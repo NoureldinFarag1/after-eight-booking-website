@@ -3,6 +3,14 @@
 @section('title', 'Scan Tickets')
 
 @section('content')
+@if(auth()->user()->isOperator())
+    <!-- Operator-only notice -->
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Operator Mode:</strong> You have access to the ticket scanning system only. Use the scanner below to validate tickets at the event entrance.
+    </div>
+@endif
+
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card">
@@ -25,7 +33,9 @@
 
                     <div id="scanner-container" class="position-relative">
                         <div class="video-container position-relative">
-                            <video id="scanner-video" class="rounded border" style="max-width: 100%; height: 300px; object-fit: cover;"></video>
+                            <video id="scanner-video" class="rounded border"
+                                   style="max-width: 100%; height: 300px; object-fit: cover;"
+                                   autoplay muted playsinline></video>
                             <div id="scanner-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="pointer-events: none;">
                                 <div class="scanner-frame"></div>
                             </div>
@@ -276,6 +286,19 @@
 
         console.log('About to call decodeFromVideoDevice...');
 
+        // Set video constraints to help with exposure
+        const constraints = {
+            video: {
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: 'environment', // Use back camera if available
+                focusMode: 'continuous',
+                exposureMode: 'continuous',
+                whiteBalanceMode: 'continuous'
+            }
+        };
+
         const decodePromise = codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
             console.log('=== DECODE CALLBACK ===');
             if (result) {
@@ -295,6 +318,32 @@
             document.getElementById('start-scanner').style.display = 'none';
             document.getElementById('stop-scanner').style.display = 'inline-block';
             document.getElementById('toggle-camera').style.display = 'inline-block';
+
+            // Apply additional video properties to help with brightness issues
+            const stream = videoElement.srcObject;
+            if (stream && stream.getVideoTracks) {
+                const videoTracks = stream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    const track = videoTracks[0];
+                    console.log('Video track capabilities:', track.getCapabilities ? track.getCapabilities() : 'Not supported');
+
+                    // Try to apply settings to prevent auto-exposure issues
+                    if (track.applyConstraints) {
+                        track.applyConstraints({
+                            exposureMode: 'manual',
+                            exposureCompensation: 0,
+                            brightness: 0.5,
+                            contrast: 1.0
+                        }).catch(err => {
+                            console.log('Could not apply manual exposure constraints:', err);
+                            // Fallback to continuous mode
+                            track.applyConstraints({
+                                exposureMode: 'continuous'
+                            }).catch(e => console.log('Fallback constraints failed:', e));
+                        });
+                    }
+                }
+            }
         }).catch((err) => {
             console.error('=== CAMERA START FAILED ===');
             console.error('Failed to start camera:', err);
@@ -306,13 +355,31 @@
     }
 
     function stopScanning() {
+        console.log('Stopping scanner...');
+
         if (codeReader) {
             codeReader.reset();
+        }
+
+        // Properly stop all video streams
+        const videoElement = document.getElementById('scanner-video');
+        if (videoElement && videoElement.srcObject) {
+            const stream = videoElement.srcObject;
+            if (stream && stream.getTracks) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => {
+                    console.log('Stopping track:', track);
+                    track.stop();
+                });
+            }
+            videoElement.srcObject = null;
         }
 
         document.getElementById('start-scanner').style.display = 'inline-block';
         document.getElementById('stop-scanner').style.display = 'none';
         document.getElementById('toggle-camera').style.display = 'none';
+
+        console.log('Scanner stopped successfully');
     }
 
     function validateManualCode() {
@@ -325,6 +392,17 @@
 
     // Handle scan result
     function handleScanResult(qrCode) {
+        console.log('Handling scan result:', qrCode);
+
+        // Temporarily pause scanning to prevent multiple scans
+        const isScanning = document.getElementById('start-scanner').style.display === 'none';
+        if (isScanning) {
+            // Stop the current scan temporarily
+            if (codeReader) {
+                codeReader.reset();
+            }
+        }
+
         // Make AJAX request to validate ticket using the correct route
         fetch(`{{ route("tickets.validate", ":qr_code") }}`.replace(':qr_code', encodeURIComponent(qrCode)), {
             method: 'POST',
@@ -341,10 +419,26 @@
                 showInvalidTicket(data.message);
             }
             addToRecentScans(data);
+
+            // After showing result, restart scanning if it was active
+            if (isScanning) {
+                setTimeout(() => {
+                    console.log('Restarting scanner after successful scan...');
+                    startScanning();
+                }, 2000); // Wait 2 seconds before restarting
+            }
         })
         .catch(error => {
             console.error('Error:', error);
             showAlert('Error validating ticket', 'danger');
+
+            // Restart scanning even on error
+            if (isScanning) {
+                setTimeout(() => {
+                    console.log('Restarting scanner after error...');
+                    startScanning();
+                }, 1000);
+            }
         });
     }
 
@@ -377,7 +471,22 @@
             <p><strong>Validated at:</strong> ${ticket.validated_at}</p>
         `;
 
-        new bootstrap.Modal(document.getElementById('scanResultModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('scanResultModal'));
+        modal.show();
+
+        // Reset camera when modal is hidden
+        document.getElementById('scanResultModal').addEventListener('hidden.bs.modal', function() {
+            console.log('Modal closed, refreshing camera stream...');
+            const videoElement = document.getElementById('scanner-video');
+            if (videoElement && videoElement.srcObject) {
+                // Force refresh the video stream to reset exposure
+                const stream = videoElement.srcObject;
+                videoElement.srcObject = null;
+                setTimeout(() => {
+                    videoElement.srcObject = stream;
+                }, 100);
+            }
+        }, { once: true }); // Use once: true to prevent multiple event listeners
     }
 
     function showInvalidTicket(message) {

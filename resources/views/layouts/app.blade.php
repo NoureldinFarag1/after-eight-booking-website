@@ -47,62 +47,95 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}"
-                           href="{{ route('events.index') }}">
-                            <i class="bi bi-calendar-event me-1"></i>Events
-                        </a>
-                    </li>
-
-                    @auth
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
-                               href="{{ route('bookings.index') }}">
-                                <i class="bi bi-ticket-perforated me-1"></i>My Bookings
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}"
-                               href="{{ route('tickets.index') }}">
-                                <i class="bi bi-qr-code me-1"></i>My Tickets
-                            </a>
-                        </li>
-
-                        @if(auth()->user()->isOperator() || auth()->user()->isAdmin())
+                @auth
+                    @if(auth()->user()->isOperator())
+                        <!-- Operator-only navigation: minimal interface -->
+                        <ul class="navbar-nav me-auto">
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('tickets.scan') ? 'active' : '' }}"
-                                   href="{{ route('tickets.scan') }}">
-                                    <i class="bi bi-upc-scan me-1"></i>Scan Tickets
+                                <span class="nav-link text-light">
+                                    <i class="bi bi-upc-scan me-1"></i>Ticket Scanner
+                                </span>
+                            </li>
+                        </ul>
+                    @else
+                        <!-- Admin and User navigation -->
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}"
+                                   href="{{ route('events.index') }}">
+                                    <i class="bi bi-calendar-event me-1"></i>Events
                                 </a>
                             </li>
-                        @endif
 
-                        @if(auth()->user()->isAdmin())
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-gear me-1"></i>Admin
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">
-                                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ route('admin.events.create') }}">
-                                        <i class="bi bi-plus-circle me-1"></i>Create Event
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ route('bookings.index') }}">
-                                        <i class="bi bi-list-check me-1"></i>All Bookings
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{{ route('tickets.index') }}">
-                                        <i class="bi bi-ticket-detailed me-1"></i>All Tickets
-                                    </a></li>
-                                </ul>
-                            </li>
-                        @endif
-                    @endauth
-                </ul>
+                            @if(auth()->user()->isAdmin())
+                                <!-- Admin Navigation -->
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
+                                       href="{{ route('bookings.index') }}">
+                                        <i class="bi bi-ticket-perforated me-1"></i>All Bookings
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('tickets.*') && !request()->routeIs('tickets.scan') ? 'active' : '' }}"
+                                       href="{{ route('tickets.index') }}">
+                                        <i class="bi bi-qr-code me-1"></i>All Tickets
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('tickets.scan') ? 'active' : '' }}"
+                                       href="{{ route('tickets.scan') }}">
+                                        <i class="bi bi-upc-scan me-1"></i>Scan Tickets
+                                    </a>
+                                </li>
+
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-gear me-1"></i>Admin
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ route('admin.events.create') }}">
+                                            <i class="bi bi-plus-circle me-1"></i>Create Event
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ route('events.index') }}">
+                                            <i class="bi bi-calendar-event me-1"></i>Manage Events
+                                        </a></li>
+                                    </ul>
+                                </li>
+                            @else
+                                <!-- Regular User Navigation -->
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
+                                       href="{{ route('bookings.index') }}">
+                                        <i class="bi bi-ticket-perforated me-1"></i>My Bookings
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}"
+                                       href="{{ route('tickets.index') }}">
+                                        <i class="bi bi-qr-code me-1"></i>My Tickets
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    @endif
+                @else
+                    <!-- Guest navigation -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}"
+                               href="{{ route('events.index') }}">
+                                <i class="bi bi-calendar-event me-1"></i>Events
+                            </a>
+                        </li>
+                    </ul>
+                @endauth
 
                 <ul class="navbar-nav">
                     @auth

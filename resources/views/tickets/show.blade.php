@@ -82,7 +82,14 @@
                             <h6 class="text-muted">Entry QR Code</h6>
                             @if($ticket->status->value === 'valid')
                                 <div class="qr-code-container" id="qrcode-container">
-                                    <canvas id="qrcode"></canvas>
+                                    <canvas id="qrcode" style="border: 1px solid #ddd; background: white;"></canvas>
+                                    <div id="qr-fallback" style="display: none;" class="bg-light p-3 rounded">
+                                        <p class="mb-2 text-muted">QR Code (fallback):</p>
+                                        <p class="font-monospace small">{{ $ticket->qr_code }}</p>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ $ticket->qr_code }}')">
+                                            <i class="bi bi-clipboard"></i> Copy Code
+                                        </button>
+                                    </div>
                                 </div>
                                 <p class="mt-2 small text-muted">
                                     Show this QR code at the event entrance
@@ -220,26 +227,71 @@
 @endif
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
+    // Check if QRious library loaded
+    console.log('QRious library available:', typeof QRious !== 'undefined');
+    console.log('QRious object:', typeof QRious !== 'undefined' ? QRious : 'undefined');
+
     // Generate QR Code
     @if($ticket->status->value === 'valid')
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, attempting to generate QR code...');
             const canvas = document.getElementById('qrcode');
-            if (canvas) {
-                QRCode.toCanvas(canvas, '{{ $ticket->qr_code }}', {
-                    width: 200,
-                    height: 200,
-                    margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                }, function (error) {
-                    if (error) console.error(error);
-                });
+            const fallback = document.getElementById('qr-fallback');
+            console.log('Canvas element:', canvas);
+            console.log('Fallback element:', fallback);
+
+            if (canvas && typeof QRious !== 'undefined') {
+                console.log('Generating QR code for: {{ $ticket->qr_code }}');
+
+                // Try to generate QR code using QRious
+                try {
+                    const qr = new QRious({
+                        element: canvas,
+                        value: '{{ $ticket->qr_code }}',
+                        size: 200,
+                        background: '#ffffff',
+                        foreground: '#000000',
+                        padding: 10
+                    });
+
+                    console.log('QR Code generated successfully with QRious');
+                    canvas.style.display = 'block';
+                } catch (e) {
+                    console.error('Exception during QR code generation:', e);
+                    showFallback();
+                }
+            } else {
+                console.error('QRious library not loaded or canvas not found');
+                console.error('QRious available:', typeof QRious !== 'undefined');
+                console.error('Canvas element:', canvas);
+                showFallback();
+            }
+
+            function showFallback() {
+                if (canvas) canvas.style.display = 'none';
+                if (fallback) fallback.style.display = 'block';
+                console.log('Showing fallback QR code display');
             }
         });
     @endif
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            alert('QR code copied to clipboard!');
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('QR code copied to clipboard!');
+        });
+    }
 
     function printTicket() {
         window.print();
@@ -253,9 +305,7 @@
             }
         }
     @endif
-</script>
-
-<style>
+</script><style>
     @media print {
         .btn, .navbar, .card-header, .breadcrumb, footer {
             display: none !important;

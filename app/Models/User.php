@@ -100,10 +100,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Get tickets for this user through bookings
+     * Get tickets for this user
      */
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    /**
+     * Get tickets scanned by this user (for operators)
+     */
+    public function scannedTickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'scanned_by');
     }
 }

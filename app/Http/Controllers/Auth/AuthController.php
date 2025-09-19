@@ -12,6 +12,7 @@ use Illuminate\Validation\Rules;
 
 class AuthController extends Controller
 {
+
     /**
      * Show the login form.
      */
@@ -33,7 +34,15 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('events.index'))->with('success', 'Welcome back, ' . Auth::user()->name . '!');
+            $user = Auth::user();
+
+            // Redirect operators directly to scan page
+            if ($user->role->value === 'operator') {
+                return redirect()->route('tickets.scan')->with('success', 'Welcome back, ' . $user->name . '!');
+            }
+
+            // Default redirect for admin and regular users
+            return redirect()->intended(route('events.index'))->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
         return back()->withErrors([

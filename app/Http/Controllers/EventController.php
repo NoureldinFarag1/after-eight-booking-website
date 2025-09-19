@@ -153,19 +153,131 @@ class EventController extends Controller
      */
     public function dashboard()
     {
+        // Basic Event Statistics
         $totalEvents = Event::query()->count();
         $publishedEvents = Event::query()->published()->count();
         $upcomingEvents = Event::query()->upcoming()->count();
-        $totalBookings = Event::withCount('bookings')->get()->sum('bookings_count');
+        $pastEvents = Event::query()->past()->count();
 
-        $recentEvents = Event::query()->latest()->limit(5)->get();
+        // Booking Statistics
+        $totalBookings = Event::withCount('bookings')->get()->sum('bookings_count');
+        $totalTickets = \App\Models\Ticket::count();
+        $scannedTickets = \App\Models\Ticket::whereNotNull('scanned_at')->count();
+        $validTickets = \App\Models\Ticket::where('status', \App\Enums\TicketStatus::VALID)->count();
+
+        // Revenue Statistics
+        $totalRevenue = \App\Models\Event::join('bookings', 'events.id', '=', 'bookings.event_id')
+            ->sum('events.price');
+
+        // Operator Statistics
+        $operators = \App\Models\User::where('role', \App\Enums\Role::OPERATOR)
+            ->withCount(['scannedTickets as total_scans'])
+            ->get();
+
+        $totalOperators = $operators->count();
+        $activeOperators = $operators->where('total_scans', '>', 0)->count();
+
+        // Recent Events with enhanced data
+        $recentEvents = Event::query()
+            ->withCount(['bookings', 'tickets'])
+            ->with(['tickets' => function($query) {
+                $query->whereNotNull('scanned_at');
+            }])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($event) {
+                $event->scanned_tickets_count = $event->tickets->count();
+                $event->scan_rate = $event->tickets_count > 0
+                    ? round(($event->scanned_tickets_count / $event->tickets_count) * 100, 1)
+                    : 0;
+                return $event;
+            });
+
+        // Event Performance Data (for charts)
+        $eventPerformance = Event::query()
+            ->withCount(['bookings', 'tickets'])
+            ->with(['tickets' => function($query) {
+                $query->whereNotNull('scanned_at');
+            }])
+            ->where('event_date', '>=', now()->subMonths(6))
+            ->get()
+            ->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'date' => $event->event_date->format('M j'),
+                    'capacity' => $event->capacity,
+                    'bookings' => $event->bookings_count,
+                    'tickets_sold' => $event->tickets_count,
+                    'tickets_scanned' => $event->tickets->count(),
+                    'revenue' => $event->price * $event->bookings_count,
+                    'attendance_rate' => $event->tickets_count > 0
+                        ? round(($event->tickets->count() / $event->tickets_count) * 100, 1)
+                        : 0
+                ];
+            });
+
+        // Operator Scan Statistics
+        $operatorStats = \App\Models\User::where('role', \App\Enums\Role::OPERATOR)
+            ->select('id', 'name', 'email', 'created_at')
+            ->withCount(['scannedTickets as total_scans'])
+            ->with(['scannedTickets' => function($query) {
+                $query->select('scanned_by', 'scanned_at', 'event_id')
+                      ->with('event:id,title')
+                      ->latest('scanned_at')
+                      ->limit(5);
+            }])
+            ->get()
+            ->map(function ($operator) {
+                $recentScans = $operator->scannedTickets;
+                $todayScans = $operator->scannedTickets()
+                    ->whereDate('scanned_at', today())
+                    ->count();
+                $thisWeekScans = $operator->scannedTickets()
+                    ->whereBetween('scanned_at', [now()->startOfWeek(), now()->endOfWeek()])
+                    ->count();
+
+                return [
+                    'id' => $operator->id,
+                    'name' => $operator->name,
+                    'email' => $operator->email,
+                    'total_scans' => $operator->total_scans,
+                    'today_scans' => $todayScans,
+                    'week_scans' => $thisWeekScans,
+                    'recent_scans' => $recentScans,
+                    'last_scan' => $recentScans->first()?->scanned_at,
+                    'member_since' => $operator->created_at
+                ];
+            });
+
+        // Daily Scan Activity (last 7 days)
+        $dailyScanActivity = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $scans = \App\Models\Ticket::whereDate('scanned_at', $date)->count();
+            $dailyScanActivity[] = [
+                'date' => $date->format('M j'),
+                'scans' => $scans
+            ];
+        }
 
         return view('admin.dashboard', compact(
             'totalEvents',
             'publishedEvents',
             'upcomingEvents',
+            'pastEvents',
             'totalBookings',
-            'recentEvents'
+            'totalTickets',
+            'scannedTickets',
+            'validTickets',
+            'totalRevenue',
+            'totalOperators',
+            'activeOperators',
+            'recentEvents',
+            'eventPerformance',
+            'operatorStats',
+            'dailyScanActivity'
         ));
     }
 }

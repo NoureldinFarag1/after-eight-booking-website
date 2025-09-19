@@ -26,7 +26,7 @@ Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
 
 // Authentication required routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'operator.redirect'])->group(function () {
 
     // Event management (Admin only)
     Route::middleware('role:admin')->group(function () {

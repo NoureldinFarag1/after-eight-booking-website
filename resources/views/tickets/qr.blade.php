@@ -160,12 +160,20 @@
 </div>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
+    // Check if QRCode library loaded
+    console.log('QRCode library available:', typeof QRCode !== 'undefined');
+
     // Generate QR Code
     @if($ticket->status->value === 'valid')
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, attempting to generate QR code...');
             const canvas = document.getElementById('qrcode');
-            if (canvas) {
+            console.log('Canvas element:', canvas);
+
+            if (canvas && typeof QRCode !== 'undefined') {
+                console.log('Generating QR code for: {{ $ticket->qr_code }}');
                 QRCode.toCanvas(canvas, '{{ $ticket->qr_code }}', {
                     width: 280,
                     height: 280,
@@ -175,8 +183,16 @@
                         light: '#FFFFFF'
                     }
                 }, function (error) {
-                    if (error) console.error(error);
+                    if (error) {
+                        console.error('QR Code generation failed:', error);
+                    } else {
+                        console.log('QR Code generated successfully');
+                    }
                 });
+            } else {
+                console.error('QRCode library not loaded or canvas not found');
+                console.error('QRCode available:', typeof QRCode !== 'undefined');
+                console.error('Canvas element:', canvas);
             }
         });
 

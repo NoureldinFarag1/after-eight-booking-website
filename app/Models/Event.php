@@ -89,4 +89,12 @@ class Event extends Model
     {
         return $query->where('event_date', '>=', now()->toDateString());
     }
+
+    /**
+     * Scope for past events
+     */
+    public function scopePast($query)
+    {
+        return $query->where('event_date', '<', now()->toDateString());
+    }
 }
