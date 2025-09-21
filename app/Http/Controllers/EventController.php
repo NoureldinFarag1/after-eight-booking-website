@@ -206,7 +206,7 @@ class EventController extends Controller
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
-                    'date' => $event->event_date->format('M j'),
+                    'date' => \Carbon\Carbon::parse($event->event_date)->format('M j'),
                     'capacity' => $event->capacity,
                     'bookings' => $event->bookings_count,
                     'tickets_sold' => $event->tickets_count,
