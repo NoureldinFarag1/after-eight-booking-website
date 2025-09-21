@@ -18,7 +18,6 @@ class EventRequestController extends Controller
 
     public function store(Request $request, Event $event)
     {
-        // check if user already reached max 5 requests
         $count = EventRequest::where('event_id', $event->id)
                              ->where('user_id', Auth::id())
                              ->count();
@@ -44,6 +43,7 @@ class EventRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->route('events.show', $event)->with('success', 'Your request has been submitted!');
+        return redirect()->route('events.show', $event)
+                         ->with('success', 'Your request has been submitted!');
     }
 }
