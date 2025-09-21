@@ -68,3 +68,27 @@ Route::prefix('api')->middleware('auth')->group(function () {
          ->middleware('role:operator,admin')
          ->name('api.tickets.validate');
 });
+
+
+/*
+| Event Requests Routes
+| - Users can create requests for events of type 'request'
+| - Admin can approve/decline
+*/
+use App\Http\Controllers\EventRequestController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/my-requests', [EventRequestController::class, 'myRequests'])->name('event_requests.index');
+});
+
+Route::get('/events/{event}/request', [EventRequestController::class, 'create'])->name('events.requests.create');
+Route::post('/events/{event}/request', [EventRequestController::class, 'store'])->name('events.requests.store');
+
+Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
+
+// Admin routes (assumes an 'admin' gate/policy or middleware in your app)
+Route::prefix('admin')->middleware('auth')->group(function() {
+    Route::get('/event-requests', [EventRequestController::class, 'adminIndex'])->name('admin.event_requests.index');
+    Route::post('/event-requests/{eventRequest}/approve', [EventRequestController::class, 'approve'])->name('admin.event_requests.approve');
+    Route::post('/event-requests/{eventRequest}/decline', [EventRequestController::class, 'decline'])->name('admin.event_requests.decline');
+});
