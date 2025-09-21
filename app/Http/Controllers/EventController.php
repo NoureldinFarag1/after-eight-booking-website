@@ -53,6 +53,7 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_date' => 'required|date|after_or_equal:today',
             'event_time' => 'required|date_format:H:i',
+            'type' => 'required|in:booking,request',
             'capacity' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],

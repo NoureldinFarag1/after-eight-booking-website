@@ -115,6 +115,14 @@
                             @enderror
                         </div>
 
+                        <div class="form-group">
+                            <label for="type">Event Type</label>
+                            <select name="type" id="type" class="form-control" required>
+                                <option value="booking">Booking</option>
+                                <option value="request">Request</option>
+                            </select>
+                        </div>
+
                         <div class="col-md-6 mb-3">
                             <label for="price" class="form-label">Price ($) *</label>
                             <input type="number"

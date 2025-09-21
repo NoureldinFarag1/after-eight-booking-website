@@ -19,6 +19,7 @@ class Event extends Model
         'event_date',
         'event_time',
         'capacity',
+        'type',
         'price',
         'status',
         'image_url',
