@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventRequestController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -75,11 +76,11 @@ Route::prefix('api')->middleware('auth')->group(function () {
 | - Users can create requests for events of type 'request'
 | - Admin can approve/decline
 */
-use App\Http\Controllers\EventRequestController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/my-requests', [EventRequestController::class, 'myRequests'])->name('event_requests.index');
 });
+
 
 Route::get('/events/{event}/request', [EventRequestController::class, 'create'])->name('events.requests.create');
 Route::post('/events/{event}/request', [EventRequestController::class, 'store'])->name('events.requests.store');

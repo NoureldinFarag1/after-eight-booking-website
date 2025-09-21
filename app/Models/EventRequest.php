@@ -10,29 +10,22 @@ class EventRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'event_id',
-        'payload',
+        'user_id',
+        'field1',
+        'field2',
+        'field3',
+        'field4',
         'status',
-        'admin_id',
     ];
 
-    protected $casts = [
-        'payload' => 'array',
-    ];
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
+    }
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function event()
-    {
-        return $this->belongsTo(\App\Models\Event::class);
-    }
-
-    public function admin()
-    {
-        return $this->belongsTo(User::class, 'admin_id');
     }
 }

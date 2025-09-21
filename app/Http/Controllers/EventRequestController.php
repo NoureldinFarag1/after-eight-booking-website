@@ -11,80 +11,39 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class EventRequestController extends Controller
 {
-    use AuthorizesRequests;
     public function create(Event $event)
     {
-        if ($event->type !== 'request') {
-            abort(404, 'This event is not of type request.');
-        }
-
-        return view('event_requests.create', compact('event'));
+        return view('events.request_form', compact('event'));
     }
 
     public function store(Request $request, Event $event)
     {
-        $user = Auth::user();
+        // check if user already reached max 5 requests
+        $count = EventRequest::where('event_id', $event->id)
+                             ->where('user_id', Auth::id())
+                             ->count();
 
-        // max 5 requests per user (across all events)
-        $existingCount = EventRequest::where('user_id', $user->id)->count();
-        if ($existingCount >= 5) {
-            return redirect()->back()->with('error', 'You have reached the maximum allowed requests (5).');
+        if ($count >= 5) {
+            return redirect()->back()->with('error', 'You have reached the maximum of 5 requests for this event.');
         }
 
-        $validated = $request->validate([
-            'field_1' => 'required|string|max:100',
-            'field_2' => 'required|string|max:255',
-            'field_3' => 'required|string|max:500',
-            'field_4' => 'required|string|max:500',
+        $request->validate([
+            'field1' => 'required|string|max:255',
+            'field2' => 'required|string|max:255',
+            'field3' => 'required|string|max:255',
+            'field4' => 'required|string|max:255',
         ]);
 
-        $er = EventRequest::create([
-            'user_id' => $user->id,
+        EventRequest::create([
             'event_id' => $event->id,
-            'payload' => $validated,
+            'user_id' => Auth::id(),
+            'field1' => $request->field1,
+            'field2' => $request->field2,
+            'field3' => $request->field3,
+            'field4' => $request->field4,
             'status' => 'pending',
         ]);
 
-        return redirect()->route('event_requests.show', $er->id)->with('success', 'Request submitted successfully.');
-    }
-
-    public function show(EventRequest $eventRequest)
-    {
-        $this->authorize('view', $eventRequest);
-        return view('event_requests.show', ['request' => $eventRequest]);
-    }
-
-    public function myRequests()
-    {
-        $user = Auth::user();
-        $requests = EventRequest::where('user_id', $user->id)->with('event')->latest()->get();
-        return view('event_requests.index', compact('requests'));
-    }
-
-    public function adminIndex()
-    {
-        $this->authorize('admin');
-        $requests = EventRequest::with('user','event')->latest()->paginate(30);
-        return view('event_requests.admin_index', compact('requests'));
-    }
-
-    public function approve(EventRequest $eventRequest)
-    {
-        $this->authorize('admin');
-        $eventRequest->update([
-            'status' => 'approved',
-            'admin_id' => auth()->id(),
-        ]);
-        return redirect()->back()->with('success', 'Request approved.');
-    }
-
-    public function decline(EventRequest $eventRequest)
-    {
-        $this->authorize('admin');
-        $eventRequest->update([
-            'status' => 'declined',
-            'admin_id' => auth()->id(),
-        ]);
-        return redirect()->back()->with('success', 'Request declined.');
+        return redirect()->route('events.show', $event)->with('success', 'Your request has been submitted!');
     }
 }

@@ -156,60 +156,68 @@
             <div class="card-body">
                 @if($event->isBookable())
                     @auth
-                        <form action="{{ route('bookings.store') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="event_id" value="{{ $event->id }}">
+                     @if($event->type === 'booking')
+                            {{-- Existing booking form --}}
+                            <form action="{{ route('bookings.store') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="event_id" value="{{ $event->id }}">
 
-                            <div class="mb-3">
-                                <label for="quantity" class="form-label">Number of Tickets</label>
-                                <select class="form-select" id="quantity" name="quantity" required>
-                                    @for($i = 1; $i <= min(10, $event->getAvailableSeatsAttribute()); $i++)
-                                        <option value="{{ $i }}">{{ $i }} ticket{{ $i > 1 ? 's' : '' }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <span>Price per ticket:</span>
-                                    <span class="fw-bold">
-                                        @if($event->price > 0)
-                                            ${{ number_format($event->price, 2) }}
-                                        @else
-                                            Free
-                                        @endif
-                                    </span>
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Number of Tickets</label>
+                                    <select class="form-select" id="quantity" name="quantity" required>
+                                        @for($i = 1; $i <= min(10, $event->getAvailableSeatsAttribute()); $i++)
+                                            <option value="{{ $i }}">{{ $i }} ticket{{ $i > 1 ? 's' : '' }}</option>
+                                        @endfor
+                                    </select>
                                 </div>
-                                <div class="d-flex justify-content-between">
-                                    <span>Total:</span>
-                                    <span class="fw-bold text-primary" id="total-price">
-                                        @if($event->price > 0)
-                                            ${{ number_format($event->price, 2) }}
-                                        @else
-                                            Free
-                                        @endif
-                                    </span>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Price per ticket:</span>
+                                        <span class="fw-bold">
+                                            @if($event->price > 0)
+                                                ${{ number_format($event->price, 2) }}
+                                            @else
+                                                Free
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total:</span>
+                                        <span class="fw-bold text-primary" id="total-price">
+                                            @if($event->price > 0)
+                                                ${{ number_format($event->price, 2) }}
+                                            @else
+                                                Free
+                                            @endif
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-cart-plus me-1"></i>Book Now
-                            </button>
-                        </form>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-cart-plus me-1"></i>Book Now
+                                </button>
+                            </form>
 
-                        <script>
-                            document.getElementById('quantity').addEventListener('change', function() {
-                                const quantity = parseInt(this.value);
-                                const price = {{ $event->price }};
-                                const total = quantity * price;
+                            <script>
+                                document.getElementById('quantity').addEventListener('change', function() {
+                                    const quantity = parseInt(this.value);
+                                    const price = {{ $event->price }};
+                                    const total = quantity * price;
 
-                                if (price > 0) {
-                                    document.getElementById('total-price').textContent = '$' + total.toFixed(2);
-                                } else {
-                                    document.getElementById('total-price').textContent = 'Free';
-                                }
-                            });
-                        </script>
+                                    if (price > 0) {
+                                        document.getElementById('total-price').textContent = '$' + total.toFixed(2);
+                                    } else {
+                                        document.getElementById('total-price').textContent = 'Free';
+                                    }
+                                });
+                            </script>
+                        @elseif($event->type === 'request')
+                            {{-- Request form link --}}
+                            <a href="{{ route('event-requests.create', $event) }}" class="btn btn-warning w-100">
+                                <i class="bi bi-envelope-plus me-1"></i> Submit a request for this event
+                            </a>
+                        @endif
                     @else
                         <div class="text-center">
                             <p class="text-muted">Please log in to book this event.</p>
