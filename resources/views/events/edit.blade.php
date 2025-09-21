@@ -139,6 +139,14 @@
                         </div>
                     </div>
 
+                    <div class="col-md-6 mb-3">
+                        <label for="type">Event Type</label>
+                        <select name="type" id="type" class="form-control" required>
+                            <option value="booking" {{ $event->type == 'booking' ? 'selected' : '' }}>Booking</option>
+                            <option value="request" {{ $event->type == 'request' ? 'selected' : '' }}>Request</option>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label for="image" class="form-label">Event Image</label>
                         @if($event->image_url)

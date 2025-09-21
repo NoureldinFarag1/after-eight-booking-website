@@ -104,6 +104,7 @@ class EventController extends Controller
             'event_time' => 'required|date_format:H:i',
             'capacity' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
+            'type' => 'required|in:booking,request',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',

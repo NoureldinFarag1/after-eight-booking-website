@@ -133,7 +133,7 @@
                     </div>
 
                 
-                    <div class="form-group">
+                    <div class="col-md-6 mb-3">
                         <label for="type">Event Type</label>
                         <select name="type" id="type" class="form-control" required>
                             <option value="booking">Booking</option>
