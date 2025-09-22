@@ -1,26 +1,43 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container">
-    <h2>My Requests</h2>
+@section('title', 'My Requests')
 
-    @if($requests->isEmpty())
-        <p>No requests yet.</p>
-    @else
-        <table class="table">
-            <thead><tr><th>ID</th><th>Event</th><th>Status</th><th>Submitted At</th><th></th></tr></thead>
-            <tbody>
-            @foreach($requests as $r)
-                <tr>
-                    <td>{{ $r->id }}</td>
-                    <td>{{ $r->event->title ?? 'N/A' }}</td>
-                    <td>{{ ucfirst($r->status) }}</td>
-                    <td>{{ $r->created_at }}</td>
-                    <td><a href="{{ route('event_requests.show', $r->id) }}" class="btn btn-sm btn-primary">View</a></td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    @endif
+@section('content')
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">My Event Requests</h5>
+    </div>
+    <div class="card-body">
+        @if($requests->isEmpty())
+            <p>You have not submitted any requests yet.</p>
+        @else
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Submitted At</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($requests as $req)
+                        <tr>
+                            <td>{{ $req->event->title ?? 'Event Deleted' }}</td>
+                            <td>{{ $req->created_at->format('M d, Y H:i') }}</td>
+                            <td>
+                                @if($req->status === 'pending')
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                @elseif($req->status === 'approved')
+                                    <span class="badge bg-success">Approved</span>
+                                @elseif($req->status === 'declined')
+                                    <span class="badge bg-danger">Declined</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
 </div>
 @endsection

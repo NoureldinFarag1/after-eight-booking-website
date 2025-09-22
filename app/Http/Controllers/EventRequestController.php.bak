@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\EventRequest;
+use App\Models\Event;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+class EventRequestController extends Controller
+{
+    public function create(Event $event)
+    {
+        return view('events.request_form', compact('event'));
+    }
+
+    public function store(Request $request, Event $event)
+    {
+        $count = EventRequest::where('event_id', $event->id)
+                             ->where('user_id', Auth::id())
+                             ->count();
+
+        if ($count >= 5) {
+            return redirect()->back()->with('error', 'You have reached the maximum of 5 requests for this event.');
+        }
+
+        $request->validate([
+            'field1' => 'required|string|max:255',
+            'field2' => 'required|string|max:255',
+            'field3' => 'required|string|max:255',
+            'field4' => 'required|string|max:255',
+        ]);
+
+        EventRequest::create([
+            'event_id' => $event->id,
+            'user_id' => Auth::id(),
+            'field1' => $request->field1,
+            'field2' => $request->field2,
+            'field3' => $request->field3,
+            'field4' => $request->field4,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->route('events.show', $event)
+                         ->with('success', 'Your request has been submitted!');
+    }
+
+
+
+    /**
+     * Admin listing of all requests
+     */
+    public function adminIndex()
+    {
+        $requests = EventRequest::latest()->get();
+        return view('event_requests.admin_index', compact('requests'));
+    }
+
+    /**
+     * List the logged-in user's requests
+     */
+    public function myRequests()
+    {
+        $requests = EventRequest::where('user_id', Auth::id())->latest()->get();
+        return view('event_requests.index', compact('requests'));
+    }
+
+    /**
+     * Show a single request (admin or owner)
+     */
+    public function show(EventRequest $eventRequest)
+    {
+        // authorize via policy if you have one; otherwise allow admins and owners
+        if (Auth::id() !== $eventRequest->user_id && ! (Auth::user()->is_admin ?? false)) {
+            abort(403);
+        }
+        return view('event_requests.show', ['request' => $eventRequest]);
+    }
+
+    /**
+     * Approve a request (admin only)
+     */
+    public function approve(EventRequest $eventRequest)
+    {
+        if (! (Auth::user()->is_admin ?? false)) {
+            abort(403);
+        }
+        $eventRequest->status = 'approved';
+        $eventRequest->save();
+
+        return back()->with('success', 'Request approved.');
+    }
+
+    /**
+     * Decline a request (admin only)
+     */
+    public function decline(EventRequest $eventRequest)
+    {
+        if (! (Auth::user()->is_admin ?? false)) {
+            abort(403);
+        }
+        $eventRequest->status = 'declined';
+        $eventRequest->save();
+
+        return back()->with('success', 'Request declined.');
+    }
+
+}
