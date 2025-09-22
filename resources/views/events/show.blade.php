@@ -183,14 +183,14 @@
                                                 </td>
                                                 <td>{{ $r->created_at->format('M j, Y') }}</td>
                                                 <td>
-                                                    <a href="{{ route('event_requests.show', $1) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                                    <a href="{{ route('event_requests.show', $r->id) }}" class="btn btn-sm btn-outline-primary">View</a>
 
                                                     @if($r->status === 'pending' && (auth()->user()->isAdmin() ?? auth()->user()->is_admin ?? false))
-                                                        <form action="{{ route('admin.event_requests.approve', $1) }}" method="POST" class="d-inline">
+                                                        <form action="{{ route('admin.event_requests.approve', $r->id) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-sm btn-success">Approve</button>
                                                         </form>
-                                                        <form action="{{ route('admin.event_requests.decline', $1) }}" method="POST" class="d-inline">
+                                                        <form action="{{ route('admin.event_requests.decline', $r->id) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-sm btn-danger">Decline</button>
                                                         </form>
@@ -351,29 +351,3 @@
     @endif
 @endauth
 @endsection
-
-
-{{-- User request status section --}}
-@if(auth()->check())
-    @php
-        $userRequest = $event->requests()->where('user_id', auth()->id())->first();
-    @endphp
-
-    @if($userRequest)
-        <div class="mt-3">
-            <strong>Your Request Status: </strong>
-            @if($userRequest->status === 'pending')
-                <span class="badge bg-warning text-dark">Pending</span>
-            @elseif($userRequest->status === 'approved')
-                <span class="badge bg-success">Approved</span>
-            @elseif($userRequest->status === 'declined')
-                <span class="badge bg-danger">Declined</span>
-            @endif
-        </div>
-    @else
-        <a href="{{ route('event_requests.create', $event) }}" class="btn btn-primary mt-3">
-            Submit Request
-        </a>
-    @endif
-@endif
-
