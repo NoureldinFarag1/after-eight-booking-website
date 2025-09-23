@@ -22,8 +22,8 @@ class TicketController extends Controller
         $user = Auth::user();
 
         $tickets = $user->isAdmin()
-            ? Ticket::with(['user', 'event', 'booking'])->latest()->paginate(15)
-            : Ticket::with(['event', 'booking'])
+            ? Ticket::with(['user', 'event', 'booking', 'type'])->latest()->paginate(15)
+            : Ticket::with(['event', 'booking', 'type'])
                 ->where('user_id', $user->id)
                 ->latest()
                 ->paginate(15);
@@ -38,7 +38,7 @@ class TicketController extends Controller
     {
         $this->authorize('view', $ticket);
 
-        $ticket->load(['event', 'booking', 'user']);
+    $ticket->load(['event', 'booking', 'user', 'type']);
 
         return view('tickets.show', compact('ticket'));
     }
@@ -78,7 +78,7 @@ class TicketController extends Controller
         }
 
         $ticket = Ticket::where('qr_code', $qrCode)
-            ->with(['event', 'user', 'booking'])
+            ->with(['event', 'user', 'booking', 'type'])
             ->first();
 
         if (!$ticket) {
@@ -99,6 +99,7 @@ class TicketController extends Controller
                     'ticket_number' => $ticket->ticket_number,
                     'event_title' => $ticket->event->title,
                     'user_name' => $ticket->user->name,
+                    'ticket_type' => $ticket->type->name ?? null,
                     'scanned_at' => $ticket->scanned_at,
                     'scanned_by' => $ticket->scannedBy->name ?? 'Unknown'
                 ]
@@ -115,7 +116,8 @@ class TicketController extends Controller
                     'ticket_number' => $ticket->ticket_number,
                     'event_title' => $ticket->event->title,
                     'event_date' => $ticket->event->event_date,
-                    'user_name' => $ticket->user->name
+                    'user_name' => $ticket->user->name,
+                    'ticket_type' => $ticket->type->name ?? null,
                 ]
             ]);
         }
@@ -130,7 +132,8 @@ class TicketController extends Controller
                     'ticket_number' => $ticket->ticket_number,
                     'status' => $ticket->status->label(),
                     'event_title' => $ticket->event->title,
-                    'user_name' => $ticket->user->name
+                    'user_name' => $ticket->user->name,
+                    'ticket_type' => $ticket->type->name ?? null,
                 ]
             ]);
         }
@@ -150,6 +153,8 @@ class TicketController extends Controller
                     'event_time' => $ticket->event->event_time,
                     'user_name' => $ticket->user->name,
                     'user_email' => $ticket->user->email,
+                    'ticket_type' => $ticket->type->name ?? null,
+                    'price' => $ticket->price,
                     'validated_at' => now(),
                     'validated_by' => $user->name
                 ]

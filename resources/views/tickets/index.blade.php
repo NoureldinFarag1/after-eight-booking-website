@@ -56,6 +56,15 @@
                                             {{ $ticket->event->title }}
                                         </a>
                                     </h5>
+                                    @if($ticket->type)
+                                        <p class="mb-1">
+                                            <i class="bi bi-ticket-detailed me-1"></i>
+                                            <strong>Type:</strong> {{ $ticket->type->name }}
+                                            @if(!is_null($ticket->price))
+                                                <span class="text-muted">• ${{ number_format($ticket->price, 2) }}</span>
+                                            @endif
+                                        </p>
+                                    @endif
 
                                     @if(auth()->user()->isAdmin())
                                         <p class="mb-1">
@@ -207,7 +216,7 @@
     <!-- Status Update Form -->
     <form id="statusUpdateForm" method="POST" style="display: none;">
         @csrf
-        @method('PUT')
+        @method('PATCH')
         <input type="hidden" name="status" id="statusInput">
     </form>
 

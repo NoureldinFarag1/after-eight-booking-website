@@ -46,7 +46,8 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
         <!-- Brand -->
-        <a class="navbar-brand" href="{{ route('events.index') }}">
+        @php($authUser = auth()->user())
+        <a class="navbar-brand" href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}">
             <i class="bi bi-calendar-event me-2"></i>After Eight Events
         </a>
 
@@ -66,8 +67,21 @@
                 </li>
 
                 @auth
-                    @if(auth()->user()->is_admin ?? false)
+                    @php($authUser = auth()->user())
+                    @if($authUser->isAdmin())
                         <!-- Admin Nav Items -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
+                               href="{{ route('admin.dashboard') }}">
+                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}"
+                               href="{{ route('admin.operators.index') }}">
+                                <i class="bi bi-people me-1"></i>Operators
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
                                href="{{ route('bookings.index') }}">
@@ -80,6 +94,8 @@
                                 <i class="bi bi-qr-code me-1"></i>All Tickets
                             </a>
                         </li>
+                    @elseif($authUser->isOperator())
+                        <!-- Operator Nav Items -->
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('tickets.scan') ? 'active' : '' }}"
                                href="{{ route('tickets.scan') }}">
@@ -107,7 +123,8 @@
             <!-- Right Side -->
             <ul class="navbar-nav ms-auto align-items-center">
                 @auth
-                    @if(auth()->user()->is_admin ?? false)
+                    @php($authUser = auth()->user())
+                    @if($authUser->isAdmin())
                         <!-- Notification Bell -->
                         <li class="nav-item me-3">
                             <a href="{{ route('admin.event_requests.index') }}" class="nav-link position-relative">

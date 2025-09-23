@@ -4,11 +4,17 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRequestController;
+use App\Http\Controllers\Admin\OperatorController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\Admin\TicketTypeController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
+    $user = Auth::user();
+    if ($user && $user->role === \App\Enums\Role::ADMIN) {
+        return redirect()->route('admin.dashboard');
+    }
     return redirect()->route('events.index');
 });
 
@@ -39,6 +45,24 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
             'update' => 'admin.events.update',
             'destroy' => 'admin.events.destroy',
         ]);
+
+        // Ticket Types per Event
+        Route::prefix('admin/events/{event}')->group(function () {
+            Route::get('ticket-types', [TicketTypeController::class, 'index'])->name('admin.events.ticket-types.index');
+            Route::post('ticket-types', [TicketTypeController::class, 'store'])->name('admin.events.ticket-types.store');
+            Route::put('ticket-types/{ticketType}', [TicketTypeController::class, 'update'])->name('admin.events.ticket-types.update');
+            Route::delete('ticket-types/{ticketType}', [TicketTypeController::class, 'destroy'])->name('admin.events.ticket-types.destroy');
+        });
+
+        // Operator management (Admin only)
+    Route::get('/admin/operators', [OperatorController::class, 'index'])->name('admin.operators.index');
+    Route::get('/admin/operators/create', [OperatorController::class, 'create'])->name('admin.operators.create');
+    Route::post('/admin/operators', [OperatorController::class, 'store'])->name('admin.operators.store');
+    Route::patch('/admin/operators/{user}/toggle', [OperatorController::class, 'toggle'])->name('admin.operators.toggle');
+    Route::get('/admin/operators/{user}/password', [OperatorController::class, 'editPassword'])->name('admin.operators.password.edit');
+    Route::post('/admin/operators/{user}/password', [OperatorController::class, 'updatePassword'])->name('admin.operators.password.update');
+    Route::delete('/admin/operators/{user}', [OperatorController::class, 'destroy'])->name('admin.operators.destroy');
+    Route::patch('/admin/operators/{id}/restore', [OperatorController::class, 'restore'])->name('admin.operators.restore');
     });
 
     // Booking routes
@@ -51,8 +75,8 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
     Route::get('/tickets/{ticket}/qr-code', [TicketController::class, 'qrCode'])->name('tickets.qr-code');
     Route::get('/tickets/{ticket}/download', [TicketController::class, 'download'])->name('tickets.download');
 
-    // Operator/Admin ticket scanning
-    Route::middleware('role:operator,admin')->group(function () {
+    // Operator-only ticket scanning
+    Route::middleware('role:operator')->group(function () {
         Route::get('/scan', [TicketController::class, 'scan'])->name('tickets.scan');
         Route::post('/tickets/validate/{qr_code}', [TicketController::class, 'validateTicket'])->name('tickets.validate');
     });
@@ -66,7 +90,7 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
 // API Routes for AJAX/QR scanning
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/tickets/validate/{qr_code}', [TicketController::class, 'validateTicket'])
-         ->middleware('role:operator,admin')
+         ->middleware('role:operator')
          ->name('api.tickets.validate');
 });
 
@@ -90,7 +114,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
 
 // Admin-side
-    
+
     // Admin-side for event requests
     Route::prefix('admin')->middleware(['auth'])->group(function() {
         Route::get('/event-requests', [EventRequestController::class, 'adminIndex'])->name('admin.event_requests.index');

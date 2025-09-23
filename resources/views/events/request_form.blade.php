@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2>Submit a request for: {{ $event->name }}</h2>
+    <h2>Request to attend: {{ $event->name }}</h2>
 
     @if(session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
@@ -11,45 +11,60 @@
     <form action="{{ route('event-requests.store', $event) }}" method="POST">
         @csrf
 
-        {{-- Example placeholders: you’ll replace names once client confirms --}}
-        <div class="mb-3">
-            <label for="field1" class="form-label">Field 1</label>
-            <input type="text" name="field1" id="field1"
-                   class="form-control @error('field1') is-invalid @enderror"
-                   value="{{ old('field1') }}" required>
-            @error('field1')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <div class="mb-4">
+            <h5 class="mb-2">Primary attendee</h5>
+            <p class="text-muted small mb-3">The primary attendee will receive up to 5 QR codes by email.</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="primary_name" class="form-label">Full name</label>
+                    <input type="text" name="primary_name" id="primary_name"
+                           class="form-control @error('primary_name') is-invalid @enderror"
+                           value="{{ old('primary_name') }}" required>
+                    @error('primary_name')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="primary_email" class="form-label">Email</label>
+                    <input type="email" name="primary_email" id="primary_email"
+                           class="form-control @error('primary_email') is-invalid @enderror"
+                           value="{{ old('primary_email') }}" required>
+                    @error('primary_email')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="primary_social_url" class="form-label">Instagram/Facebook URL</label>
+                    <input type="url" name="primary_social_url" id="primary_social_url" required
+                           class="form-control @error('primary_social_url') is-invalid @enderror"
+                           value="{{ old('primary_social_url') }}" placeholder="https://instagram.com/username">
+                    @error('primary_social_url')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="field2" class="form-label">Field 2</label>
-            <input type="text" name="field2" id="field2"
-                   class="form-control @error('field2') is-invalid @enderror"
-                   value="{{ old('field2') }}" required>
-            @error('field2')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <div class="mb-3">
-            <label for="field3" class="form-label">Field 3</label>
-            <input type="text" name="field3" id="field3"
-                   class="form-control @error('field3') is-invalid @enderror"
-                   value="{{ old('field3') }}" required>
-            @error('field3')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
-        </div>
-
-        <div class="mb-3">
-            <label for="field4" class="form-label">Field 4</label>
-            <input type="text" name="field4" id="field4"
-                   class="form-control @error('field4') is-invalid @enderror"
-                   value="{{ old('field4') }}" required>
-            @error('field4')
-                <span class="invalid-feedback">{{ $message }}</span>
-            @enderror
+        <div class="mb-4">
+            <h5 class="mb-2">Additional guests (up to 4)</h5>
+            <div class="row g-3">
+                @for($i = 0; $i < 4; $i++)
+                    <div class="col-md-4">
+                        <label class="form-label">Guest {{ $i+1 }} name</label>
+                        <input type="text" name="guests[{{ $i }}][name]" class="form-control @error('guests.'.$i.'.name') is-invalid @enderror" value="{{ old('guests.'.$i.'.name') }}" placeholder="Optional">
+                        @error('guests.'.$i.'.name')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Guest {{ $i+1 }} Instagram/Facebook URL</label>
+                        <input type="url" name="guests[{{ $i }}][social_url]" class="form-control @error('guests.'.$i.'.social_url') is-invalid @enderror" value="{{ old('guests.'.$i.'.social_url') }}" placeholder="https://instagram.com/guest">
+                        @error('guests.'.$i.'.social_url')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+                @endfor
+            </div>
         </div>
 
         <button type="submit" class="btn btn-warning w-100">

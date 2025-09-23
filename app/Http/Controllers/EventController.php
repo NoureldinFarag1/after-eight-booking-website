@@ -59,6 +59,12 @@ class EventController extends Controller
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',
+            // Optional ticket types on create
+            'ticket_types' => 'nullable|array|max:50',
+            'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
+            'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
+            'ticket_types.*.capacity' => 'nullable|integer|min:0',
+            'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
 
         // Handle image upload
@@ -67,6 +73,28 @@ class EventController extends Controller
         }
 
         $event = Event::create($validated);
+
+        // Create ticket types if provided and event is bookable type
+        $types = $request->input('ticket_types', []);
+        if (!empty($types) && $request->input('type') === 'booking') {
+            $payload = collect($types)
+                ->filter(fn($t) => isset($t['name']) && $t['name'] !== '')
+                ->map(function ($t) {
+                    return [
+                        'name' => $t['name'],
+                        'description' => $t['description'] ?? null,
+                        'price' => (float)($t['price'] ?? 0),
+                        'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
+                        'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })->values()->all();
+
+            if (!empty($payload)) {
+                $event->ticketTypes()->insert($payload);
+            }
+        }
 
         return redirect()
             ->route('events.show', $event)
@@ -108,6 +136,12 @@ class EventController extends Controller
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',
+            // Optional new ticket types to add on update
+            'ticket_types' => 'nullable|array|max:50',
+            'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
+            'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
+            'ticket_types.*.capacity' => 'nullable|integer|min:0',
+            'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
 
         // Handle image upload
@@ -120,6 +154,28 @@ class EventController extends Controller
         }
 
         $event->update($validated);
+
+        // Optionally add new ticket types when editing (manage existing via dedicated page)
+        $types = $request->input('ticket_types', []);
+        if (!empty($types) && $request->input('type') === 'booking') {
+            $payload = collect($types)
+                ->filter(fn($t) => isset($t['name']) && $t['name'] !== '')
+                ->map(function ($t) {
+                    return [
+                        'name' => $t['name'],
+                        'description' => $t['description'] ?? null,
+                        'price' => (float)($t['price'] ?? 0),
+                        'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
+                        'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })->values()->all();
+
+            if (!empty($payload)) {
+                $event->ticketTypes()->insert($payload);
+            }
+        }
 
         return redirect()
             ->route('events.show', $event)
