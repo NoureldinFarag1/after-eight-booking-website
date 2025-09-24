@@ -123,3 +123,9 @@ Route::middleware('auth')->group(function () {
     });
 
 });
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
+        ->only(['index', 'create', 'store']);
+});
+
