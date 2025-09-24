@@ -124,11 +124,8 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
-use App\Http\Controllers\InvitationController;
-
-// Route added: store invitations (no email send)
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
         ->only(['index', 'create', 'store']);
 });
+
