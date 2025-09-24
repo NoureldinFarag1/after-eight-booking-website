@@ -9,6 +9,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketTypeController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Facades\Socialite; // still used indirectly if needed
 
 Route::get('/', function () {
     $user = Auth::user();
@@ -129,3 +130,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->only(['index', 'create', 'store']);
 });
 
+// Google OAuth
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');

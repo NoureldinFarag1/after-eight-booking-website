@@ -27,6 +27,10 @@ class User extends Authenticatable
         'role',
         'phone',
         'active',
+        'provider_id',
+        'provider_name',
+        'provider_token',
+        'provider_refresh_token',
     ];
 
     /**
@@ -37,6 +41,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'provider_token',
+        'provider_refresh_token',
     ];
 
     /**
@@ -51,6 +57,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'active' => 'boolean',
+            'provider_token' => 'encrypted',
+            'provider_refresh_token' => 'encrypted',
         ];
     }
 

@@ -64,7 +64,16 @@
                     </div>
                 </form>
 
-                <hr>
+                <div class="my-4 text-center position-relative">
+                    <span class="bg-white px-3 text-muted small" style="position:relative; z-index:2;">or</span>
+                    <hr class="position-absolute top-50 start-0 w-100 translate-middle-y m-0" />
+                </div>
+
+                <div class="d-grid mb-3">
+                    <a href="{{ route('auth.google.redirect') }}" class="btn btn-outline-danger">
+                        <i class="bi bi-google me-1"></i> Continue with Google
+                    </a>
+                </div>
 
                 <div class="text-center">
                     <p class="mb-0">Already have an account?

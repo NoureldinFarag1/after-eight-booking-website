@@ -35,13 +35,21 @@
             border-radius: 10px;
             display: inline-block;
         }
+        /* Ensure navbar links always visible */
+        .navbar-nav .nav-link { color: #f8f9fa !important; }
+        .navbar-nav .nav-link.active, .navbar-nav .nav-link:focus, .navbar-nav .nav-link:hover { color: #ffffff !important; text-decoration: none; }
     </style>
 </head>
-<body class="bg-light">
+{{-- Allow child views to override body class (e.g. auth screens) --}}
+<body class="@yield('body_class','bg-light')">
     <!-- Navigation -->
     @php
-    $pendingCount = \App\Models\EventRequest::where('status', 'pending')->count();
-@endphp
+        $pendingCount = 0;
+        $authUser = auth()->user();
+        if($authUser && method_exists($authUser,'isAdmin') && $authUser->isAdmin()) {
+            $pendingCount = EventRequest::where('status','pending')->count();
+        }
+    @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
@@ -57,11 +65,11 @@
         </button>
 
         <!-- Navbar Content -->
-        <div class="collapse navbar-collapse" id="navbarNav">
+        {{-- If your nav items disappear, ensure Bootstrap JS loads and this element gains display:flex above lg. --}}
+        <div class="collapse navbar-collapse show" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}"
-                       href="{{ route('events.index') }}">
+                    <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                         <i class="bi bi-calendar-event me-1"></i>Events
                     </a>
                 </li>
@@ -161,17 +169,9 @@
                         </ul>
                     </li>
                 @else
-                    <!-- Guest Nav -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('login') }}">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('register') }}">
-                            <i class="bi bi-person-plus me-1"></i>Register
-                        </a>
-                    </li>
+                    <!-- Guest Nav (always visible) -->
+                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('register') }}"><i class="bi bi-person-plus me-1"></i>Register</a></li>
                 @endauth
             </ul>
         </div>
