@@ -60,6 +60,27 @@
                     <input type="hidden" name="event_id" value="{{ $event->id }}">
 
                     <div class="row">
+                        @if(isset($types) && $types->count() > 0)
+                            <div class="col-md-6 mb-3">
+                                <label for="ticket_type_id" class="form-label">Ticket Type *</label>
+                                <select class="form-select @error('ticket_type_id') is-invalid @enderror"
+                                        id="ticket_type_id"
+                                        name="ticket_type_id"
+                                        required>
+                                    <option value="">Select type</option>
+                                    @foreach($types as $t)
+                                        <option value="{{ $t->id }}" data-price="{{ $t->price }}" {{ old('ticket_type_id') == $t->id ? 'selected' : '' }}>
+                                            {{ $t->name }} — ${{ number_format($t->price, 2) }}
+                                            @if(!is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('ticket_type_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+
                         <div class="col-md-6 mb-3">
                             <label for="quantity" class="form-label">Number of Tickets *</label>
                             <select class="form-select @error('quantity') is-invalid @enderror"
@@ -81,11 +102,17 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Price per Ticket</label>
                             <div class="form-control-plaintext h5 text-primary mb-0">
-                                @if($event->price > 0)
-                                    ${{ number_format($event->price, 2) }}
-                                @else
-                                    Free
-                                @endif
+                                <span id="unit-price">
+                                    @if(isset($types) && $types->count() > 0)
+                                        ${{ number_format($types->first()->price, 2) }}
+                                    @else
+                                        @if($event->price > 0)
+                                            ${{ number_format($event->price, 2) }}
+                                        @else
+                                            Free
+                                        @endif
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -167,7 +194,9 @@
         const summarySubtotal = document.getElementById('summary-subtotal');
         const summaryTotal = document.getElementById('summary-total');
 
-        const pricePerTicket = {{ $event->price }};
+        const hasTypes = {{ isset($types) && $types->count() > 0 ? 'true' : 'false' }};
+        const typeSelect = document.getElementById('ticket_type_id');
+        let pricePerTicket = hasTypes ? parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0) : {{ $event->price }};
 
         function updateSummary() {
             const quantity = parseInt(quantitySelect.value) || 0;
@@ -175,12 +204,17 @@
 
             summaryQuantity.textContent = quantity;
 
-            if (pricePerTicket > 0) {
+            const unitPriceEl = document.getElementById('unit-price');
+            if (unitPriceEl) {
+                unitPriceEl.textContent = pricePerTicket > 0 ? '$' + pricePerTicket.toFixed(2) : 'Free';
+            }
+
+            if (pricePerTicket > 0 && quantity > 0) {
                 summarySubtotal.textContent = '$' + subtotal.toFixed(2);
                 summaryTotal.textContent = '$' + subtotal.toFixed(2);
             } else {
-                summarySubtotal.textContent = 'Free';
-                summaryTotal.textContent = 'Free';
+                summarySubtotal.textContent = quantity > 0 ? '$0.00' : '$0.00';
+                summaryTotal.textContent = quantity > 0 ? '$0.00' : '$0.00';
             }
         }
 
@@ -195,6 +229,14 @@
             updateSummary();
             updateSubmitButton();
         });
+
+        if (hasTypes && typeSelect) {
+            typeSelect.addEventListener('change', function() {
+                pricePerTicket = parseFloat(this.selectedOptions[0].dataset.price || 0);
+                updateSummary();
+                updateSubmitButton();
+            });
+        }
 
         agreeCheckbox.addEventListener('change', updateSubmitButton);
 

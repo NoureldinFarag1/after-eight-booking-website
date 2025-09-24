@@ -36,13 +36,27 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // Redirect operators directly to scan page
-            if ($user->role->value === 'operator') {
-                return redirect()->route('tickets.scan')->with('success', 'Welcome back, ' . $user->name . '!');
+            // Role-based redirects
+            if ($user->role === Role::OPERATOR) {
+                // Block inactive operators
+                if (!$user->active) {
+                    Auth::logout();
+                    return back()->withErrors(['email' => 'Your operator account is inactive. Please contact an administrator.']);
+                }
+                // Operators go to scan
+                return redirect()->route('tickets.scan')
+                    ->with('success', 'Welcome back, ' . $user->name . '!');
             }
 
-            // Default redirect for admin and regular users
-            return redirect()->intended(route('events.index'))->with('success', 'Welcome back, ' . $user->name . '!');
+            if ($user->role === Role::ADMIN) {
+                // Admins go to dashboard
+                return redirect()->intended(route('admin.dashboard'))
+                    ->with('success', 'Welcome back, ' . $user->name . '!');
+            }
+
+            // Regular users go to events
+            return redirect()->intended(route('events.index'))
+                ->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
         return back()->withErrors([

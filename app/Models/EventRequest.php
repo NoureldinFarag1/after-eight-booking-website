@@ -12,11 +12,17 @@ class EventRequest extends Model
     protected $fillable = [
         'event_id',
         'user_id',
-        'field1',
-        'field2',
-        'field3',
-        'field4',
+        'payload',
         'status',
+        'primary_name',
+        'primary_email',
+        'primary_social_url',
+        'guests',
+    ];
+
+    protected $casts = [
+        'guests' => 'array',
+        'payload' => 'array',
     ];
 
     public function event()
@@ -27,5 +33,10 @@ class EventRequest extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id');
     }
 }

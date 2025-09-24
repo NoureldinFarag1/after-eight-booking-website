@@ -33,6 +33,12 @@
                                 {{ $ticket->booking->booking_reference }}
                             </a>
                         </p>
+                        @if($ticket->type)
+                            <p class="mb-1"><strong>Type:</strong> {{ $ticket->type->name }}</p>
+                        @endif
+                        @if(!is_null($ticket->price))
+                            <p class="mb-1"><strong>Price:</strong> ${{ number_format($ticket->price, 2) }}</p>
+                        @endif
                         @if($ticket->seat_number)
                             <p><strong>Seat Number:</strong> {{ $ticket->seat_number }}</p>
                         @endif
@@ -122,6 +128,15 @@
                                     <i class="bi bi-geo-alt me-1"></i>
                                     {{ $ticket->event->location }}
                                 </p>
+                                @if($ticket->type)
+                                    <p class="mb-0 mt-1">
+                                        <i class="bi bi-ticket-detailed me-1"></i>
+                                        Type: {{ $ticket->type->name }}
+                                        @if(!is_null($ticket->price))
+                                            • ${{ number_format($ticket->price, 2) }}
+                                        @endif
+                                    </p>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -163,10 +178,12 @@
                                                 <i class="bi bi-geo-alt text-primary me-1"></i>
                                                 {{ $ticket->event->location }}
                                             </p>
-                                            <p class="mb-1">
-                                                <i class="bi bi-currency-dollar text-primary me-1"></i>
-                                                ${{ number_format($ticket->event->price, 2) }}
-                                            </p>
+                                            @if(!is_null($ticket->price))
+                                                <p class="mb-1">
+                                                    <i class="bi bi-currency-dollar text-primary me-1"></i>
+                                                    ${{ number_format($ticket->price, 2) }}
+                                                </p>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -219,9 +236,9 @@
 
 @if(auth()->user()->isAdmin())
     <!-- Status Update Form -->
-    <form id="statusUpdateForm" method="POST" action="{{ route('tickets.updateStatus', $ticket) }}" style="display: none;">
+    <form id="statusUpdateForm" method="POST" action="{{ route('tickets.update-status', $ticket) }}" style="display: none;">
         @csrf
-        @method('PUT')
+        @method('PATCH')
         <input type="hidden" name="status" id="statusInput">
     </form>
 @endif

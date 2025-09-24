@@ -132,14 +132,14 @@
                         </div>
                     </div>
 
-                
+
                     <div class="col-md-6 mb-3">
                         <label for="type">Event Type</label>
                         <select name="type" id="type" class="form-control" required>
                             <option value="booking">Booking</option>
                             <option value="request">Request</option>
                         </select>
-                    </div>    
+                    </div>
 
                     <div class="mb-3">
                         <label for="image" class="form-label">Event Image</label>
@@ -181,4 +181,79 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeSelect = document.getElementById('type');
+        const container = document.getElementById('ticket-types-container');
+        const addBtn = document.getElementById('add-ticket-type');
+
+        function toggleTypes() {
+            const isBooking = typeSelect.value === 'booking';
+            container.style.display = isBooking ? '' : 'none';
+        }
+        if (typeSelect) {
+            typeSelect.addEventListener('change', toggleTypes);
+            toggleTypes();
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const list = document.getElementById('ticket-types-list');
+                const idx = list.children.length;
+                const row = document.createElement('div');
+                row.className = 'row g-2 align-items-end mb-2';
+                row.innerHTML = `
+                    <div class="col-md-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="ticket_types[${idx}][name]" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" name="ticket_types[${idx}][price]" class="form-control" min="0" step="0.01" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Capacity (optional)</label>
+                        <input type="number" name="ticket_types[${idx}][capacity]" class="form-control" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="ticket_types[${idx}][is_active]" value="0">
+                            <input class="form-check-input" type="checkbox" name="ticket_types[${idx}][is_active]" value="1" checked>
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-end">
+                        <button class="btn btn-outline-danger btn-sm" onclick="this.closest('.row').remove()" title="Remove">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+    });
+</script>
+@endpush
 @endsection
+
+@push('after-content')
+<div class="row justify-content-center mt-3" id="ticket-types-container" style="display:none;">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Ticket Types</strong>
+                <button id="add-ticket-type" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus"></i> Add Type
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ticket-types-list"></div>
+                <div class="form-text">You can also manage ticket types later from the event page.</div>
+            </div>
+        </div>
+    </div>
+    </div>
+@endpush

@@ -32,6 +32,9 @@
                                 <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-pencil me-1"></i>Edit
                                 </a>
+                                <a href="{{ route('admin.events.ticket-types.index', $event) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-ticket-detailed me-1"></i>Manage Ticket Types
+                                </a>
                                 <button type="button" class="btn btn-outline-danger"
                                         onclick="confirmDelete('{{ $event->id }}')">
                                     <i class="bi bi-trash me-1"></i>Delete
@@ -144,7 +147,7 @@
                         @endif
                     </div>
                 </div>
-            
+
                 <!-- Admin: Recent Requests -->
                 <div class="card mt-4">
                     <div class="card-header">
@@ -219,10 +222,26 @@
                 @if($event->isBookable())
                     @auth
                      @if($event->type === 'booking')
-                            {{-- Existing booking form --}}
+                            {{-- Existing booking form with ticket types --}}
                             <form action="{{ route('bookings.store') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="event_id" value="{{ $event->id }}">
+
+                                @php($types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get())
+                                @if($types->count() > 0)
+                                    <div class="mb-3">
+                                        <label for="ticket_type_id" class="form-label">Ticket Type</label>
+                                        <select class="form-select" id="ticket_type_id" name="ticket_type_id" required>
+                                            <option value="">Select type</option>
+                                            @foreach($types as $t)
+                                                <option value="{{ $t->id }}" data-price="{{ $t->price }}">
+                                                    {{ $t->name }} — ${{ number_format($t->price, 2) }}
+                                                    @if(!is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endif
 
                                 <div class="mb-3">
                                     <label for="quantity" class="form-label">Number of Tickets</label>
@@ -237,21 +256,23 @@
                                     <div class="d-flex justify-content-between">
                                         <span>Price per ticket:</span>
                                         <span class="fw-bold">
-                                            @if($event->price > 0)
-                                                ${{ number_format($event->price, 2) }}
-                                            @else
-                                                Free
-                                            @endif
+                                            <span id="unit-price">
+                                                @if($types->count() > 0)
+                                                    ${{ number_format($types->first()->price, 2) }}
+                                                @else
+                                                    @if($event->price > 0)
+                                                        ${{ number_format($event->price, 2) }}
+                                                    @else
+                                                        Free
+                                                    @endif
+                                                @endif
+                                            </span>
                                         </span>
                                     </div>
                                     <div class="d-flex justify-content-between">
                                         <span>Total:</span>
                                         <span class="fw-bold text-primary" id="total-price">
-                                            @if($event->price > 0)
-                                                ${{ number_format($event->price, 2) }}
-                                            @else
-                                                Free
-                                            @endif
+                                            $0.00
                                         </span>
                                     </div>
                                 </div>
@@ -262,17 +283,30 @@
                             </form>
 
                             <script>
-                                document.getElementById('quantity').addEventListener('change', function() {
-                                    const quantity = parseInt(this.value);
-                                    const price = {{ $event->price }};
-                                    const total = quantity * price;
+                                (function() {
+                                    const quantityEl = document.getElementById('quantity');
+                                    const typeEl = document.getElementById('ticket_type_id');
+                                    const totalEl = document.getElementById('total-price');
+                                    const unitPriceEl = document.getElementById('unit-price');
+                                    const hasTypes = !!typeEl;
+                                    let unitPrice = hasTypes ? parseFloat(typeEl.selectedOptions[0]?.dataset.price || 0) : {{ $event->price }};
 
-                                    if (price > 0) {
-                                        document.getElementById('total-price').textContent = '$' + total.toFixed(2);
-                                    } else {
-                                        document.getElementById('total-price').textContent = 'Free';
+                                    function update() {
+                                        const qty = parseInt(quantityEl.value || '0');
+                                        if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? '$' + unitPrice.toFixed(2) : 'Free';
+                                        const total = qty * unitPrice;
+                                        totalEl.textContent = unitPrice > 0 && qty > 0 ? '$' + total.toFixed(2) : '$0.00';
                                     }
-                                });
+
+                                    quantityEl.addEventListener('change', update);
+                                    if (hasTypes) {
+                                        typeEl.addEventListener('change', function() {
+                                            unitPrice = parseFloat(this.selectedOptions[0].dataset.price || 0);
+                                            update();
+                                        });
+                                    }
+                                    update();
+                                })();
                             </script>
                         @elseif($event->type === 'request')
                             {{-- Request form link --}}

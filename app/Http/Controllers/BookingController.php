@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class BookingController extends Controller
@@ -48,7 +49,9 @@ class BookingController extends Controller
                 ->with('error', 'This event is not available for booking.');
         }
 
-        return view('bookings.create', compact('event'));
+        $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
+
+        return view('bookings.create', compact('event', 'types'));
     }
 
     /**
@@ -59,6 +62,7 @@ class BookingController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'quantity' => 'required|integer|min:1|max:10',
+            'ticket_type_id' => ['nullable', 'integer'],
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
@@ -75,13 +79,45 @@ class BookingController extends Controller
                 ->with('error', 'Not enough seats available.');
         }
 
-        DB::transaction(function () use ($validated, $event) {
+        $types = $event->ticketTypes()->where('is_active', true)->get();
+        $selectedType = null;
+        if ($types->count() > 0) {
+            // When types exist, a valid type is required
+            $request->validate([
+                'ticket_type_id' => [
+                    'required',
+                    Rule::exists('ticket_types', 'id')->where(function ($q) use ($event) {
+                        return $q->where('event_id', $event->id)->where('is_active', true);
+                    }),
+                ],
+            ]);
+
+            $selectedType = $types->firstWhere('id', (int)$request->input('ticket_type_id'));
+            if (!$selectedType) {
+                return back()->withErrors(['ticket_type_id' => 'Invalid ticket type selected.'])->withInput();
+            }
+
+            // Enforce per-type capacity if set
+            if (!is_null($selectedType->capacity)) {
+                $soldCount = Ticket::where('event_id', $event->id)
+                    ->where('ticket_type_id', $selectedType->id)
+                    ->where('status', '!=', TicketStatus::CANCELLED)
+                    ->count();
+                $remaining = max(0, $selectedType->capacity - $soldCount);
+                if ($remaining < $validated['quantity']) {
+                    return back()->withErrors(['quantity' => 'Not enough tickets available for the selected type. Remaining: ' . $remaining])->withInput();
+                }
+            }
+        }
+
+        DB::transaction(function () use ($validated, $event, $selectedType) {
+            $unitPrice = $selectedType ? $selectedType->price : ($event->price ?? 0);
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'event_id' => $validated['event_id'],
                 'quantity' => $validated['quantity'],
-                'total_amount' => $event->price * $validated['quantity'],
+                'total_amount' => $unitPrice * $validated['quantity'],
                 'status' => BookingStatus::CONFIRMED,
                 'booking_date' => now(),
             ]);
@@ -91,8 +127,10 @@ class BookingController extends Controller
                 Ticket::create([
                     'user_id' => Auth::id(),
                     'event_id' => $event->id,
+                    'ticket_type_id' => $selectedType?->id,
                     'booking_id' => $booking->id,
                     'status' => TicketStatus::VALID,
+                    'price' => $unitPrice,
                 ]);
             }
         });
