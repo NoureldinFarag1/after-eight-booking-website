@@ -380,7 +380,14 @@
                                                             <strong>{{ $event->title }}</strong>
                                                             <br>
                                                             <small class="text-muted">
-                                                                ${{ number_format($event->price, 2) }}
+                                                                @php
+                                                                    $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
+                                                                @endphp
+                                                                @if($types->count() > 0)
+                                                                    From ${{ number_format($types->min('price'), 2) }}
+                                                                @else
+                                                                    Pricing TBA
+                                                                @endif
                                                             </small>
                                                         </div>
                                                     </div>

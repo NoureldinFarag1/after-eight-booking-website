@@ -3,6 +3,9 @@
 @section('title', $event->title)
 
 @section('content')
+@php
+    $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
+@endphp
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
@@ -66,15 +69,16 @@
                         </div>
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-ticket text-primary me-2"></i>
-                            <span>{{ $event->getAvailableSeatsAttribute() }} seats available</span>
+                            <span>{{ $event->available_seats }} seats available</span>
                         </div>
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-currency-dollar text-primary me-2"></i>
                             <span>
-                                @if($event->price > 0)
-                                    ${{ number_format($event->price, 2) }} per ticket
+                                {{-- Ticket-type-first pricing: show min type price or placeholder --}}
+                                @if($types->count() > 0)
+                                    From ${{ number_format($types->min('price'), 2) }}
                                 @else
-                                    Free event
+                                    Pricing will be announced
                                 @endif
                             </span>
                         </div>
@@ -155,7 +159,7 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $recentRequests = \App\Models\EventRequest::where('event_id', $event->id)->latest()->take(10)->get();
+                            $recentRequests = \App\Models\EventRequest::where('event_id', $event->id)->latest()->limit(10)->get();
                         @endphp
 
                         @if($recentRequests->count() > 0)
@@ -227,7 +231,6 @@
                                 @csrf
                                 <input type="hidden" name="event_id" value="{{ $event->id }}">
 
-                                @php($types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get())
                                 @if($types->count() > 0)
                                     <div class="mb-3">
                                         <label for="ticket_type_id" class="form-label">Ticket Type</label>
@@ -236,20 +239,33 @@
                                             @foreach($types as $t)
                                                 <option value="{{ $t->id }}" data-price="{{ $t->price }}">
                                                     {{ $t->name }} — ${{ number_format($t->price, 2) }}
-                                                    @if(!is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                                    @if($t->capacity !== null) (cap: {{ $t->capacity }}) @endif
                                                 </option>
                                             @endforeach
                                         </select>
                                     </div>
+                                @else
+                                    <div class="alert alert-info mb-3">
+                                        Ticket types will be available soon. Please check back later.
+                                    </div>
                                 @endif
 
+                                @php
+                                    $maxTickets = min(10, $event->getAvailableSeatsAttribute());
+                                @endphp
                                 <div class="mb-3">
                                     <label for="quantity" class="form-label">Number of Tickets</label>
-                                    <select class="form-select" id="quantity" name="quantity" required>
-                                        @for($i = 1; $i <= min(10, $event->getAvailableSeatsAttribute()); $i++)
-                                            <option value="{{ $i }}">{{ $i }} ticket{{ $i > 1 ? 's' : '' }}</option>
-                                        @endfor
-                                    </select>
+                                    @if($maxTickets < 1)
+                                        <div class="alert alert-warning mb-0">
+                                            No seats available for booking.
+                                        </div>
+                                    @else
+                                        <select class="form-select" id="quantity" name="quantity" required>
+                                            @for($i = 1; $i <= $maxTickets; $i++)
+                                                <option value="{{ $i }}">{{ $i }} ticket{{ $i > 1 ? 's' : '' }}</option>
+                                            @endfor
+                                        </select>
+                                    @endif
                                 </div>
 
                                 <div class="mb-3">
@@ -258,13 +274,9 @@
                                         <span class="fw-bold">
                                             <span id="unit-price">
                                                 @if($types->count() > 0)
-                                                    ${{ number_format($types->first()->price, 2) }}
+                                                    Select a ticket type
                                                 @else
-                                                    @if($event->price > 0)
-                                                        ${{ number_format($event->price, 2) }}
-                                                    @else
-                                                        Free
-                                                    @endif
+                                                    Pricing will be announced
                                                 @endif
                                             </span>
                                         </span>
@@ -277,10 +289,9 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" class="btn btn-primary w-100">
+                                <button type="submit" class="btn btn-primary w-100" @if($maxTickets < 1 || $types->count() === 0) disabled @endif>
                                     <i class="bi bi-cart-plus me-1"></i>Book Now
                                 </button>
-                            </form>
 
                             <script>
                                 (function() {
@@ -289,21 +300,32 @@
                                     const totalEl = document.getElementById('total-price');
                                     const unitPriceEl = document.getElementById('unit-price');
                                     const hasTypes = !!typeEl;
-                                    let unitPrice = hasTypes ? parseFloat(typeEl.selectedOptions[0]?.dataset.price || 0) : {{ $event->price }};
 
-                                    function update() {
-                                        const qty = parseInt(quantityEl.value || '0');
-                                        if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? '$' + unitPrice.toFixed(2) : 'Free';
-                                        const total = qty * unitPrice;
-                                        totalEl.textContent = unitPrice > 0 && qty > 0 ? '$' + total.toFixed(2) : '$0.00';
+                                    function getSelectedTypePrice() {
+                                        if (!hasTypes) return 0;
+                                        const selected = typeEl.selectedOptions[0];
+                                        return selected && selected.dataset.price !== undefined
+                                            ? parseFloat(selected.dataset.price)
+                                            : 0;
                                     }
 
-                                    quantityEl.addEventListener('change', update);
+                                    function currentUnitPrice() {
+                                        return hasTypes ? getSelectedTypePrice() : 0;
+                                    }
+
+                                    function update() {
+                                        const unitPrice = currentUnitPrice();
+                                        const qty = parseInt(quantityEl.value || '0', 10);
+                                        if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? '$' + unitPrice.toFixed(2) : '{{ $types->count() > 0 ? 'Select a ticket type' : 'Pricing will be announced' }}';
+                                        totalEl.textContent = unitPrice > 0 && qty > 0 ? '$' + (qty * unitPrice).toFixed(2) : '$0.00';
+                                    }
+
                                     if (hasTypes) {
-                                        typeEl.addEventListener('change', function() {
-                                            unitPrice = parseFloat(this.selectedOptions[0].dataset.price || 0);
-                                            update();
-                                        });
+                                        typeEl.addEventListener('change', update);
+                                    }
+                                    if (quantityEl) {
+                                        quantityEl.addEventListener('change', update);
+                                        quantityEl.addEventListener('input', update);
                                     }
                                     update();
                                 })();
@@ -353,7 +375,7 @@
 @auth
     @if(auth()->user()->isAdmin())
         <!-- Delete Confirmation Modal -->
-        <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -363,10 +385,7 @@
                     <div class="modal-body">
                         <p>Are you sure you want to delete this event? This action cannot be undone.</p>
                         <p class="text-danger"><strong>Note:</strong> Events with existing bookings cannot be deleted.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form id="deleteForm" method="POST" class="d-inline">
+                        <form id="deleteForm" method="POST" class="d-inline" action="{{ route('admin.events.destroy', ['event' => '__EVENT_ID__']) }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger">Delete Event</button>
@@ -375,12 +394,14 @@
                 </div>
             </div>
         </div>
-
         <script>
-            function confirmDelete(eventId) {
-                document.getElementById('deleteForm').action = '/admin/events/' + eventId;
-                new bootstrap.Modal(document.getElementById('deleteModal')).show();
-            }
+            document.addEventListener('DOMContentLoaded', function() {
+                window.confirmDelete = function(eventId) {
+                    const form = document.getElementById('deleteForm');
+                    form.action = '/admin/events/' + eventId;
+                    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+                };
+            });
         </script>
     @endif
 @endauth

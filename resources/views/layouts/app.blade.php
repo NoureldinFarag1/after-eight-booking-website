@@ -18,212 +18,269 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    <style>
-        .navbar-brand { font-weight: 600; }
-        .card { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-        .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .event-card { transition: transform 0.2s; }
-        .event-card:hover { transform: translateY(-2px); }
-        .qr-code-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            display: inline-block;
-        }
-        /* Ensure navbar links always visible */
-        .navbar-nav .nav-link { color: #f8f9fa !important; }
-        .navbar-nav .nav-link.active, .navbar-nav .nav-link:focus, .navbar-nav .nav-link:hover { color: #ffffff !important; text-decoration: none; }
-    </style>
 </head>
 {{-- Allow child views to override body class (e.g. auth screens) --}}
 <body class="@yield('body_class','bg-light')">
-    <!-- Navigation -->
-    @php
-        $pendingCount = 0;
-        $authUser = auth()->user();
-        if($authUser && method_exists($authUser,'isAdmin') && $authUser->isAdmin()) {
-            $pendingCount = EventRequest::where('status','pending')->count();
-        }
-    @endphp
+@php
+    $pendingCount = 0;
+    $authUser = auth()->user();
+    if($authUser && method_exists($authUser,'isAdmin') && $authUser->isAdmin()) {
+        $pendingCount = EventRequest::where('status','pending')->count();
+    }
+@endphp
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <!-- Brand -->
-        @php($authUser = auth()->user())
-        <a class="navbar-brand" href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}">
-            <i class="bi bi-calendar-event me-2"></i>After Eight Events
-        </a>
+<div class="d-flex">
+    <!-- Sidebar (fixed for md+ screens) -->
+    <aside class="sidebar sidebar-fixed border-end d-none d-md-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
+            <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="text-decoration-none d-flex align-items-center">
+                <i class="bi bi-calendar-event text-primary me-2 brand-icon"></i>
+                <span class="fw-semibold text-light brand-text">After Eight</span>
+            </a>
+        </div>
 
-        <!-- Mobile Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <nav class="nav flex-column p-2">
+            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
+                <i class="bi bi-calendar-event me-2"></i>
+                <span class="label-text">Events</span>
+            </a>
 
-        <!-- Navbar Content -->
-        {{-- If your nav items disappear, ensure Bootstrap JS loads and this element gains display:flex above lg. --}}
-        <div class="collapse navbar-collapse show" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                        <i class="bi bi-calendar-event me-1"></i>Events
+            @auth
+                @if($authUser->isAdmin())
+                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Admin</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        <span class="label-text">Dashboard</span>
                     </a>
-                </li>
-
-                @auth
-                    @php($authUser = auth()->user())
-                    @if($authUser->isAdmin())
-                        <!-- Admin Nav Items -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
-                               href="{{ route('admin.dashboard') }}">
-                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}"
-                               href="{{ route('admin.operators.index') }}">
-                                <i class="bi bi-people me-1"></i>Operators
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
-                               href="{{ route('bookings.index') }}">
-                                <i class="bi bi-ticket-perforated me-1"></i>All Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('tickets.index') ? 'active' : '' }}"
-                               href="{{ route('tickets.index') }}">
-                                <i class="bi bi-qr-code me-1"></i>All Tickets
-                            </a>
-                        </li>
-                    @elseif($authUser->isOperator())
-                        <!-- Operator Nav Items -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('tickets.scan') ? 'active' : '' }}"
-                               href="{{ route('tickets.scan') }}">
-                                <i class="bi bi-upc-scan me-1"></i>Scan Tickets
-                            </a>
-                        </li>
-                    @else
-                        <!-- User Nav Items -->
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('bookings.*') ? 'active' : '' }}"
-                               href="{{ route('bookings.index') }}">
-                                <i class="bi bi-ticket-perforated me-1"></i>My Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('tickets.index') ? 'active' : '' }}"
-                               href="{{ route('tickets.index') }}">
-                                <i class="bi bi-qr-code me-1"></i>My Tickets
-                            </a>
-                        </li>
-                    @endif
-                @endauth
-            </ul>
-
-            <!-- Right Side -->
-            <ul class="navbar-nav ms-auto align-items-center">
-                @auth
-                    @php($authUser = auth()->user())
-                    @if($authUser->isAdmin())
-                        <!-- Notification Bell -->
-                        <li class="nav-item me-3">
-                            <a href="{{ route('admin.event_requests.index') }}" class="nav-link position-relative">
-                                <i class="bi bi-bell fs-5"></i>
-                                @if($pendingCount > 0)
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {{ $pendingCount }}
-                                    </span>
-                                @endif
-                            </a>
-                        </li>
-                    @endif
-
-                    <!-- User Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i>{{ auth()->user()->name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item" href="#">
-                                    <i class="bi bi-person me-1"></i>Profile
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right me-1"></i>Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}">
+                        <i class="bi bi-people me-2"></i>
+                        <span class="label-text">Operators</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        <span class="label-text">Bookings</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span class="label-text">Tickets</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}">
+                        <i class="bi bi-bell me-2 position-relative"></i>
+                        <span class="label-text">Requests</span>
+                        @if($pendingCount > 0)
+                            <span class="badge rounded-pill bg-danger ms-auto">{{ $pendingCount }}</span>
+                        @endif
+                    </a>
+                @elseif($authUser->isOperator())
+                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Operator</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}">
+                        <i class="bi bi-upc-scan me-2"></i>
+                        <span class="label-text">Scan Tickets</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span class="label-text">All Tickets</span>
+                    </a>
                 @else
-                    <!-- Guest Nav (always visible) -->
-                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('register') }}"><i class="bi bi-person-plus me-1"></i>Register</a></li>
-                @endauth
-            </ul>
-        </div>
-    </div>
-</nav>
+                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Account</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        <span class="label-text">My Bookings</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span class="label-text">My Tickets</span>
+                    </a>
+                @endif
 
 
-    <!-- Flash Messages -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
-            <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
-            <i class="bi bi-exclamation-triangle me-1"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('warning'))
-        <div class="alert alert-warning alert-dismissible fade show m-0" role="alert">
-            <i class="bi bi-exclamation-triangle me-1"></i>{{ session('warning') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    <!-- Main Content -->
-    <main class="container py-4">
-        @yield('content')
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>After Eight Events</h5>
-                    <p class="mb-0">Premium event booking platform</p>
+            @else
+                <div class="px-2 pt-2 guest-actions">
+                    <a class="btn btn-primary w-100 mb-2 d-inline-flex align-items-center" href="{{ route('login') }}">
+                        <i class="bi bi-box-arrow-in-right me-1"></i><span class="label-text">Login</span>
+                    </a>
+                    <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center" href="{{ route('register') }}">
+                        <i class="bi bi-person-plus me-1"></i><span class="label-text">Register</span>
+                    </a>
                 </div>
-                <div class="col-md-6 text-md-end">
+            @endauth
+        </nav>
+
+        <!-- Bottom actions -->
+        <div class="mt-auto px-2 pb-3">
+            @auth
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger w-100 logout-btn">
+                    <i class="bi bi-box-arrow-right me-1"></i><span class="label-text">Logout</span>
+                </button>
+            </form>
+            @endauth
+        </div>
+
+
+    </aside>
+
+    <!-- Main Area -->
+    <div class="content-wrapper content-with-sidebar flex-grow-1 d-flex flex-column" style="min-height: 100vh;">
+        <!-- Top bar -->
+        <header class="app-header">
+            <div class="container-fluid d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Desktop sidebar collapse toggle -->
+                    <button class="btn-icon d-none d-md-inline-flex" id="sidebarToggleBtn" type="button" aria-label="Toggle sidebar">
+                        <i id="sidebarToggleIcon" class="bi bi-chevron-left"></i>
+                    </button>
+                    <!-- Mobile sidebar toggle -->
+                    <button class="btn-icon d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="Open menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="h5 mb-0">@yield('title', 'Event Booking System')</h1>
+                </div>
+                @auth
+                    <div class="small d-flex align-items-center">
+                        <i class="bi bi-person-circle me-1"></i>{{ auth()->user()->name }}
+                    </div>
+                @endauth
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
+                <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
+                <i class="bi bi-exclamation-triangle me-1"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('warning'))
+            <div class="alert alert-warning alert-dismissible fade show m-0" role="alert">
+                <i class="bi bi-exclamation-triangle me-1"></i>{{ session('warning') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        <!-- Main Content -->
+        <main class="container-fluid py-4">
+            @yield('content')
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-light py-4 mt-auto">
+            <div class="container-fluid d-flex justify-content-between">
+                <div>
+                    <h6 class="mb-1">After Eight Events</h6>
+                    <small class="mb-0 d-block">Premium event booking platform</small>
+                </div>
+                <div class="text-end">
                     <small>&copy; {{ date('Y') }} After Eight Events. All rights reserved.</small>
                 </div>
             </div>
+        </footer>
+    </div>
+</div>
+
+<!-- Offcanvas Sidebar (for small screens) -->
+<div class="offcanvas offcanvas-start bg-black text-light" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title d-flex align-items-center gap-2" id="mobileSidebarLabel">
+            <i class="bi bi-calendar-event text-primary" style="font-size: 1.2rem;"></i>
+            After Eight
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column">
+        <nav class="nav flex-column p-2">
+            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}" data-bs-dismiss="offcanvas">
+                <i class="bi bi-calendar-event me-2"></i>
+                <span>Events</span>
+            </a>
+
+            @auth
+                @if($authUser->isAdmin())
+                    <div class="mt-2 small text-uppercase text-muted px-2">Admin</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-people me-2"></i>
+                        <span>Operators</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        <span>Bookings</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span>Tickets</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-bell me-2 position-relative"></i>
+                        <span>Requests</span>
+                        @if($pendingCount > 0)
+                            <span class="badge rounded-pill bg-danger ms-auto">{{ $pendingCount }}</span>
+                        @endif
+                    </a>
+                @elseif($authUser->isOperator())
+                    <div class="mt-2 small text-uppercase text-muted px-2">Operator</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-upc-scan me-2"></i>
+                        <span>Scan Tickets</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span>All Tickets</span>
+                    </a>
+                @else
+                    <div class="mt-2 small text-uppercase text-muted px-2">Account</div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        <span>My Bookings</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-qr-code me-2"></i>
+                        <span>My Tickets</span>
+                    </a>
+                @endif
+
+
+            @else
+                <div class="px-2 pt-2 guest-actions">
+                    <a class="btn btn-primary w-100 mb-2 d-inline-flex align-items-center" href="{{ route('login') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-box-arrow-in-right me-1"></i><span class="label-text">Login</span>
+                    </a>
+                    <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center" href="{{ route('register') }}" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-person-plus me-1"></i><span class="label-text">Register</span>
+                    </a>
+                </div>
+            @endauth
+        </nav>
+
+        <div class="mt-auto w-100">
+            @auth
+            <div class="px-2 pb-3">
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger w-100 logout-btn" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-box-arrow-right me-1"></i><span class="label-text">Logout</span>
+                    </button>
+                </form>
+            </div>
+            @endauth
+
         </div>
-    </footer>
+    </div>
+</div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    @stack('scripts')
+@stack('scripts')
 </body>
 </html>

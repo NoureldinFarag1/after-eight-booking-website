@@ -79,9 +79,9 @@ class BookingController extends Controller
                 ->with('error', 'Not enough seats available.');
         }
 
-        $types = $event->ticketTypes()->where('is_active', true)->get();
-        $selectedType = null;
-        if ($types->count() > 0) {
+    $types = $event->ticketTypes()->where('is_active', true)->get();
+    $selectedType = null;
+    if ($types->count() > 0) {
             // When types exist, a valid type is required
             $request->validate([
                 'ticket_type_id' => [
@@ -111,7 +111,8 @@ class BookingController extends Controller
         }
 
         DB::transaction(function () use ($validated, $event, $selectedType) {
-            $unitPrice = $selectedType ? $selectedType->price : ($event->price ?? 0);
+            // With ticket-type-first model, a type must be selected when types exist
+            $unitPrice = $selectedType ? $selectedType->price : 0;
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
@@ -147,7 +148,7 @@ class BookingController extends Controller
     {
         $this->authorize('view', $booking);
 
-        $booking->load(['event', 'tickets', 'user']);
+        $booking->load(['event', 'tickets.type', 'user']);
 
         return view('bookings.show', compact('booking'));
     }
@@ -157,7 +158,7 @@ class BookingController extends Controller
      */
     public function cancel(Booking $booking)
     {
-        $this->authorize('update', $booking);
+        $this->authorize('cancel', $booking);
 
         if (!$booking->canBeCancelled()) {
             return redirect()

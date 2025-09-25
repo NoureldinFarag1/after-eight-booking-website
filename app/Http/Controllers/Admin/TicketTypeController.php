@@ -32,6 +32,16 @@ class TicketTypeController extends Controller
         ]);
 
         $validated['is_active'] = (int) $request->input('is_active', 1);
+        // Ensure allocated capacities across types do not exceed event capacity
+        if (!is_null($validated['capacity'] ?? null)) {
+            $allocated = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
+            $remaining = max(0, $event->capacity - $allocated);
+            if ($validated['capacity'] > $remaining) {
+                return back()
+                    ->withErrors(['capacity' => 'Allocated capacity exceeds event capacity. Remaining available: ' . $remaining])
+                    ->withInput();
+            }
+        }
         $event->ticketTypes()->create($validated);
 
         return redirect()->route('admin.events.ticket-types.index', $event)
@@ -56,6 +66,30 @@ class TicketTypeController extends Controller
         ]);
 
         $validated['is_active'] = (int) $request->input('is_active', 1);
+        // Validate capacity allocation on update
+        if (array_key_exists('capacity', $validated) && !is_null($validated['capacity'])) {
+            // Prevent setting capacity below already sold tickets for this type
+            $soldCount = $ticketType->tickets()
+                ->where('status', '!=', \App\Enums\TicketStatus::CANCELLED)
+                ->count();
+            if ($validated['capacity'] < $soldCount) {
+                return back()
+                    ->withErrors(['capacity' => 'Capacity cannot be less than already sold tickets: ' . $soldCount])
+                    ->withInput();
+            }
+
+            // Ensure total allocated does not exceed event capacity
+            $allocated = $event->ticketTypes()
+                ->whereNotNull('capacity')
+                ->where('id', '!=', $ticketType->id)
+                ->sum('capacity');
+            $remaining = max(0, $event->capacity - $allocated);
+            if ($validated['capacity'] > $remaining) {
+                return back()
+                    ->withErrors(['capacity' => 'Allocated capacity exceeds event capacity. Remaining available: ' . $remaining])
+                    ->withInput();
+            }
+        }
         $ticketType->update($validated);
 
         return redirect()->route('admin.events.ticket-types.index', $event)

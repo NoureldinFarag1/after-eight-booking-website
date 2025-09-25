@@ -21,7 +21,6 @@ class Event extends Model
         'event_time',
         'capacity',
         'type',
-        'price',
         'status',
         'image_url',
         'terms_conditions',
@@ -30,9 +29,18 @@ class Event extends Model
     protected $casts = [
         'event_date' => 'date',
         'event_time' => 'datetime',
-        'price' => 'decimal:2',
         'status' => EventStatus::class,
     ];
+
+    public function getAllocatedCapacityAttribute(): int
+    {
+        return (int) $this->ticketTypes()->whereNotNull('capacity')->sum('capacity');
+    }
+
+    public function getRemainingAllocatableCapacityAttribute(): int
+    {
+        return max(0, (int)$this->capacity - $this->getAllocatedCapacityAttribute());
+    }
 
     /**
      * Get bookings for this event

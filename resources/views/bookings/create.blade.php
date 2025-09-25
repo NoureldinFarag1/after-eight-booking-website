@@ -104,13 +104,9 @@
                             <div class="form-control-plaintext h5 text-primary mb-0">
                                 <span id="unit-price">
                                     @if(isset($types) && $types->count() > 0)
-                                        ${{ number_format($types->first()->price, 2) }}
+                                        Select a ticket type
                                     @else
-                                        @if($event->price > 0)
-                                            ${{ number_format($event->price, 2) }}
-                                        @else
-                                            Free
-                                        @endif
+                                        Pricing will be announced
                                     @endif
                                 </span>
                             </div>
@@ -194,9 +190,9 @@
         const summarySubtotal = document.getElementById('summary-subtotal');
         const summaryTotal = document.getElementById('summary-total');
 
-        const hasTypes = {{ isset($types) && $types->count() > 0 ? 'true' : 'false' }};
-        const typeSelect = document.getElementById('ticket_type_id');
-        let pricePerTicket = hasTypes ? parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0) : {{ $event->price }};
+    const hasTypes = {{ isset($types) && $types->count() > 0 ? 'true' : 'false' }};
+    const typeSelect = document.getElementById('ticket_type_id');
+    let pricePerTicket = hasTypes ? parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0) : 0;
 
         function updateSummary() {
             const quantity = parseInt(quantitySelect.value) || 0;
@@ -221,8 +217,9 @@
         function updateSubmitButton() {
             const hasQuantity = quantitySelect.value !== '';
             const hasAgreed = agreeCheckbox.checked;
+            const hasTypeSelection = !hasTypes || (typeSelect && typeSelect.value !== '');
 
-            submitBtn.disabled = !(hasQuantity && hasAgreed);
+            submitBtn.disabled = !(hasQuantity && hasAgreed && hasTypeSelection);
         }
 
         quantitySelect.addEventListener('change', function() {

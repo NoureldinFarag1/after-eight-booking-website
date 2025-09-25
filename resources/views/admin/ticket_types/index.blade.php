@@ -24,11 +24,27 @@
       </div>
   @endif
 
+  @php
+      $allocated = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
+      $remaining = max(0, $event->capacity - $allocated);
+  @endphp
+
   <div class="row">
       <div class="col-md-5">
           <div class="card mb-4">
               <div class="card-header"><strong>Add Ticket Type</strong></div>
               <div class="card-body">
+                  <div class="alert alert-info py-2">
+                      <div class="d-flex justify-content-between">
+                          <span>Event capacity:</span><strong>{{ $event->capacity }}</strong>
+                      </div>
+                      <div class="d-flex justify-content-between">
+                          <span>Allocated to types:</span><strong>{{ $allocated }}</strong>
+                      </div>
+                      <div class="d-flex justify-content-between">
+                          <span>Remaining to allocate:</span><strong>{{ $remaining }}</strong>
+                      </div>
+                  </div>
                   <form method="POST" action="{{ route('admin.events.ticket-types.store', $event) }}">
                       @csrf
                       <div class="mb-3">
@@ -46,7 +62,8 @@
                           </div>
                           <div class="col-md-6 mb-3">
                               <label class="form-label">Capacity (optional)</label>
-                              <input type="number" min="0" name="capacity" class="form-control" value="{{ old('capacity') }}">
+                              <input type="number" min="0" max="{{ $remaining }}" name="capacity" class="form-control" value="{{ old('capacity') }}">
+                              <div class="form-text">Remaining available: {{ $remaining }}</div>
                           </div>
                       </div>
                       <div class="form-check form-switch mb-3">

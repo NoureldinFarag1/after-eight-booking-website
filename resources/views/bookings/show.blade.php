@@ -69,7 +69,18 @@
                                         </div>
                                         <div class="col-sm-6">
                                             <p><i class="bi bi-geo-alt me-1"></i> {{ $booking->event->location }}</p>
-                                            <p><i class="bi bi-currency-dollar me-1"></i> ${{ number_format($booking->event->price, 2) }} per ticket</p>
+                                            @php
+                                                $firstTicket = $booking->tickets->first();
+                                            @endphp
+                                            @if($firstTicket)
+                                                <p>
+                                                    <i class="bi bi-currency-dollar me-1"></i>
+                                                    ${{ number_format($firstTicket->price, 2) }} per ticket
+                                                    @if($firstTicket->type)
+                                                        <span class="text-muted">— {{ $firstTicket->type->name }}</span>
+                                                    @endif
+                                                </p>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

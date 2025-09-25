@@ -116,19 +116,10 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="price" class="form-label">Price ($) *</label>
-                            <input type="number"
-                                   class="form-control @error('price') is-invalid @enderror"
-                                   id="price"
-                                   name="price"
-                                   value="{{ old('price') }}"
-                                   min="0"
-                                   step="0.01"
-                                   required>
-                            @error('price')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <div class="form-text">Enter 0 for free events</div>
+                            <label class="form-label">Pricing</label>
+                            <div class="form-text">
+                                Pricing is configured via Ticket Types after creating the event. Leave price blank unless this is a simple single-price event.
+                            </div>
                         </div>
                     </div>
 

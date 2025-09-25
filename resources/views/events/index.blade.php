@@ -74,10 +74,14 @@
                                 <div class="mt-auto">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            @if($event->price > 0)
-                                                <span class="h5 text-primary mb-0">${{ number_format($event->price, 2) }}</span>
+                                            @php
+                                                $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
+                                            @endphp
+                                            @if($types->count() > 0)
+                                                <span class="h6 text-muted mb-0">From</span>
+                                                <span class="h5 text-primary mb-0">${{ number_format($types->min('price'), 2) }}</span>
                                             @else
-                                                <span class="h5 text-success mb-0">Free</span>
+                                                <span class="text-muted">Pricing will be announced</span>
                                             @endif
                                         </div>
 

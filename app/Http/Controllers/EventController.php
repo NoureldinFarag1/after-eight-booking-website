@@ -53,9 +53,8 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_date' => 'required|date|after_or_equal:today',
             'event_time' => 'required|date_format:H:i',
-            'type' => 'required|in:booking,request',
-            'capacity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',
+                'type' => 'required|in:booking,request',
+                'capacity' => 'required|integer|min:1',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',
@@ -70,6 +69,20 @@ class EventController extends Controller
         // Handle image upload
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('events', 'public');
+        }
+
+        // Validate that initial ticket type capacities (if any) do not exceed event capacity
+        $types = $request->input('ticket_types', []);
+        if (!empty($types) && $request->input('type') === 'booking') {
+            $sumCap = collect($types)
+                ->sum(function ($t) {
+                    return isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : 0;
+                });
+            if ($sumCap > (int)$validated['capacity']) {
+                return back()
+                    ->withErrors(['ticket_types' => 'Sum of ticket type capacities ('. $sumCap .') exceeds event capacity ('. $validated['capacity'] .').'])
+                    ->withInput();
+            }
         }
 
         $event = Event::create($validated);
@@ -130,8 +143,7 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_date' => 'required|date|after_or_equal:today',
             'event_time' => 'required|date_format:H:i',
-            'capacity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',
+                'capacity' => 'required|integer|min:1',
             'type' => 'required|in:booking,request',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -143,6 +155,15 @@ class EventController extends Controller
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
+
+        // Prevent lowering event capacity below already booked seats or allocated ticket-type capacity
+        $bookedSeats = $event->bookings()->sum('quantity');
+        $allocatedCapacity = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
+        if ((int)$validated['capacity'] < max($bookedSeats, $allocatedCapacity)) {
+            return back()
+                ->withErrors(['capacity' => 'Capacity cannot be less than already booked seats ('. $bookedSeats .') or allocated ticket type capacity ('. $allocatedCapacity .').'])
+                ->withInput();
+        }
 
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -158,6 +179,17 @@ class EventController extends Controller
         // Optionally add new ticket types when editing (manage existing via dedicated page)
         $types = $request->input('ticket_types', []);
         if (!empty($types) && $request->input('type') === 'booking') {
+            // Validate that new types do not exceed remaining allocatable capacity
+            $allocated = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
+            $remaining = max(0, (int)$validated['capacity'] - $allocated);
+            $sumNew = collect($types)->sum(function ($t) {
+                return isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : 0;
+            });
+            if ($sumNew > $remaining) {
+                return back()
+                    ->withErrors(['ticket_types' => 'New ticket type capacities ('. $sumNew .') exceed remaining allocatable capacity ('. $remaining .').'])
+                    ->withInput();
+            }
             $payload = collect($types)
                 ->filter(fn($t) => isset($t['name']) && $t['name'] !== '')
                 ->map(function ($t) {
@@ -223,15 +255,14 @@ class EventController extends Controller
         $scannedTickets = \App\Models\Ticket::whereNotNull('scanned_at')->count();
         $validTickets = \App\Models\Ticket::where('status', \App\Enums\TicketStatus::VALID)->count();
 
-        // Revenue Statistics
-        $totalRevenue = \App\Models\Event::join('bookings', 'events.id', '=', 'bookings.event_id')
-            ->sum('events.price');
+        // Revenue Statistics (sum of booking totals)
+        $totalRevenue = Event::join('bookings', 'events.id', '=', 'bookings.event_id')
+            ->sum('bookings.total_amount');
 
         // Operator Statistics
-        $operators = \App\Models\User::where('role', \App\Enums\Role::OPERATOR)
+        $operators = User::where('role', \App\Enums\Role::OPERATOR)
             ->withCount(['scannedTickets as total_scans'])
             ->get();
-
         $totalOperators = $operators->count();
         $activeOperators = $operators->where('total_scans', '>', 0)->count();
 
@@ -269,14 +300,13 @@ class EventController extends Controller
                     'bookings' => $event->bookings_count,
                     'tickets_sold' => $event->tickets_count,
                     'tickets_scanned' => $event->tickets->count(),
-                    'revenue' => $event->price * $event->bookings_count,
+                    // Total revenue as sum of ticket prices
+                    'revenue' => \App\Models\Ticket::where('event_id', $event->id)->sum('price'),
                     'attendance_rate' => $event->tickets_count > 0
                         ? round(($event->tickets->count() / $event->tickets_count) * 100, 1)
                         : 0
                 ];
             });
-
-        // Operator Scan Statistics
         $operatorStats = \App\Models\User::where('role', \App\Enums\Role::OPERATOR)
             ->select('id', 'name', 'email', 'created_at')
             ->withCount(['scannedTickets as total_scans'])
