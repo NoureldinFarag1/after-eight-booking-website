@@ -63,13 +63,27 @@
                         </div>
                     </div>
                     <div class="col-md-6">
+                        @php
+                            $reservedSeats = $event->capacity - $event->available_seats;
+                            $showInitial = !is_null($event->initial_capacity) && $event->initial_capacity != $event->capacity;
+                        @endphp
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-people text-primary me-2"></i>
-                            <span>{{ $event->capacity }} total seats</span>
+                            <span>
+                                @if($showInitial)
+                                    {{ $event->capacity }} current seats
+                                    <small class="text-muted">(initial: {{ $event->initial_capacity }})</small>
+                                @else
+                                    {{ $event->capacity }} total seats
+                                @endif
+                            </span>
                         </div>
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-ticket text-primary me-2"></i>
-                            <span>{{ $event->available_seats }} seats available</span>
+                            <span>
+                                {{ $event->available_seats }} seats available
+                                <small class="text-muted ms-1">reserved: {{ $reservedSeats }}</small>
+                            </span>
                         </div>
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-currency-dollar text-primary me-2"></i>
@@ -225,7 +239,13 @@
             <div class="card-body">
                 @if($event->isBookable())
                     @auth
-                     @if($event->type === 'booking')
+                        @if(auth()->user()->isAdmin())
+                            <div class="alert alert-info text-center">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Administrators cannot create bookings for events.
+                            </div>
+                        @else
+                        @if($event->type === 'booking')
                             {{-- Existing booking form with ticket types --}}
                             <form action="{{ route('bookings.store') }}" method="POST">
                                 @csrf
@@ -335,7 +355,8 @@
                             <a href="{{ route('event-requests.create', $event) }}" class="btn btn-warning w-100">
                                 <i class="bi bi-envelope-plus me-1"></i> Submit a request for this event
                             </a>
-                        @endif
+                        @endif {{-- end type conditional --}}
+                        @endif {{-- end admin guard --}}
                     @else
                         <div class="text-center">
                             <p class="text-muted">Please log in to book this event.</p>

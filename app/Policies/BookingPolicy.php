@@ -51,4 +51,13 @@ class BookingPolicy
         // Admins or booking owner can cancel
         return $user->isAdmin() || $user->id === $booking->user_id;
     }
+
+    /**
+     * Determine whether the user can create a booking.
+     * Business rule: Administrators are NOT allowed to create bookings.
+     */
+    public function create(User $user): bool
+    {
+        return !$user->isAdmin();
+    }
 }

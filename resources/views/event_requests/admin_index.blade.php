@@ -40,6 +40,8 @@
                             <th>User</th>
                             <th>Event</th>
                             <th>Primary</th>
+                            <th class="text-center">Attendees</th>
+                            <th>Tickets Mix</th>
                             <th>Status</th>
                             <th>Submitted</th>
                             <th class="text-end">Actions</th>
@@ -59,6 +61,35 @@
                                 <td>
                                     <div class="fw-semibold">{{ $r->primary_name ?? '-' }}</div>
                                     <div class="text-muted small">{{ $r->primary_email ?? '' }}</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-dark">{{ $r->attendee_count ?? (1 + (is_array($r->guests) ? count($r->guests) : 0)) }}</span>
+                                </td>
+                                <td>
+                                    @php
+                                        $mix = [];
+                                        if ($r->primary_ticket_type_id && isset($ticketTypeMap[$r->primary_ticket_type_id])) {
+                                            $name = $ticketTypeMap[$r->primary_ticket_type_id];
+                                            $mix[$name] = ($mix[$name] ?? 0) + 1;
+                                        }
+                                        if (is_array($r->guests)) {
+                                            foreach ($r->guests as $g) {
+                                                if (isset($g['ticket_type_id']) && isset($ticketTypeMap[$g['ticket_type_id']])) {
+                                                    $name = $ticketTypeMap[$g['ticket_type_id']];
+                                                    $mix[$name] = ($mix[$name] ?? 0) + 1;
+                                                }
+                                            }
+                                        }
+                                    @endphp
+                                    @if(empty($mix))
+                                        <span class="text-muted small">-</span>
+                                    @else
+                                        <div class="small d-flex flex-wrap gap-1">
+                                            @foreach($mix as $name => $cnt)
+                                                <span class="badge bg-secondary">{{ $name }}: {{ $cnt }}</span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </td>
                                 <td>
                                     @php($badge = $r->status === 'approved' ? 'success' : ($r->status === 'declined' ? 'danger' : 'warning'))

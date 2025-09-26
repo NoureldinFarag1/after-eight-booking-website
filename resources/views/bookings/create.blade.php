@@ -54,6 +54,12 @@
 
                 <hr>
 
+                @if(auth()->user()->isAdmin())
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Administrators are not allowed to create bookings.
+                    </div>
+                @else
                 <!-- Booking Form -->
                 <form action="{{ route('bookings.store') }}" method="POST" id="bookingForm">
                     @csrf
@@ -176,6 +182,7 @@
                         </button>
                     </div>
                 </form>
+                @endif
             </div>
         </div>
     </div>

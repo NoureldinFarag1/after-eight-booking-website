@@ -9,6 +9,7 @@ use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class EventRequestController extends Controller
 {
@@ -66,9 +67,12 @@ class EventRequestController extends Controller
             'primary_name' => ['required', 'string', 'max:255'],
             'primary_email' => ['required', 'email', 'max:255'],
             'primary_social_url' => ['required', 'url', 'max:255', $socialUrlRule],
-            'guests' => ['nullable', 'array', 'max:4'], // up to 4 additional guests (total 5)
+            'primary_ticket_type_id' => ['required', 'integer', 'exists:ticket_types,id'],
+            'guests' => ['nullable', 'array', 'max:4'], // up to 4 additional guests (total 5 total attendees)
             'guests.*.name' => ['required', 'string', 'max:255'],
+            'guests.*.email' => ['required','email','max:255'],
             'guests.*.social_url' => ['required', 'url', 'max:255', $socialUrlRule],
+            'guests.*.ticket_type_id' => ['required','integer','exists:ticket_types,id'],
         ]);
 
         $payload = [
@@ -78,8 +82,12 @@ class EventRequestController extends Controller
             'primary_name' => $validated['primary_name'],
             'primary_email' => $validated['primary_email'],
             'primary_social_url' => $validated['primary_social_url'] ?? null,
+            'primary_ticket_type_id' => $validated['primary_ticket_type_id'],
             'guests' => array_values(array_filter($validated['guests'] ?? [], function ($g) {
-                // Keep only entries with a non-empty name
+                // Keep only entries with a non-empty name (ticket type and email validated already if present)
+                return isset($g['name']) && trim($g['name']) !== '';
+            })),
+            'attendee_count' => 1 + count(array_filter($validated['guests'] ?? [], function ($g) {
                 return isset($g['name']) && trim($g['name']) !== '';
             })),
         ];
@@ -91,6 +99,7 @@ class EventRequestController extends Controller
                     'name' => $validated['primary_name'],
                     'email' => $validated['primary_email'],
                     'social_url' => $validated['primary_social_url'] ?? null,
+                    'ticket_type_id' => $validated['primary_ticket_type_id'],
                 ],
                 'guests' => $payload['guests'],
             ];
@@ -144,7 +153,27 @@ class EventRequestController extends Controller
             'q' => $q !== '' ? $q : null,
         ]);
 
-        return view('event_requests.admin_index', compact('requests', 'status', 'q'));
+        // Collect ticket_type_ids from current page (primary + guests) to avoid N+1 lookups in view
+        $ticketTypeIds = collect();
+        foreach ($requests as $req) {
+            if ($req->primary_ticket_type_id) {
+                $ticketTypeIds->push($req->primary_ticket_type_id);
+            }
+            if (is_array($req->guests)) {
+                foreach ($req->guests as $g) {
+                    if (is_array($g) && !empty($g['ticket_type_id'])) {
+                        $ticketTypeIds->push($g['ticket_type_id']);
+                    }
+                }
+            }
+        }
+        $ticketTypeIds = $ticketTypeIds->unique()->values();
+        $ticketTypeMap = [];
+        if ($ticketTypeIds->count() > 0) {
+            $ticketTypeMap = \App\Models\TicketType::whereIn('id', $ticketTypeIds)->pluck('name','id')->toArray();
+        }
+
+        return view('event_requests.admin_index', compact('requests', 'status', 'q', 'ticketTypeMap'));
     }
 
     // Show a single request (owner or admin)
@@ -173,11 +202,45 @@ class EventRequestController extends Controller
         if ($eventRequest->status !== 'pending') {
             return back()->with('warning', 'This request has already been ' . $eventRequest->status . ' and cannot be changed.');
         }
-        $eventRequest->status = 'approved';
-        if (Schema::hasColumn('event_requests', 'admin_id')) {
-            $eventRequest->admin_id = $user->id;
+        $event = $eventRequest->event()->lockForUpdate()->first();
+
+        // Safeguard: ensure enough seats remain
+        $needed = $eventRequest->attendee_count ?? (1 + (is_array($eventRequest->guests) ? count($eventRequest->guests) : 0));
+        if ($event->getAvailableSeatsAttribute() < $needed) {
+            return back()->with('error', 'Not enough available seats to approve this request (needs ' . $needed . ').');
         }
-        $eventRequest->save();
+
+        // Wrap in transaction to maintain consistency
+        DB::transaction(function () use ($eventRequest, $user, $event) {
+
+            // Decrement ticket type capacities if present in payload or columns
+            if ($eventRequest->primary_ticket_type_id) {
+                $primaryType = \App\Models\TicketType::where('id', $eventRequest->primary_ticket_type_id)->lockForUpdate()->first();
+                if ($primaryType && !is_null($primaryType->capacity) && $primaryType->capacity > 0) {
+                    $primaryType->capacity = max(0, $primaryType->capacity - 1);
+                    $primaryType->save();
+                }
+            }
+            if (is_array($eventRequest->guests)) {
+                $grouped = collect($eventRequest->guests)
+                    ->filter(fn($g) => is_array($g) && isset($g['ticket_type_id']))
+                    ->groupBy('ticket_type_id')
+                    ->map(fn($group) => count($group));
+                foreach ($grouped as $ticketTypeId => $count) {
+                    $tt = \App\Models\TicketType::where('id', $ticketTypeId)->lockForUpdate()->first();
+                    if ($tt && !is_null($tt->capacity) && $tt->capacity > 0) {
+                        $tt->capacity = max(0, $tt->capacity - $count);
+                        $tt->save();
+                    }
+                }
+            }
+
+            $eventRequest->status = 'approved';
+            if (Schema::hasColumn('event_requests', 'admin_id')) {
+                $eventRequest->admin_id = $user->id;
+            }
+            $eventRequest->save();
+        });
 
         return back()->with('success', 'Request approved.');
     }

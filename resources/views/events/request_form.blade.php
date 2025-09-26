@@ -42,6 +42,18 @@
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
                 </div>
+                <div class="col-md-4">
+                    <label for="primary_ticket_type_id" class="form-label">Primary Ticket Type</label>
+                    <select name="primary_ticket_type_id" id="primary_ticket_type_id" class="form-select @error('primary_ticket_type_id') is-invalid @enderror" required>
+                        <option value="">Select...</option>
+                        @foreach($event->ticketTypes as $tt)
+                            <option value="{{ $tt->id }}" @selected(old('primary_ticket_type_id') == $tt->id)>{{ $tt->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('primary_ticket_type_id')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
             </div>
         </div>
 
@@ -49,17 +61,36 @@
             <h5 class="mb-2">Additional guests (up to 4)</h5>
             <div class="row g-3">
                 @for($i = 0; $i < 4; $i++)
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Guest {{ $i+1 }} name</label>
                         <input type="text" name="guests[{{ $i }}][name]" class="form-control @error('guests.'.$i.'.name') is-invalid @enderror" value="{{ old('guests.'.$i.'.name') }}" placeholder="Optional">
                         @error('guests.'.$i.'.name')
                             <span class="invalid-feedback">{{ $message }}</span>
                         @enderror
                     </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Guest {{ $i+1 }} Instagram/Facebook URL</label>
+                    <div class="col-md-3">
+                        <label class="form-label">Guest {{ $i+1 }} email</label>
+                        <input type="email" name="guests[{{ $i }}][email]" class="form-control @error('guests.'.$i.'.email') is-invalid @enderror" value="{{ old('guests.'.$i.'.email') }}" placeholder="Optional">
+                        @error('guests.'.$i.'.email')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Guest {{ $i+1 }} social URL</label>
                         <input type="url" name="guests[{{ $i }}][social_url]" class="form-control @error('guests.'.$i.'.social_url') is-invalid @enderror" value="{{ old('guests.'.$i.'.social_url') }}" placeholder="https://instagram.com/guest">
                         @error('guests.'.$i.'.social_url')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Guest {{ $i+1 }} ticket type</label>
+                        <select name="guests[{{ $i }}][ticket_type_id]" class="form-select @error('guests.'.$i.'.ticket_type_id') is-invalid @enderror">
+                            <option value="">Select...</option>
+                            @foreach($event->ticketTypes as $tt)
+                                <option value="{{ $tt->id }}" @selected(old('guests.'.$i.'.ticket_type_id') == $tt->id)>{{ $tt->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('guests.'.$i.'.ticket_type_id')
                             <span class="invalid-feedback">{{ $message }}</span>
                         @enderror
                     </div>

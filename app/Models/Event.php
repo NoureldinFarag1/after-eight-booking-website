@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Facades\Schema;
 
 class Event extends Model
 {
@@ -20,6 +21,7 @@ class Event extends Model
         'event_date',
         'event_time',
         'capacity',
+        'initial_capacity',
         'type',
         'status',
         'image_url',
@@ -71,7 +73,15 @@ class Event extends Model
      */
     public function getAvailableSeatsAttribute(): int
     {
-        return $this->capacity - $this->bookings()->sum('quantity');
+        $booked = $this->bookings()->sum('quantity');
+        // Sum approved event request attendees (attendee_count) if column exists
+        $approvedRequestAttendees = 0;
+    if (Schema::hasTable('event_requests') && Schema::hasColumn('event_requests','attendee_count')) {
+            $approvedRequestAttendees = (int) $this->requests()
+                ->where('status', 'approved')
+                ->sum('attendee_count');
+        }
+        return max(0, $this->capacity - $booked - $approvedRequestAttendees);
     }
 
     /**

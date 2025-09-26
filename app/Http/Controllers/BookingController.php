@@ -43,6 +43,8 @@ class BookingController extends Controller
      */
     public function create(Event $event)
     {
+        // Enforce business rule: admins cannot create bookings
+        $this->authorize('create', Booking::class);
         if (!$event->isBookable()) {
             return redirect()
                 ->route('events.show', $event)
@@ -59,6 +61,8 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+        // Enforce business rule: admins cannot create bookings
+        $this->authorize('create', Booking::class);
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'quantity' => 'required|integer|min:1|max:10',
