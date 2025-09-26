@@ -17,7 +17,7 @@ Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     }
     return redirect()->route('events.index');
-});
+})->name('home');
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -116,6 +116,9 @@ Route::middleware('auth')->group(function () {
         ->name('event-requests.create');
     Route::post('/events/{event}/request', [EventRequestController::class, 'store'])
         ->name('event-requests.store');
+
+    Route::get('/event-requests/{eventRequest}/edit', [EventRequestController::class, 'edit'])->name('event_requests.edit');
+    Route::put('/event-requests/{eventRequest}', [EventRequestController::class, 'update'])->name('event_requests.update');
 
     Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
 

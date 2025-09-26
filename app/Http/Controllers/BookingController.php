@@ -21,21 +21,57 @@ class BookingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         /** @var User $user */
         $user = Auth::user();
 
+        $eventRequests = collect();
+        $bookingQuery = Booking::query()->with(['event']);
         if ($user->isAdmin()) {
-            $bookings = Booking::with(['user', 'event'])->latest()->paginate(15);
+            $bookingQuery->with('user');
         } else {
-            $bookings = Booking::with('event')
-                ->where('user_id', $user->id)
-                ->latest()
-                ->paginate(15);
+            $bookingQuery->where('user_id', $user->id);
+            $eventRequests = \App\Models\EventRequest::with('event')
+                ->where('user_id', $user->id);
         }
 
-        return view('bookings.index', compact('bookings'));
+        // Search: booking reference or event title
+        if ($search = trim($request->input('q', ''))) {
+            $bookingQuery->where(function ($q) use ($search) {
+                $q->where('booking_reference', 'like', "%{$search}%")
+                  ->orWhereHas('event', function ($qe) use ($search) {
+                      $qe->where('title', 'like', "%{$search}%");
+                  });
+            });
+            if (!$user->isAdmin()) {
+                $eventRequests->whereHas('event', function ($qe) use ($search) {
+                    $qe->where('title', 'like', "%{$search}%");
+                });
+            }
+        }
+
+        // Status filter
+        if ($status = $request->input('status')) {
+            $validStatuses = collect(BookingStatus::cases())->pluck('value')->all();
+            if (in_array($status, $validStatuses, true)) {
+                $bookingQuery->where('status', $status);
+            }
+        }
+
+        $bookings = $bookingQuery->latest()->paginate(15, ['*'], 'bookings_page')->appends($request->query());
+        if (!$user->isAdmin()) {
+            $eventRequests = $eventRequests->latest()->paginate(12, ['*'], 'requests_page')->appends($request->query());
+        }
+
+        $filters = [
+            'q' => $request->input('q'),
+            'status' => $request->input('status'),
+        ];
+
+        $statusOptions = collect(BookingStatus::cases())->pluck('value')->all();
+
+        return view('bookings.index', compact('bookings', 'eventRequests', 'filters', 'statusOptions'));
     }
 
     /**

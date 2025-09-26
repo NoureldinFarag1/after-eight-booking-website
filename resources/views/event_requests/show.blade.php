@@ -134,6 +134,16 @@
         @if(auth()->check() && auth()->id() === $eventRequest->user_id)
             <a href="{{ route('event_requests.index') }}" class="btn btn-secondary">My Requests</a>
         @endif
+        @if(auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN && $eventRequest->status === 'pending')
+            <form method="POST" action="{{ route('admin.event_requests.approve', $eventRequest->id) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> Approve</button>
+            </form>
+            <form method="POST" action="{{ route('admin.event_requests.decline', $eventRequest->id) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-danger"><i class="bi bi-x"></i> Decline</button>
+            </form>
+        @endif
     </div>
 </div>
 @endsection

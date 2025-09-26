@@ -1,7 +1,34 @@
 import './bootstrap';
+import { Notyf } from 'notyf';
+import 'notyf/notyf.min.css';
 
 // Collapsible sidebar toggle and persistence
 document.addEventListener('DOMContentLoaded', () => {
+	/* =============================
+	   Modern Toast Notifications
+	   ============================= */
+	if (!window.__notyfInstance) {
+		window.__notyfInstance = new Notyf({
+			position: { x: 'right', y: 'top' },
+			duration: 4500,
+			dismissible: true,
+			types: [
+				{ type: 'success', background: '#198754', icon: { className: 'bi bi-check-circle me-1', tagName: 'i' } },
+				{ type: 'error', background: '#dc3545', icon: { className: 'bi bi-exclamation-octagon me-1', tagName: 'i' } },
+				{ type: 'warning', background: '#ffc107', icon: { className: 'bi bi-exclamation-triangle me-1 text-dark', tagName: 'i' } },
+				{ type: 'info', background: '#0dcaf0', icon: { className: 'bi bi-info-circle me-1 text-dark', tagName: 'i' } }
+			]
+		});
+	}
+	const notyf = window.__notyfInstance;
+	if (window.__FLASH__) {
+		Object.entries(window.__FLASH__).forEach(([type, message]) => {
+			if (!message) return;
+			if (['success','error','warning','info'].includes(type)) {
+				notyf.open({ type, message });
+			}
+		});
+	}
 	const KEY = 'ae.sidebar.collapsed';
 	const body = document.body;
 	const btn = document.getElementById('sidebarToggleBtn');
@@ -115,4 +142,45 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
     // Theme toggle removed – app now defaults to single dark theme.
+
+	/* =============================
+	   Mobile Offcanvas Nav Autoclose
+	   ============================= */
+	const mobileSidebar = document.getElementById('mobileSidebar');
+	if (mobileSidebar && window.bootstrap) {
+		let navTapLocked = false;
+		const pageLoader = document.getElementById('navPageLoader');
+		function showPageLoader() {
+			if (!pageLoader) return;
+			pageLoader.classList.remove('d-none');
+		}
+		function hidePageLoader() {
+			if (!pageLoader) return;
+			pageLoader.classList.add('d-none');
+		}
+		window.addEventListener('pageshow', hidePageLoader);
+		mobileSidebar.addEventListener('click', (e) => {
+			const link = e.target.closest('a.nav-link, a.btn');
+			if (!link) return;
+			const href = link.getAttribute('href');
+			if (!href || href.startsWith('#') || link.getAttribute('target') === '_blank') return;
+			if (navTapLocked) { e.preventDefault(); return; }
+			navTapLocked = true;
+			showPageLoader();
+			const oc = window.bootstrap.Offcanvas.getInstance(mobileSidebar) || new window.bootstrap.Offcanvas(mobileSidebar);
+			requestAnimationFrame(() => oc.hide());
+			// Safety unlock after 2s if navigation prevented (edge case)
+			setTimeout(() => { navTapLocked = false; }, 2000);
+		});
+	}
+
+	// Also apply page loader + debounce for any top-level layout nav links (desktop)
+	document.addEventListener('click', (e) => {
+		const link = e.target.closest('a.nav-link');
+		if (!link) return;
+		if (link.closest('#mobileSidebar')) return; // already handled above
+		const href = link.getAttribute('href');
+		if (!href || href.startsWith('#') || link.getAttribute('target') === '_blank') return;
+		showPageLoader();
+	});
 });

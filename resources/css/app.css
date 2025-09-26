@@ -205,6 +205,15 @@ body.sidebar-collapsed-responsive .sidebar .guest-actions .btn .bi { margin-righ
 	width: 3px; background-color: var(--ae-primary); border-radius: 2px;
 }
 
+/* Event filters offcanvas (mobile) */
+#eventFiltersOffcanvas { width: 85%; max-width: 360px; }
+#eventFiltersOffcanvas .offcanvas-footer { background: var(--ae-color-bg-sidebar); }
+
+/* Full page navigation loader (blank screen with spinner) */
+.nav-page-loader { position:fixed; inset:0; z-index:3000; display:flex; align-items:center; justify-content:center; background:#000; }
+.nav-page-loader .inner { text-align:center; }
+.nav-page-loader .spinner-border { width:3rem; height:3rem; }
+
 /* Mobile tweaks: full-width offcanvas and content */
 .content-wrapper { width: 100%; min-height: 100vh; }
 @media (max-width: 767.98px) {
@@ -220,6 +229,22 @@ body.sidebar-collapsed-responsive .sidebar .guest-actions .btn .bi { margin-righ
 /* Utilities */
 .sidebar-fixed { position: fixed; top: 0; left: 0; height: 100vh; width: var(--ae-sidebar-width); overflow-y: auto; }
 .brand-icon { font-size: 1.4rem; }
+
+/* =============================
+	Toast (Notyf) Overrides
+	============================= */
+.notyf { z-index: 3100; }
+.notyf__toast { border-radius: .75rem; padding: .9rem 1rem; box-shadow: 0 8px 24px -6px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,0.08) inset; font-weight:500; letter-spacing:.25px; }
+.notyf__message { font-size: .9rem; display:flex; align-items:center; gap:.4rem; }
+.notyf__icon i { font-size:1.1rem; line-height:1; }
+.notyf__dismiss { background: rgba(255,255,255,0.15); width:26px; height:26px; border-radius: .5rem; }
+.notyf__dismiss:hover { background: rgba(255,255,255,0.28); }
+.notyf__toast--info, .notyf__toast--warning { color:#000; }
+.notyf__toast--success { background: linear-gradient(135deg,#198754,#157347); }
+.notyf__toast--error { background: linear-gradient(135deg,#dc3545,#bb2d3b); }
+.notyf__toast--warning { background: linear-gradient(135deg,#ffc107,#ffcd39); }
+.notyf__toast--info { background: linear-gradient(135deg,#0dcaf0,#31d2f2); }
+.notyf__wrapper { backdrop-filter: blur(6px); }
 
 /* Collapsible sidebar behavior */
 body.sidebar-collapsed .sidebar-fixed { width: var(--ae-sidebar-width-collapsed); }

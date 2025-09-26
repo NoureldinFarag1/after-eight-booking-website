@@ -44,7 +44,7 @@
                             <th>Tickets Mix</th>
                             <th>Status</th>
                             <th>Submitted</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -104,15 +104,7 @@
                                 </td>
                                 <td>{{ $r->created_at->diffForHumans() }}</td>
                                 <td class="text-end">
-                                    <a href="{{ route('event_requests.show', $r->id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i> View</a>
-                                    <form method="POST" action="{{ route('admin.event_requests.approve', $r->id) }}" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm btn-outline-success" type="submit" {{ $r->status !== 'pending' ? 'disabled' : '' }}><i class="bi bi-check2"></i> Approve</button>
-                                    </form>
-                                    <form method="POST" action="{{ route('admin.event_requests.decline', $r->id) }}" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm btn-outline-danger" type="submit" {{ $r->status !== 'pending' ? 'disabled' : '' }}><i class="bi bi-x"></i> Decline</button>
-                                    </form>
+                                    <a href="{{ route('event_requests.show', $r->id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Review</a>
                                 </td>
                             </tr>
                         @endforeach

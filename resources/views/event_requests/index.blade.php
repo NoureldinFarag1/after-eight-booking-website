@@ -11,12 +11,13 @@
         @if($requests->isEmpty())
             <p>You have not submitted any requests yet.</p>
         @else
-            <table class="table table-bordered">
+            <table class="table table-bordered align-middle">
                 <thead>
                     <tr>
                         <th>Event</th>
                         <th>Submitted At</th>
                         <th>Status</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,6 +32,12 @@
                                     <span class="badge bg-success">Approved</span>
                                 @elseif($req->status === 'declined')
                                     <span class="badge bg-danger">Declined</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ route('event_requests.show', $req->id) }}" class="btn btn-sm btn-outline-secondary">View</a>
+                                @if($req->status === 'pending')
+                                    <a href="{{ route('event_requests.edit', $req->id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                 @endif
                             </td>
                         </tr>

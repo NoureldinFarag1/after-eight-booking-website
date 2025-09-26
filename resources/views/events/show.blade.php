@@ -66,29 +66,42 @@
                         @php
                             $reservedSeats = $event->capacity - $event->available_seats;
                             $showInitial = !is_null($event->initial_capacity) && $event->initial_capacity != $event->capacity;
+                            $isAdmin = auth()->check() && auth()->user()->isAdmin();
                         @endphp
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-people text-primary me-2"></i>
-                            <span>
-                                @if($showInitial)
-                                    {{ $event->capacity }} current seats
-                                    <small class="text-muted">(initial: {{ $event->initial_capacity }})</small>
-                                @else
-                                    {{ $event->capacity }} total seats
-                                @endif
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-ticket text-primary me-2"></i>
-                            <span>
-                                {{ $event->available_seats }} seats available
-                                <small class="text-muted ms-1">reserved: {{ $reservedSeats }}</small>
-                            </span>
-                        </div>
+                        @if($isAdmin)
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-people text-primary me-2"></i>
+                                <span>
+                                    @if($showInitial)
+                                        {{ $event->capacity }} current seats
+                                        <small class="text-muted">(initial: {{ $event->initial_capacity }})</small>
+                                    @else
+                                        {{ $event->capacity }} total seats
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-ticket text-primary me-2"></i>
+                                <span>
+                                    {{ $event->available_seats }} seats available
+                                    <small class="text-muted ms-1">reserved: {{ $reservedSeats }}</small>
+                                </span>
+                            </div>
+                        @else
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-people text-primary me-2"></i>
+                                <span>
+                                    @if($event->isSoldOut())
+                                        <span class="text-danger">Sold Out</span>
+                                    @else
+                                        <span class="text-success">Spots Available</span>
+                                    @endif
+                                </span>
+                            </div>
+                        @endif
                         <div class="d-flex align-items-center mb-2">
                             <i class="bi bi-currency-dollar text-primary me-2"></i>
                             <span>
-                                {{-- Ticket-type-first pricing: show min type price or placeholder --}}
                                 @if($types->count() > 0)
                                     From ${{ number_format($types->min('price'), 2) }}
                                 @else
@@ -351,10 +364,36 @@
                                 })();
                             </script>
                         @elseif($event->type === 'request')
-                            {{-- Request form link --}}
-                            <a href="{{ route('event-requests.create', $event) }}" class="btn btn-warning w-100">
-                                <i class="bi bi-envelope-plus me-1"></i> Submit a request for this event
-                            </a>
+                            @php
+                                $existingRequest = \App\Models\EventRequest::where('event_id',$event->id)->where('user_id', auth()->id())->latest()->first();
+                            @endphp
+                            @if($existingRequest)
+                                <div class="alert alert-info">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>Your Request Status:</strong>
+                                            <span class="badge
+                                                @if($existingRequest->status === 'approved') bg-success
+                                                @elseif($existingRequest->status === 'pending') bg-warning text-dark
+                                                @elseif($existingRequest->status === 'declined') bg-danger
+                                                @else bg-secondary @endif">
+                                                {{ ucfirst($existingRequest->status) }}
+                                            </span>
+                                            <div class="small text-muted mt-1">Submitted {{ $existingRequest->created_at->diffForHumans() }} • Attendees: {{ $existingRequest->attendee_count ?? (1 + (is_array($existingRequest->guests) ? count($existingRequest->guests) : 0)) }}</div>
+                                        </div>
+                                        <div class="ms-3 d-flex flex-column gap-2">
+                                            <a href="{{ route('event_requests.show', $existingRequest->id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i> View</a>
+                                            @if($existingRequest->status === 'pending')
+                                                <a href="{{ route('event_requests.edit', $existingRequest->id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <a href="{{ route('event-requests.create', $event) }}" class="btn btn-warning w-100">
+                                    <i class="bi bi-envelope-plus me-1"></i> Submit a request for this event
+                                </a>
+                            @endif
                         @endif {{-- end type conditional --}}
                         @endif {{-- end admin guard --}}
                     @else

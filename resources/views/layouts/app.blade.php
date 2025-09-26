@@ -147,25 +147,15 @@
             </div>
         </header>
 
-        <!-- Flash Messages -->
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
-                <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
-                <i class="bi bi-exclamation-triangle me-1"></i>{{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('warning'))
-            <div class="alert alert-warning alert-dismissible fade show m-0" role="alert">
-                <i class="bi bi-exclamation-triangle me-1"></i>{{ session('warning') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
+        <!-- Flash Messages (handled by Notyf toasts) -->
+        <script>
+            window.__FLASH__ = {
+                @if(session('success')) success: @json(session('success')), @endif
+                @if(session('error')) error: @json(session('error')), @endif
+                @if(session('warning')) warning: @json(session('warning')), @endif
+                @if(session('info')) info: @json(session('info')), @endif
+            };
+        </script>
 
         <!-- Main Content -->
         <main class="container-fluid py-4">
@@ -198,7 +188,7 @@
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
         <nav class="nav flex-column p-2">
-            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                 <i class="bi bi-calendar-event me-2"></i>
                 <span>Events</span>
             </a>
@@ -206,23 +196,23 @@
             @auth
                 @if($authUser->isAdmin())
                     <div class="mt-2 small text-uppercase text-muted px-2">Admin</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                         <i class="bi bi-speedometer2 me-2"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}">
                         <i class="bi bi-people me-2"></i>
                         <span>Operators</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
                         <span>Bookings</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                         <i class="bi bi-qr-code me-2"></i>
                         <span>Tickets</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}">
                         <i class="bi bi-bell me-2 position-relative"></i>
                         <span>Requests</span>
                         @if($pendingCount > 0)
@@ -231,21 +221,21 @@
                     </a>
                 @elseif($authUser->isOperator())
                     <div class="mt-2 small text-uppercase text-muted px-2">Operator</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}">
                         <i class="bi bi-upc-scan me-2"></i>
                         <span>Scan Tickets</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                         <i class="bi bi-qr-code me-2"></i>
                         <span>All Tickets</span>
                     </a>
                 @else
                     <div class="mt-2 small text-uppercase text-muted px-2">Account</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
                         <span>My Bookings</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" data-bs-dismiss="offcanvas">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                         <i class="bi bi-qr-code me-2"></i>
                         <span>My Tickets</span>
                     </a>
@@ -254,10 +244,10 @@
 
             @else
                 <div class="px-2 pt-2 guest-actions">
-                    <a class="btn btn-primary w-100 mb-2 d-inline-flex align-items-center" href="{{ route('login') }}" data-bs-dismiss="offcanvas">
+                    <a class="btn btn-primary w-100 mb-2 d-inline-flex align-items-center" href="{{ route('login') }}">
                         <i class="bi bi-box-arrow-in-right me-1"></i><span class="label-text">Login</span>
                     </a>
-                    <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center" href="{{ route('register') }}" data-bs-dismiss="offcanvas">
+                    <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center" href="{{ route('register') }}">
                         <i class="bi bi-person-plus me-1"></i><span class="label-text">Register</span>
                     </a>
                 </div>
@@ -269,7 +259,7 @@
             <div class="px-2 pb-3">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="btn btn-outline-danger w-100 logout-btn" data-bs-dismiss="offcanvas">
+                    <button type="submit" class="btn btn-outline-danger w-100 logout-btn">
                         <i class="bi bi-box-arrow-right me-1"></i><span class="label-text">Logout</span>
                     </button>
                 </form>
@@ -284,5 +274,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 @stack('scripts')
+<div id="navPageLoader" class="nav-page-loader d-none" aria-hidden="true">
+    <div class="inner">
+        <div class="spinner-border text-primary" role="status" aria-label="Loading"></div>
+    </div>
+</div>
 </body>
 </html>

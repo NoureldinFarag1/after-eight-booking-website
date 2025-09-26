@@ -18,20 +18,100 @@ class EventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = Event::query();
 
-        // Only show published events to non-admin users
-        /** @var User|null $user */
-        $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
+    /** @var User|null $user */
+    $user = Auth::user();
+        $isAdmin = $user && $user->isAdmin();
+
+        // Base scope for non-admins: only published upcoming events
+        if (!$isAdmin) {
             $query->published()->upcoming();
         }
 
-        $events = $query->orderBy('event_date', 'asc')->paginate(12);
+        // Search (title/location)
+        if ($search = trim($request->input('q', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
 
-        return view('events.index', compact('events'));
+        // Status filter (admin only)
+        if ($isAdmin && ($status = $request->input('status'))) {
+            $validStatuses = collect(EventStatus::cases())->pluck('value')->all();
+            if (in_array($status, $validStatuses, true)) {
+                $query->where('status', $status);
+            }
+        }
+
+        // Type filter (booking|request)
+        if ($type = $request->input('type')) {
+            if (in_array($type, ['booking', 'request'], true)) {
+                $query->where('type', $type);
+            }
+        }
+
+        // Date range filters
+        if ($from = $request->input('date_from')) {
+            $query->whereDate('event_date', '>=', $from);
+        }
+        if ($to = $request->input('date_to')) {
+            $query->whereDate('event_date', '<=', $to);
+        }
+
+        // Capacity filters (admin only)
+        if ($isAdmin) {
+            if ($minCap = $request->input('capacity_min')) {
+                if (is_numeric($minCap)) {
+                    $query->where('capacity', '>=', (int)$minCap);
+                }
+            }
+            if ($maxCap = $request->input('capacity_max')) {
+                if (is_numeric($maxCap)) {
+                    $query->where('capacity', '<=', (int)$maxCap);
+                }
+            }
+        }
+
+        // Sorting options
+        $sort = $request->input('sort', 'date_asc');
+        switch ($sort) {
+            case 'date_desc':
+                $query->orderBy('event_date', 'desc');
+                break;
+            case 'created_desc':
+                $query->latest();
+                break;
+            case 'capacity_desc':
+                $query->orderBy('capacity', 'desc');
+                break;
+            case 'capacity_asc':
+                $query->orderBy('capacity', 'asc');
+                break;
+            case 'date_asc':
+            default:
+                $query->orderBy('event_date', 'asc');
+        }
+
+        $events = $query->paginate(12)->appends($request->query());
+
+        $filters = [
+            'q' => $request->input('q'),
+            'status' => $request->input('status'),
+            'type' => $request->input('type'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'capacity_min' => $request->input('capacity_min'),
+            'capacity_max' => $request->input('capacity_max'),
+            'sort' => $sort,
+        ];
+
+        $statusOptions = collect(EventStatus::cases())->pluck('value')->all();
+
+        return view('events.index', compact('events', 'filters', 'statusOptions', 'isAdmin'));
     }
 
     /**

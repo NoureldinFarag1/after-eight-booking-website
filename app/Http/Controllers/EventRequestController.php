@@ -16,12 +16,29 @@ class EventRequestController extends Controller
     // Show the form to create a request for an event
     public function create(Event $event)
     {
-        return view('events.request_form', compact('event'));
+        // If the user already has a pending (or any) request for this event, show it instead of new form
+        $existing = EventRequest::where('event_id', $event->id)
+            ->where('user_id', Auth::id())
+            ->first();
+        if ($existing) {
+            return redirect()->route('events.show', $event)->with('info', 'You already submitted a request for this event. You can view or edit it below.');
+        }
+        // Provide ticket types for selection (active only)
+        $ticketTypes = $event->ticketTypes()->where('is_active', 1)->orderBy('price')->get();
+        return view('event_requests.create', compact('event','ticketTypes'));
     }
 
     // Store a new request
     public function store(Request $request, Event $event)
     {
+        // Prevent duplicate request by same user for same event
+        $existing = EventRequest::where('event_id', $event->id)
+            ->where('user_id', Auth::id())
+            ->first();
+        if ($existing) {
+            return redirect()->route('events.show', $event)
+                ->with('warning', 'You have already submitted a request for this event. Status: ' . ucfirst($existing->status) . '.');
+        }
         // Normalize guests: drop completely empty rows so we only validate rows the user actually filled
         $rawGuests = $request->input('guests', []);
         if (is_array($rawGuests)) {
@@ -112,11 +129,129 @@ class EventRequestController extends Controller
         return redirect()->route('events.show', $event)->with('success', 'Request submitted.');
     }
 
+    // Alias for existing route name expecting myRequests
+    public function myRequests()
+    {
+        return $this->index();
+    }
+
     // List logged-in user's requests
     public function index()
     {
         $requests = EventRequest::where('user_id', Auth::id())->latest()->get();
         return view('event_requests.index', compact('requests'));
+    }
+
+    // Edit (only if pending and owner)
+    public function edit(EventRequest $eventRequest)
+    {
+        $user = Auth::user();
+        if (!$user || $user->id !== $eventRequest->user_id) {
+            abort(403);
+        }
+        if ($eventRequest->status !== 'pending') {
+            return redirect()->route('event_requests.show', $eventRequest)->with('warning', 'Only pending requests can be edited.');
+        }
+        $event = $eventRequest->event()->first();
+        $ticketTypes = $event ? $event->ticketTypes()->where('is_active',1)->orderBy('price')->get() : collect();
+        return view('event_requests.edit', compact('eventRequest','event','ticketTypes'));
+    }
+
+    // Update pending request
+    public function update(Request $request, EventRequest $eventRequest)
+    {
+        $user = Auth::user();
+        if (!$user || $user->id !== $eventRequest->user_id) {
+            abort(403);
+        }
+        if ($eventRequest->status !== 'pending') {
+            return redirect()->route('event_requests.show', $eventRequest)->with('warning', 'Only pending requests can be updated.');
+        }
+
+        $event = $eventRequest->event()->first();
+        if (!$event) {
+            return redirect()->route('event_requests.index')->with('error', 'Event no longer exists.');
+        }
+
+        // Normalize guests like in store
+        $rawGuests = $request->input('guests', []);
+        if (is_array($rawGuests)) {
+            $cleanGuests = collect($rawGuests)
+                ->filter(function ($g) {
+                    if (!is_array($g)) return false;
+                    $name = isset($g['name']) ? trim((string)$g['name']) : '';
+                    $social = isset($g['social_url']) ? trim((string)$g['social_url']) : '';
+                    $email = isset($g['email']) ? trim((string)$g['email']) : '';
+                    return $name !== '' || $social !== '' || $email !== '';
+                })
+                ->values()
+                ->all();
+            $request->merge(['guests' => $cleanGuests]);
+        }
+
+        $socialUrlRule = function (string $attribute, mixed $value, \Closure $fail) {
+            $url = trim((string) $value);
+            if ($url === '') {
+                $fail('The social URL is required.');
+                return;
+            }
+            $parts = parse_url($url);
+            if ($parts === false || empty($parts['host']) || empty($parts['path'])) {
+                $fail('Please provide a valid Instagram or Facebook profile link.');
+                return;
+            }
+            $host = strtolower($parts['host']);
+            $isInsta = preg_match('/(^|\.)instagram\.com$/i', $host) === 1;
+            $isFb = preg_match('/(^|\.)facebook\.com$/i', $host) === 1;
+            if (!($isInsta || $isFb)) {
+                $fail('Social link must be from instagram.com or facebook.com.');
+                return;
+            }
+            $path = trim($parts['path'], '/');
+            if ($path === '') {
+                $fail('Social link must include an account path.');
+            }
+        };
+
+        $validated = $request->validate([
+            'primary_name' => ['required', 'string', 'max:255'],
+            'primary_email' => ['required', 'email', 'max:255'],
+            'primary_social_url' => ['required', 'url', 'max:255', $socialUrlRule],
+            'primary_ticket_type_id' => ['required', 'integer', 'exists:ticket_types,id'],
+            'guests' => ['nullable', 'array', 'max:4'],
+            'guests.*.name' => ['required', 'string', 'max:255'],
+            'guests.*.email' => ['required','email','max:255'],
+            'guests.*.social_url' => ['required', 'url', 'max:255', $socialUrlRule],
+            'guests.*.ticket_type_id' => ['required','integer','exists:ticket_types,id'],
+        ]);
+
+        $guests = array_values(array_filter($validated['guests'] ?? [], function ($g) {
+            return isset($g['name']) && trim($g['name']) !== '';
+        }));
+
+        $eventRequest->update([
+            'primary_name' => $validated['primary_name'],
+            'primary_email' => $validated['primary_email'],
+            'primary_social_url' => $validated['primary_social_url'],
+            'primary_ticket_type_id' => $validated['primary_ticket_type_id'],
+            'guests' => $guests,
+            'attendee_count' => 1 + count($guests),
+        ]);
+
+        if (Schema::hasColumn('event_requests', 'payload')) {
+            $snapshot = $eventRequest->payload ?? [];
+            $snapshot['primary'] = [
+                'name' => $validated['primary_name'],
+                'email' => $validated['primary_email'],
+                'social_url' => $validated['primary_social_url'],
+                'ticket_type_id' => $validated['primary_ticket_type_id'],
+            ];
+            $snapshot['guests'] = $guests;
+            $eventRequest->payload = $snapshot;
+            $eventRequest->save();
+        }
+
+        return redirect()->route('event_requests.show', $eventRequest)->with('success', 'Request updated.');
     }
 
     // Admin listing of all requests
@@ -135,16 +270,32 @@ class EventRequestController extends Controller
         }
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
+                // Search requesting user
                 $sub->whereHas('user', function ($u) use ($q) {
                         $u->where('name', 'like', "%$q%")
                           ->orWhere('email', 'like', "%$q%");
                     })
+                    // Search event title only (no events.name column exists)
                     ->orWhereHas('event', function ($e) use ($q) {
-                        $e->where('title', 'like', "%$q%")
-                          ->orWhere('name', 'like', "%$q%");
+                        $e->where('title', 'like', "%$q%");
                     })
+                    // Primary attendee
                     ->orWhere('primary_name', 'like', "%$q%")
-                    ->orWhere('primary_email', 'like', "%$q%");
+                    ->orWhere('primary_email', 'like', "%$q%")
+                    // Guests (if JSON column present) – attempt basic JSON_EXTRACT match on guest names/emails
+                    ->orWhere(function($g) use ($q) {
+                        // Use MySQL JSON_SEARCH if available; fallback to LIKE on raw JSON text
+                        $driver = config('database.default');
+                        $conn = config("database.connections.$driver.driver");
+                        if ($conn === 'mysql') {
+                            // This pattern searches any guest object name/email containing the q string
+                            $g->whereRaw('JSON_SEARCH(guests, "all", ?, NULL, "$[*].name") IS NOT NULL', ["%$q%"])
+                              ->orWhereRaw('JSON_SEARCH(guests, "all", ?, NULL, "$[*].email") IS NOT NULL', ["%$q%"]);
+                        } else {
+                            // Fallback: coarse search on serialized guests array
+                            $g->where('guests', 'like', "%$q%");
+                        }
+                    });
             });
         }
 

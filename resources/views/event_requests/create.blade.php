@@ -2,40 +2,47 @@
 
 @section('content')
 <div class="container">
-    <h2>Submit Request for Event: {{ $event->title ?? 'Event' }}</h2>
+    <h2 class="mb-3">Submit Request for: {{ $event->title }}</h2>
+    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Back to Event</a>
 
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
-    <form method="POST" action="{{ route('events.requests.store', $event->id) }}">
+    <form method="POST" action="{{ route('event-requests.store', $event->id) }}" id="createRequestForm">
         @csrf
 
-        <div class="mb-3">
-            <label>Field 1</label>
-            <input type="text" name="field_1" value="{{ old('field_1') }}" class="form-control" required>
-            @error('field_1')<div class="text-danger">{{ $message }}</div>@enderror
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Primary Attendee</div>
+            <div class="card-body row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="primary_name" value="{{ old('primary_name') }}" class="form-control" required>
+                    @error('primary_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="primary_email" value="{{ old('primary_email') }}" class="form-control" required>
+                    @error('primary_email')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Social URL (Instagram/Facebook)</label>
+                    <input type="url" name="primary_social_url" value="{{ old('primary_social_url') }}" class="form-control" required>
+                    @error('primary_social_url')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ticket Type</label>
+                    <select name="primary_ticket_type_id" class="form-select" required>
+                        <option value="">Select type</option>
+                        @foreach($ticketTypes as $tt)
+                            <option value="{{ $tt->id }}" {{ (int)old('primary_ticket_type_id') === $tt->id ? 'selected' : '' }}>{{ $tt->name }} @if(!is_null($tt->price)) - ${{ number_format($tt->price,2) }} @endif</option>
+                        @endforeach
+                    </select>
+                    @error('primary_ticket_type_id')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label>Field 2</label>
-            <input type="text" name="field_2" value="{{ old('field_2') }}" class="form-control" required>
-            @error('field_2')<div class="text-danger">{{ $message }}</div>@enderror
-        </div>
+        @include('event_requests.partials._guests_form', ['context' => 'create'])
 
-        <div class="mb-3">
-            <label>Field 3</label>
-            <textarea name="field_3" class="form-control" required>{{ old('field_3') }}</textarea>
-            @error('field_3')<div class="text-danger">{{ $message }}</div>@enderror
-        </div>
-
-        <div class="mb-3">
-            <label>Field 4</label>
-            <textarea name="field_4" class="form-control" required>{{ old('field_4') }}</textarea>
-            @error('field_4')<div class="text-danger">{{ $message }}</div>@enderror
-        </div>
-
-        <button class="btn btn-primary">Submit Request</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-envelope-plus me-1"></i> Submit Request</button>
     </form>
 </div>
+
 @endsection
