@@ -138,8 +138,10 @@
                     <h1 class="h5 mb-0">@yield('title', 'Event Booking System')</h1>
                 </div>
                 @auth
-                    <div class="small d-flex align-items-center">
-                        <i class="bi bi-person-circle me-1"></i>{{ auth()->user()->name }}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="small d-flex align-items-center">
+                            <i class="bi bi-person-circle me-1"></i>{{ auth()->user()->name }}
+                        </div>
                     </div>
                 @endauth
             </div>

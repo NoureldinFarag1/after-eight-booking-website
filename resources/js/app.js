@@ -85,4 +85,34 @@ document.addEventListener('DOMContentLoaded', () => {
 		clearTimeout(resizeTimeout);
 		resizeTimeout = setTimeout(updateResponsiveCollapse, 100);
 	});
+
+	/* =============================
+	   Password Visibility Toggles
+	   ============================= */
+	document.querySelectorAll('.toggle-password').forEach(toggle => {
+		toggle.addEventListener('click', () => {
+			const selector = toggle.getAttribute('data-target');
+			if (!selector) return;
+			const input = document.querySelector(selector);
+			if (!input) return;
+			const isPassword = input.getAttribute('type') === 'password';
+			input.setAttribute('type', isPassword ? 'text' : 'password');
+			const iconEl = toggle.querySelector('i');
+			if (iconEl) {
+				iconEl.classList.toggle('bi-eye', !isPassword);
+				iconEl.classList.toggle('bi-eye-slash', isPassword);
+			}
+			toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+		});
+	});
+
+	/* =============================
+	   Auth Card Entrance Animation
+	   ============================= */
+	const authCard = document.querySelector('.auth-card');
+	if (authCard) {
+		requestAnimationFrame(() => authCard.classList.add('enter'));
+	}
+
+    // Theme toggle removed – app now defaults to single dark theme.
 });

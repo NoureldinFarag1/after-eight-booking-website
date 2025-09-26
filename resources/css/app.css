@@ -3,13 +3,31 @@ body {
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
-/* Theme variables */
+/* Theme variables (single dark mode) */
 :root {
-	/* Company theme: red as primary */
 	--ae-primary: #dc3545;
 	--ae-primary-rgb: 220, 53, 69;
 	--ae-sidebar-width: 240px;
 	--ae-sidebar-width-collapsed: 72px;
+	--ae-color-bg-root: #000;
+	--ae-color-bg-header: #000;
+	--ae-color-bg-sidebar: #000;
+	--ae-color-bg-sidebar-hover: #111;
+	--ae-color-bg-card: rgba(255,255,255,0.04);
+	--ae-color-bg-card-accent: rgba(var(--ae-primary-rgb),0.25);
+	--ae-color-border-subtle: #111;
+	--ae-color-border-card: rgba(255,255,255,0.08);
+	--ae-color-text: #f8f9fa;
+	--ae-color-text-muted: #adb5bd;
+	--ae-color-text-invert: #000;
+	--ae-color-icon: #f8f9fa;
+	--ae-color-shadow-card: 0 4px 24px -4px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+	--ae-color-auth-bg-gradient: radial-gradient(circle at 20% 20%, #111 0%, #000 60%);
+	--ae-color-auth-divider-bg: rgba(0,0,0,0.8);
+	--ae-color-auth-form-bg: rgba(255,255,255,0.08);
+	--ae-color-auth-form-bg-focus: rgba(255,255,255,0.12);
+	--ae-color-auth-form-border: rgba(255,255,255,0.15);
+	--ae-color-auth-form-border-focus: var(--ae-primary);
 }
 
 /* Bootstrap theme overrides and helpers */
@@ -97,10 +115,10 @@ body {
 .navbar-nav .nav-link:hover { color: #ffffff !important; text-decoration: none; }
 
 /* Dark header */
-header.app-header { background-color: #000; color: #f8f9fa; border-bottom: 1px solid #111; }
+header.app-header { background-color: var(--ae-color-bg-header); color: var(--ae-color-text); border-bottom: 1px solid var(--ae-color-border-subtle); }
 header.app-header a,
 header.app-header .nav-link,
-header.app-header .btn { color: #f8f9fa; }
+header.app-header .btn { color: var(--ae-color-text); }
 header.app-header .btn-outline-light { border-color: #f8f9fa; }
 /* Keep ghost-style buttons in dark header without turning white on hover */
 header.app-header .btn-outline-light {
@@ -141,20 +159,21 @@ header.app-header .btn-outline-light:focus-visible {
 .btn-icon:focus-visible { box-shadow: 0 0 0 .2rem rgba(255,255,255,0.25); }
 
 /* Sidebar styles (black/white/red) */
-.sidebar { background-color: #000; color: #f8f9fa; }
-.sidebar .nav-link { color: #f8f9fa; padding: .5rem .75rem; border-radius: .375rem; position: relative; }
+.sidebar { background-color: var(--ae-color-bg-sidebar); color: var(--ae-color-text); }
+.sidebar .nav-link { color: var(--ae-color-text); padding: .5rem .75rem; border-radius: .375rem; position: relative; }
 .sidebar .nav-link { width: 100%; }
-.sidebar .nav-link .bi { color: #f8f9fa; }
-.sidebar .nav-link:hover { background-color: #111; }
+.sidebar .nav-link .bi { color: var(--ae-color-icon); }
+.sidebar .nav-link:hover { background-color: var(--ae-color-bg-sidebar-hover); }
 .sidebar .nav-link.active { background-color: rgba(var(--ae-primary-rgb), 0.15); color: #fff; font-weight: 600; }
 .sidebar .nav-link.active .bi { color: #fff; }
+
 .sidebar .nav-link.active::before {
 	content: "";
 	position: absolute;
 	left: 0; top: 6px; bottom: 6px;
 	width: 3px; background-color: var(--ae-primary); border-radius: 2px;
 }
-.sidebar .text-muted { color: #adb5bd !important; }
+.sidebar .text-muted { color: var(--ae-color-text-muted) !important; }
 footer.bg-dark { background-color: #000 !important; }
 /* Guest actions in sidebar */
 .sidebar .guest-actions .btn { margin-bottom: .5rem; }
@@ -253,3 +272,98 @@ body.sidebar-collapsed .logout-btn .bi,
 body.sidebar-collapsed-responsive .logout-btn .bi { margin-right: 0 !important; }
 body.sidebar-collapsed .logout-btn,
 body.sidebar-collapsed-responsive .logout-btn { justify-content: center; display: inline-flex; align-items: center; width: 100%; }
+
+/* =============================
+   Modern Auth Pages Styling
+   ============================= */
+body.auth-body {
+	background: var(--ae-color-auth-bg-gradient);
+	color: var(--ae-color-text);
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+body.auth-body .app-header { display: none; }
+body.auth-body .sidebar-fixed { display: none !important; }
+body.auth-body .content-with-sidebar { margin-left: 0 !important; }
+
+.auth-wrapper {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem 1rem;
+}
+
+.auth-card {
+	background: var(--ae-color-bg-card);
+	backdrop-filter: blur(12px) saturate(140%);
+	border: 1px solid var(--ae-color-border-card);
+	border-radius: 1rem;
+	max-width: 440px;
+	width: 100%;
+	box-shadow: 0 4px 24px -4px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+	padding: 2.25rem 2rem 2rem;
+	position: relative;
+	overflow: hidden;
+}
+.auth-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 85% 15%, var(--ae-color-bg-card-accent), transparent 60%); pointer-events: none; }
+
+.auth-title {
+	font-size: 1.75rem;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: .6rem;
+	margin-bottom: .75rem;
+}
+.auth-subtitle { color: var(--ae-color-text-muted); font-size: .9rem; margin-bottom: 1.75rem; }
+
+.auth-form .form-label { font-weight: 500; }
+.auth-form .form-control { background: var(--ae-color-auth-form-bg); border: 1px solid var(--ae-color-auth-form-border); color: var(--ae-color-text); }
+.auth-form .form-control:focus { background: var(--ae-color-auth-form-bg-focus); border-color: var(--ae-color-auth-form-border-focus); box-shadow: 0 0 0 .2rem rgba(var(--ae-primary-rgb), 0.25); color: var(--ae-color-text); }
+.auth-form .form-control::placeholder { color: #6c757d; }
+
+.auth-actions .btn { height: 48px; font-weight: 600; letter-spacing: .3px; }
+
+.auth-divider {
+	position: relative;
+	text-align: center;
+	margin: 2rem 0 1.5rem;
+}
+.auth-divider span { display: inline-block; background: var(--ae-color-auth-divider-bg); padding: 0 .75rem; font-size: .75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--ae-color-text-muted); position: relative; z-index: 1; }
+.auth-divider:before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.12); transform: translateY(-50%); }
+
+.social-btn { position: relative; }
+.social-btn i { font-size: 1.05rem; }
+
+.auth-footer { margin-top: 1.75rem; font-size: .85rem; color: #adb5bd; text-align: center; }
+.auth-footer a { color: var(--ae-primary); text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 575.98px) {
+	.auth-card { padding: 1.75rem 1.25rem 1.5rem; }
+	.auth-title { font-size: 1.55rem; }
+}
+
+/* Password toggle input group adjustments */
+.password-toggle-group .form-control { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.password-toggle-group .toggle-password { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.toggle-password i { pointer-events: none; }
+
+/* Auth card entrance animation */
+.auth-card { opacity: 0; transform: translateY(14px) scale(.985); transition: opacity .5s ease, transform .55s cubic-bezier(.16,.84,.44,1); }
+.auth-card.enter { opacity: 1; transform: translateY(0) scale(1); }
+
+/* Theme toggle button minimal style adjustments within auth */
+/* (Removed theme toggle styles) */
+
+/* Light theme override selectors removed in favor of variable tokens above */
+
+/* Auth footer uses muted text variable */
+.auth-footer { color: var(--ae-color-text-muted); }
+.auth-footer a { color: var(--ae-primary); }
+
+/* Toggle password focus outline */
+.toggle-password:focus-visible { outline: 2px solid var(--ae-primary); outline-offset: 1px; }
+
