@@ -9,23 +9,45 @@ document.addEventListener('DOMContentLoaded', () => {
 	   ============================= */
 	if (!window.__notyfInstance) {
 		window.__notyfInstance = new Notyf({
-			position: { x: 'right', y: 'top' },
-			duration: 4500,
+			position: { x: 'right', y: window.innerWidth < 768 ? 'bottom' : 'top' },
+			duration: 4200,
 			dismissible: true,
+			// We keep backgrounds transparent-ish and handle gradient in CSS via modifier classes
 			types: [
-				{ type: 'success', background: '#198754', icon: { className: 'bi bi-check-circle me-1', tagName: 'i' } },
-				{ type: 'error', background: '#dc3545', icon: { className: 'bi bi-exclamation-octagon me-1', tagName: 'i' } },
-				{ type: 'warning', background: '#ffc107', icon: { className: 'bi bi-exclamation-triangle me-1 text-dark', tagName: 'i' } },
-				{ type: 'info', background: '#0dcaf0', icon: { className: 'bi bi-info-circle me-1 text-dark', tagName: 'i' } }
+				{ type: 'success', background: 'rgba(25,135,84,0.85)', icon: { className: 'bi bi-check-circle', tagName: 'i' } },
+				{ type: 'error', background: 'rgba(220,53,69,0.85)', icon: { className: 'bi bi-exclamation-octagon', tagName: 'i' } },
+				{ type: 'warning', background: 'rgba(255,193,7,0.90)', icon: { className: 'bi bi-exclamation-triangle text-dark', tagName: 'i' } },
+				{ type: 'info', background: 'rgba(13,202,240,0.90)', icon: { className: 'bi bi-info-circle text-dark', tagName: 'i' } }
 			]
 		});
 	}
 	const notyf = window.__notyfInstance;
-	if (window.__FLASH__) {
+
+	// Suppress trivial auth messages (login/register/logout welcomes) & if we are on auth pages
+	const authRoutePatterns = [/\/login$/, /\/register$/, /\/forgot-password/, /\/reset-password/];
+	const onAuthPage = authRoutePatterns.some(r => r.test(window.location.pathname));
+	const trivialPhrases = [
+		'Welcome back,',
+		'You have been logged out',
+		'Welcome to After Eight Events'
+	];
+
+	function isTrivial(message) {
+		return trivialPhrases.some(p => message.startsWith(p));
+	}
+
+	if (window.__FLASH__ && !onAuthPage) {
 		Object.entries(window.__FLASH__).forEach(([type, message]) => {
 			if (!message) return;
+			if (isTrivial(message)) return; // skip UX noise
 			if (['success','error','warning','info'].includes(type)) {
-				notyf.open({ type, message });
+				const toast = notyf.open({ type, message });
+				// Attach a progress bar element for visual lifetime (CSS anim handles width)
+				try {
+					const bar = document.createElement('div');
+					bar.className = 'notyf-progress';
+					toast.el.appendChild(bar);
+				} catch {}
 			}
 		});
 	}
@@ -182,5 +204,66 @@ document.addEventListener('DOMContentLoaded', () => {
 		const href = link.getAttribute('href');
 		if (!href || href.startsWith('#') || link.getAttribute('target') === '_blank') return;
 		showPageLoader();
+	});
+
+	/* =============================
+	   AJAX Publish Toggle (Events Index)
+	   ============================= */
+	const publishForms = document.querySelectorAll('.publish-toggle-form');
+	publishForms.forEach(form => {
+		form.addEventListener('submit', async (ev) => {
+			ev.preventDefault();
+			const btn = form.querySelector('[data-publish-btn]');
+			if (!btn) return form.submit(); // fallback
+			if (btn.getAttribute('data-loading') === '1') return; // guard double click
+			const spinner = btn.querySelector('.spinner-border');
+			const labelSpan = btn.querySelector('.btn-label');
+			const badge = form.closest('.card').querySelector('.status-badge');
+			const origHTML = labelSpan ? labelSpan.innerHTML : '';
+			btn.setAttribute('data-loading','1');
+			btn.disabled = true;
+			if (spinner) spinner.classList.remove('d-none');
+			try {
+				const resp = await fetch(form.action, {
+					method: 'POST',
+					headers: {
+						'X-Requested-With': 'XMLHttpRequest',
+						'Accept': 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+					},
+					body: new URLSearchParams({ _method: 'PATCH' })
+				});
+				const data = await resp.json();
+				if (!resp.ok) {
+					throw new Error(data.message || 'Failed to update');
+				}
+				// Update badge
+				if (badge) {
+					badge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+					badge.className = 'badge status-badge ' + (data.badge_class || 'bg-secondary');
+				}
+				// Update button visual state
+				btn.classList.remove('btn-success','btn-outline-warning');
+				if (data.status === 'draft') {
+					btn.classList.add('btn-success');
+					if (labelSpan) labelSpan.innerHTML = '<i class="bi bi-upload me-1"></i>Publish';
+					btn.setAttribute('aria-label','Publish event');
+				} else if (data.status === 'published') {
+					btn.classList.add('btn-outline-warning');
+					if (labelSpan) labelSpan.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>Revert';
+					btn.setAttribute('aria-label','Revert event to draft');
+				}
+				btn.removeAttribute('data-loading');
+				btn.disabled = false;
+				if (spinner) spinner.classList.add('d-none');
+				if (window.__notyfInstance) window.__notyfInstance.success(data.message || 'Status updated');
+			} catch (err) {
+				if (labelSpan) labelSpan.innerHTML = origHTML;
+				btn.removeAttribute('data-loading');
+				btn.disabled = false;
+				if (spinner) spinner.classList.add('d-none');
+				if (window.__notyfInstance) window.__notyfInstance.error(err.message || 'Failed to update');
+			}
+		});
 	});
 });

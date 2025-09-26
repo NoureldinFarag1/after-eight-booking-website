@@ -51,6 +51,7 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
             'update' => 'admin.events.update',
             'destroy' => 'admin.events.destroy',
         ]);
+        Route::patch('/admin/events/{event}/toggle-publish', [EventController::class, 'togglePublish'])->name('admin.events.toggle-publish');
 
         // Ticket Types per Event
         Route::prefix('admin/events/{event}')->group(function () {

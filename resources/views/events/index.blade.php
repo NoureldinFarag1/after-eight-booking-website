@@ -232,8 +232,8 @@
                                 </div>
 
                                 <div class="mt-auto">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
+                                    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 event-card-footer-actions">
+                                        <div class="price-mini d-flex flex-column align-items-start justify-content-center">
                                             @php
                                                 $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
                                             @endphp
@@ -244,23 +244,41 @@
                                                 <span class="text-muted">Pricing will be announced</span>
                                             @endif
                                         </div>
-
-                                        <div>
+                                        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center justify-content-end action-buttons" style="min-width: 180px;">
                                             <a href="{{ route('events.show', $event) }}"
                                                class="btn btn-outline-primary btn-sm @if($event->isSoldOut() && !auth()->user()?->isAdmin()) disabled @endif"
                                                @if($event->isSoldOut() && !auth()->user()?->isAdmin())
                                                    tabindex="-1" aria-disabled="true"
                                                @endif
                                             >
-                                                View Details
+                                                View
                                             </a>
 
                                             @auth
                                                 @if(auth()->user()->isAdmin())
                                                     <a href="{{ route('admin.events.edit', $event) }}"
-                                                       class="btn btn-outline-secondary btn-sm">
-                                                        <i class="bi bi-pencil"></i>
+                                                       class="btn btn-outline-secondary btn-sm" title="Edit Event">
+                                                        <i class="bi bi-pencil me-1"></i><span class="d-none d-xl-inline">Edit</span>
                                                     </a>
+                                                    @if(in_array($event->status->value, ['draft','published']))
+                                                        <form method="POST" action="{{ route('admin.events.toggle-publish', $event) }}" class="d-inline publish-toggle-form" data-event-id="{{ $event->id }}" data-current-status="{{ $event->status->value }}">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn btn-sm publish-toggle-btn {{ $event->status->value==='draft' ? 'btn-success' : 'btn-outline-warning' }}" data-publish-btn
+                                                                    data-status="{{ $event->status->value }}"
+                                                                    aria-live="polite"
+                                                                    aria-label="{{ $event->status->value==='draft' ? 'Publish event' : 'Revert event to draft' }}">
+                                                                <span class="btn-label" data-label-publish="Publish" data-label-draft="Revert">
+                                                                    @if($event->status->value==='draft')
+                                                                        <i class="bi bi-upload me-1"></i>Publish
+                                                                    @else
+                                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+                                                                    @endif
+                                                                </span>
+                                                                <span class="spinner-border spinner-border-sm d-none align-middle" role="status" aria-hidden="true"></span>
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 @endif
                                             @endauth
                                         </div>
@@ -283,8 +301,8 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center">
-                {{ $events->appends(request()->query())->links() }}
+            <div class="d-flex justify-content-center mt-4">
+                <x-pagination :paginator="$events->appends(request()->query())" />
             </div>
         @else
             <div class="text-center py-5">

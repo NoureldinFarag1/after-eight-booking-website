@@ -192,8 +192,8 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center">
-                {{ $tickets->links() }}
+            <div class="d-flex justify-content-center mt-4">
+                <x-pagination :paginator="$tickets->appends(request()->query())" />
             </div>
         @else
             <div class="text-center py-5">

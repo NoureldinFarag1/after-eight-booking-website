@@ -122,7 +122,8 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('events.index')->with('success', 'You have been logged out successfully.');
+    // Use a low-priority info flag instead of a prominent success toast
+    return redirect()->route('events.index')->with('info', 'You have been logged out.');
     }
 
     /**

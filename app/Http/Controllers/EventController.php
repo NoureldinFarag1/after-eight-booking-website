@@ -319,6 +319,52 @@ class EventController extends Controller
     }
 
     /**
+     * Quick status toggle (admin index action) – publish or revert to draft.
+     * Only allowed for draft|published states; cancelled/completed immutable here.
+     */
+    public function togglePublish(Event $event)
+    {
+        if (!Auth::user()?->isAdmin()) {
+            if (request()->wantsJson()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+            abort(403);
+        }
+
+        if (in_array($event->status->value, [EventStatus::CANCELLED->value, EventStatus::COMPLETED->value], true)) {
+            $msg = 'Cannot change status of a '. $event->status->value . ' event here.';
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'message' => $msg,
+                    'status' => $event->status->value,
+                    'event_id' => $event->id,
+                ], 422);
+            }
+            return back()->with('warning', $msg);
+        }
+
+        $event->status = $event->status === EventStatus::PUBLISHED
+            ? EventStatus::DRAFT
+            : EventStatus::PUBLISHED;
+        $event->save();
+        $msg = 'Event status updated to '. ucfirst($event->status->value) .'.';
+        if (request()->wantsJson()) {
+            return response()->json([
+                'message' => $msg,
+                'status' => $event->status->value,
+                'badge_class' => match($event->status->value) {
+                    'published' => 'bg-success',
+                    'draft' => 'bg-secondary',
+                    'cancelled' => 'bg-danger',
+                    default => 'bg-warning'
+                },
+                'event_id' => $event->id,
+            ]);
+        }
+        return back()->with('success', $msg);
+    }
+
+    /**
      * Admin dashboard view
      */
     public function dashboard()

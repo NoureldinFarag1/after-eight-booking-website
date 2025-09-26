@@ -75,7 +75,7 @@
                         @endforeach
                     </div>
                     <div class="d-flex justify-content-center mt-2">
-                        {{ $eventRequests->appends(request()->query())->links() }}
+                        <x-pagination :paginator="$eventRequests->appends(request()->query())" />
                     </div>
                 </div>
             @endif
@@ -189,8 +189,8 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center">
-                {{ $bookings->appends(request()->query())->links() }}
+            <div class="d-flex justify-content-center mt-4">
+                <x-pagination :paginator="$bookings->appends(request()->query())" />
             </div>
         @else
             <div class="text-center py-5">
