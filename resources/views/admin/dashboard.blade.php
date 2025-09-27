@@ -320,8 +320,6 @@
                             </a>
                             <a href="{{ route('tickets.scan') }}" class="btn btn-outline-success">
                                 <i class="bi bi-upc-scan me-1"></i>Scan Tickets
-                            </a>
-
                             {{-- Send Invitation Button (redirects to Create Invitation page) --}}
                             @if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
                                 <a href="{{ route('invitations.store') }}" class="btn btn-success">

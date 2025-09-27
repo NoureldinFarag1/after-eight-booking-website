@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('provider_id')->nullable()->after('password');
-            $table->string('provider_name')->nullable()->after('provider_id');
-            $table->string('provider_token')->nullable()->after('provider_name');
-            $table->string('provider_refresh_token')->nullable()->after('provider_token');
-            $table->softDeletes();
+            if (!Schema::hasColumn('users', 'provider_id')) {
+                $table->string('provider_id')->nullable()->after('password');
+            }
+            if (!Schema::hasColumn('users', 'provider_name')) {
+                $table->string('provider_name')->nullable()->after('provider_id');
+            }
+            if (!Schema::hasColumn('users', 'provider_token')) {
+                $table->string('provider_token')->nullable()->after('provider_name');
+            }
+            if (!Schema::hasColumn('users', 'provider_refresh_token')) {
+                $table->string('provider_refresh_token')->nullable()->after('provider_token');
+            }
+            if (!Schema::hasColumn('users', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
     }
 
@@ -26,13 +36,21 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'provider_id',
-                'provider_name',
-                'provider_token',
-                'provider_refresh_token',
-            ]);
-            $table->dropSoftDeletes();
+            if (Schema::hasColumn('users', 'provider_id')) {
+                $table->dropColumn('provider_id');
+            }
+            if (Schema::hasColumn('users', 'provider_name')) {
+                $table->dropColumn('provider_name');
+            }
+            if (Schema::hasColumn('users', 'provider_token')) {
+                $table->dropColumn('provider_token');
+            }
+            if (Schema::hasColumn('users', 'provider_refresh_token')) {
+                $table->dropColumn('provider_refresh_token');
+            }
+            if (Schema::hasColumn('users', 'deleted_at')) {
+                $table->dropSoftDeletes();
+            }
         });
     }
 };

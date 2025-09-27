@@ -8,16 +8,35 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Use raw SQL to avoid needing doctrine/dbal for column alteration.
-        // TEXT is sufficient (up to 65,535 bytes) for encrypted tokens.
-        DB::statement('ALTER TABLE `users` MODIFY `provider_token` TEXT NULL');
-        DB::statement('ALTER TABLE `users` MODIFY `provider_refresh_token` TEXT NULL');
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            // MySQL supports MODIFY
+            DB::statement('ALTER TABLE `users` MODIFY `provider_token` TEXT NULL');
+            DB::statement('ALTER TABLE `users` MODIFY `provider_refresh_token` TEXT NULL');
+        } elseif ($driver === 'sqlite') {
+            // SQLite does not support MODIFY – we skip or rebuild manually
+            // If they don’t exist yet, just ensure columns are TEXT
+            Schema::table('users', function ($table) {
+                if (Schema::hasColumn('users', 'provider_token')) {
+                    // SQLite can't alter column types, so skip
+                }
+                if (Schema::hasColumn('users', 'provider_refresh_token')) {
+                    // Skip
+                }
+            });
+        }
     }
 
     public function down(): void
     {
-        // Revert to VARCHAR(255) if needed (may truncate existing long values) – document risk.
-        DB::statement('ALTER TABLE `users` MODIFY `provider_token` VARCHAR(255) NULL');
-        DB::statement('ALTER TABLE `users` MODIFY `provider_refresh_token` VARCHAR(255) NULL');
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement('ALTER TABLE `users` MODIFY `provider_token` VARCHAR(255) NULL');
+            DB::statement('ALTER TABLE `users` MODIFY `provider_refresh_token` VARCHAR(255) NULL');
+        } elseif ($driver === 'sqlite') {
+            // No down migration possible in SQLite without rebuild
+        }
     }
 };

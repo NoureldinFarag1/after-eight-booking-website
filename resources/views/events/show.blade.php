@@ -20,6 +20,12 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <h1 class="card-title h2">{{ $event->title }}</h1>
+@if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
+    <a href="{{ route('invitations.create', ['event_id' => $event->id]) }}" class="btn btn-success mb-3">
+        <i class="bi bi-envelope-open me-1"></i>Send Invitation for this Event
+    </a>
+@endif
+
                         <span class="badge status-badge
                             @if($event->status->value === 'published') bg-success
                             @elseif($event->status->value === 'draft') bg-secondary

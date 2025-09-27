@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invitation;
+use App\Models\Event;
 use Illuminate\Http\Request;
 
 class InvitationController extends Controller
@@ -17,22 +18,27 @@ class InvitationController extends Controller
     }
 
     /**
-     * Show the form to create a new invitation.
+     * Show create form.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('invitations.create');
+        // load events for dropdown (admins only via routes middleware)
+        $events = Event::orderBy('title')->get();
+        $selectedEventId = $request->query('event_id') ?? null;
+
+        return view('invitations.create', compact('events', 'selectedEventId'));
     }
 
     /**
-     * Store a newly created invitation in the database.
+     * Store new invitation.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
-            'message' => 'nullable|string|max:1000',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255',
+            'message'  => 'nullable|string|max:1000',
+            'event_id' => 'nullable|exists:events,id',
         ]);
 
         Invitation::create($validated);

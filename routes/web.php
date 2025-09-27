@@ -135,7 +135,15 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
+    
+    // Admins management (manage admin users)
+    Route::get('/admin/admins', [\App\Http\Controllers\Admin\AdminController::class, 'index'])->name('admin.admins.index');
+    Route::get('/admin/admins/create', [\App\Http\Controllers\Admin\AdminController::class, 'create'])->name('admin.admins.create');
+    Route::post('/admin/admins', [\App\Http\Controllers\Admin\AdminController::class, 'store'])->name('admin.admins.store');
+    Route::get('/admin/admins/{user}/edit', [\App\Http\Controllers\Admin\AdminController::class, 'edit'])->name('admin.admins.edit');
+    Route::put('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'update'])->name('admin.admins.update');
+    Route::delete('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'destroy'])->name('admin.admins.destroy');
+Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
         ->only(['index', 'create', 'store']);
 });
 

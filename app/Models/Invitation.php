@@ -14,5 +14,13 @@ class Invitation extends Model
         'email',
         'message',
         'status',
+        'event_id',
     ];
+
+
+    public function event()
+    {
+        return $this->belongsTo(\App\Models\Event::class);
+    }
+
 }

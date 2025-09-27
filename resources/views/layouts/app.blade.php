@@ -56,6 +56,11 @@
                         <i class="bi bi-people me-2"></i>
                         <span class="label-text">Operators</span>
                     </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}" href="{{ route('admin.admins.index') }}">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        <span class="label-text">Admins</span>
+                    </a>
+
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
                         <span class="label-text">Bookings</span>

@@ -11,36 +11,39 @@
             <form action="{{ route('invitations.store') }}" method="POST">
                 @csrf
 
+                <!-- Event Select -->
+                <div class="mb-3">
+                    <label for="event_id" class="form-label">Event (optional)</label>
+                    <select name="event_id" id="event_id" class="form-select">
+                        <option value="">-- Select an Event (optional) --</option>
+                        @foreach($events as $event)
+                            <option value="{{ $event->id }}" {{ (old('event_id', $selectedEventId ?? '') == $event->id) ? 'selected' : '' }}>
+                                {{ $event->title }} - {{ $event->event_date->format('M j, Y') }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('event_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+
                 <!-- Name -->
                 <div class="mb-3">
                     <label for="name" class="form-label">Recipient Name</label>
-                    <input type="text" name="name" id="name" 
-                           class="form-control @error('name') is-invalid @enderror" 
-                           value="{{ old('name') }}" required>
-                    @error('name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
+                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
 
                 <!-- Email -->
                 <div class="mb-3">
                     <label for="email" class="form-label">Recipient Email</label>
-                    <input type="email" name="email" id="email" 
-                           class="form-control @error('email') is-invalid @enderror" 
-                           value="{{ old('email') }}" required>
-                    @error('email')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required>
+                    @error('email')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
 
                 <!-- Message -->
                 <div class="mb-3">
                     <label for="message" class="form-label">Message (optional)</label>
-                    <textarea name="message" id="message" rows="4" 
-                              class="form-control @error('message') is-invalid @enderror">{{ old('message') }}</textarea>
-                    @error('message')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <textarea class="form-control" id="message" name="message" rows="4">{{ old('message') }}</textarea>
+                    @error('message')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
 
                 <!-- Submit -->
