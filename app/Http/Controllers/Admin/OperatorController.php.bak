@@ -75,11 +75,12 @@ class OperatorController extends Controller
         $base = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $validated['name']));
         $base = trim($base, '-');
         if ($base === '') {
-            $base = $validated['role'];
+            $base = $validated['role']; // fallback to chosen role
         }
         $domain = 'aftereight.com';
         $email = $base . '@' . $domain;
 
+        // Ensure unique
         $counter = 1;
         while (User::withTrashed()->where('email', $email)->exists()) {
             $email = $base . '-' . $counter . '@' . $domain;
@@ -91,19 +92,12 @@ class OperatorController extends Controller
             'email' => $email,
             'phone' => $validated['phone'] ?? null,
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
+            'role' => $validated['role'], // ✅ now respects Operator OR Approval Officer
         ]);
-
-        // Redirect based on role
-        if ($user->role === Role::APPROVAL_OFFICER) {
-            return redirect()
-                ->route('approval.index')
-                ->with('success', 'Approval officer account created for ' . $user->name . '.');
-        }
 
         return redirect()
             ->route('admin.operators.index')
-            ->with('success', 'Operator account created for ' . $user->name . '.');
+            ->with('success', ucfirst(str_replace('_', ' ', $user->role)) . ' account created for ' . $user->name . '.');
     }
 
     /** Restore a soft-deleted operator/approval officer */
@@ -115,7 +109,7 @@ class OperatorController extends Controller
         }
         $user->restore();
         return redirect()->route('admin.operators.index', ['status' => 'deleted'])
-            ->with('success', ucfirst(str_replace('_', ' ', $user->role->value)) . ' ' . $user->name . ' restored.');
+            ->with('success', ucfirst(str_replace('_', ' ', $user->role)) . ' ' . $user->name . ' restored.');
     }
 
     /** Toggle active/inactive status */
@@ -167,6 +161,6 @@ class OperatorController extends Controller
         }
         $user->delete();
         return redirect()->route('admin.operators.index')
-            ->with('success', ucfirst(str_replace('_', ' ', $user->role->value)) . ' ' . $user->name . ' deleted.');
+            ->with('success', ucfirst(str_replace('_', ' ', $user->role)) . ' ' . $user->name . ' deleted.');
     }
 }

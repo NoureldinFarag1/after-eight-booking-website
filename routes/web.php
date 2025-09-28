@@ -150,3 +150,11 @@ Route::resource('invitations', \App\Http\Controllers\InvitationController::class
 // Google OAuth
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
+
+// Approval Officer routes
+Route::middleware(['auth','role:approval_officer'])->group(function () {
+    Route::get('/approval', [\App\Http\Controllers\ApprovalRequestController::class, 'index'])->name('approval.index');
+    Route::post('/approval/{eventRequest}/approve', [\App\Http\Controllers\ApprovalRequestController::class, 'approve'])->name('approval.approve');
+    Route::post('/approval/{eventRequest}/reject', [\App\Http\Controllers\ApprovalRequestController::class, 'reject'])->name('approval.reject');
+});

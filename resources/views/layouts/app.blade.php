@@ -286,3 +286,11 @@
 </div>
 </body>
 </html>
+
+
+@if(Auth::check() && Auth::user()->role === \App\Enums\Role::APPROVAL_OFFICER)
+    <a class="nav-link d-flex align-items-center {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
+        <i class="bi bi-check-circle me-2"></i>
+        <span class="label-text">Approval Requests</span>
+    </a>
+@endif

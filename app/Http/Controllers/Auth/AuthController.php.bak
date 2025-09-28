@@ -63,14 +63,7 @@ class AuthController extends Controller
                     ->with('success', 'Welcome back, ' . $user->name . '!');
             }
 
-            
-            // Approval officer redirect
-            if ($user->role === Role::APPROVAL_OFFICER) {
-                return redirect()->route('approval.index')
-                    ->with('success', 'Welcome back, ' . $user->name . '!');
-            }
-
-if ($user->role === Role::ADMIN) {
+            if ($user->role === Role::ADMIN) {
                 // Admins go to dashboard
                 return redirect()->intended(route('admin.dashboard'))
                     ->with('success', 'Welcome back, ' . $user->name . '!');
@@ -218,13 +211,6 @@ if ($user->role === Role::ADMIN) {
             }
             return redirect()->route('tickets.scan')->with('success', 'Welcome back, ' . $user->name . '!');
         }
-
-            // Approval officer redirect
-            if ($user->role === Role::APPROVAL_OFFICER) {
-                return redirect()->route('approval.index')
-                    ->with('success', 'Welcome back, ' . $user->name . '!');
-            }
-
         if ($user->role === Role::ADMIN) {
             return redirect()->route('admin.dashboard')->with('success', 'Welcome back, ' . $user->name . '!');
         }

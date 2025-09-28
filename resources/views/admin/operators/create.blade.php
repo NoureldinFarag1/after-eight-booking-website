@@ -43,8 +43,16 @@
                     </div>
 
                     <div class="d-flex gap-2">
+                        
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select name="role" id="role" class="form-control" required>
+                                <option value="admin">Operator</option>
+                                <option value="approval_officer">Approval Officer</option>
+                            </select>
+                        </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check2 me-1"></i>Create
+                                <i class="bi bi-check2 me-1"></i>Create
                         </button>
                         <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>

@@ -12,7 +12,7 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $admins = User::where('role', Role::ADMIN->value)->paginate(15);
+        $admins = User::where('role', Role::ADMIN)->paginate(15);
         return view('admin.admins.index', compact('admins'));
     }
 
@@ -33,7 +33,7 @@ class AdminController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => Role::ADMIN->value,
+            'role' => Role::ADMIN,
         ]);
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin created.');
