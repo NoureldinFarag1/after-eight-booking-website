@@ -135,7 +135,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    
+
     // Admins management (manage admin users)
     Route::get('/admin/admins', [\App\Http\Controllers\Admin\AdminController::class, 'index'])->name('admin.admins.index');
     Route::get('/admin/admins/create', [\App\Http\Controllers\Admin\AdminController::class, 'create'])->name('admin.admins.create');
@@ -155,6 +155,7 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 // Approval Officer routes
 Route::middleware(['auth','role:approval_officer'])->group(function () {
     Route::get('/approval', [\App\Http\Controllers\ApprovalRequestController::class, 'index'])->name('approval.index');
+    Route::get('/approval/{eventRequest}', [\App\Http\Controllers\ApprovalRequestController::class, 'show'])->name('approval.show');
     Route::post('/approval/{eventRequest}/approve', [\App\Http\Controllers\ApprovalRequestController::class, 'approve'])->name('approval.approve');
     Route::post('/approval/{eventRequest}/reject', [\App\Http\Controllers\ApprovalRequestController::class, 'reject'])->name('approval.reject');
 });

@@ -63,9 +63,13 @@ class AuthController extends Controller
                     ->with('success', 'Welcome back, ' . $user->name . '!');
             }
 
-            
-            // Approval officer redirect
+
+            // Approval officer redirect (also block if inactive)
             if ($user->role === Role::APPROVAL_OFFICER) {
+                if (!$user->active) {
+                    Auth::logout();
+                    return back()->withErrors(['email' => 'Your approval officer account is inactive. Please contact an administrator.']);
+                }
                 return redirect()->route('approval.index')
                     ->with('success', 'Welcome back, ' . $user->name . '!');
             }

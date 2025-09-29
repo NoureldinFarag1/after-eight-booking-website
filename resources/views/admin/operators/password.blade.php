@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Reset Operator Password')
+@section('title', 'Reset Staff Password')
 
 @section('content')
 <div class="row">
@@ -11,7 +11,7 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Operator:</strong> {{ $user->name }} ({{ $user->email }})
+                    <strong>{{ $user->role->label() }}:</strong> {{ $user->name }} ({{ $user->email }})
                 </div>
                 <form method="POST" action="{{ route('admin.operators.password.update', $user) }}">
                     @csrf

@@ -10,15 +10,22 @@ use Illuminate\Support\Facades\Hash;
 
 class OperatorController extends Controller
 {
+    // Route protection handled in routes/web.php via middleware('role:admin') or can:staff.manage.
+    // Keeping constructor empty to avoid undefined middleware() base method (base Controller is minimal).
     /**
      * List operators & approval officers
      */
     public function index(Request $request)
     {
-        $query = User::query()->whereIn('role', [Role::OPERATOR, Role::APPROVAL_OFFICER]);
+        $manageable = Role::manageableStaff();
+        $query = User::query()->whereIn('role', array_map(fn($r) => $r->value, $manageable));
 
         // Filters
         $status = $request->query('status'); // active|inactive|deleted|null
+        $roleFilter = $request->query('role'); // specific role value
+        if ($roleFilter && in_array($roleFilter, array_map(fn($r)=>$r->value,$manageable), true)) {
+            $query->where('role', $roleFilter);
+        }
         if ($status === null && $request->has('deleted') && $request->boolean('deleted')) {
             $status = 'deleted';
         }
@@ -44,11 +51,12 @@ class OperatorController extends Controller
         $operators = $query->latest()->paginate(15)->appends([
             'status' => $status,
             'q' => $q !== '' ? $q : null,
+            'role' => $roleFilter,
         ]);
 
         $showDeleted = $status === 'deleted';
-
-        return view('admin.operators.index', compact('operators', 'showDeleted', 'status', 'q'));
+        $manageableRoles = $manageable;
+        return view('admin.operators.index', compact('operators', 'showDeleted', 'status', 'q', 'manageableRoles', 'roleFilter'));
     }
 
     /**
@@ -64,11 +72,12 @@ class OperatorController extends Controller
      */
     public function store(Request $request)
     {
+        $manageableValues = array_map(fn($r)=>$r->value, Role::manageableStaff());
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'not_regex:/^\s*$/'],
             'phone' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => 'required|in:operator,approval_officer',
+            'role' => 'required|in:'.implode(',', $manageableValues),
         ]);
 
         // Build unique email from name
@@ -94,23 +103,18 @@ class OperatorController extends Controller
             'role' => $validated['role'],
         ]);
 
-        // Redirect based on role
-        if ($user->role === Role::APPROVAL_OFFICER) {
-            return redirect()
-                ->route('approval.index')
-                ->with('success', 'Approval officer account created for ' . $user->name . '.');
-        }
-
+        // Always return to staff listing (admin area) – avoids 403 for admin after creating approval officer
+        $roleLabel = str_replace('_',' ', $user->role->value);
         return redirect()
             ->route('admin.operators.index')
-            ->with('success', 'Operator account created for ' . $user->name . '.');
+            ->with('success', ucfirst($roleLabel).' account created for '.$user->name.'.');
     }
 
     /** Restore a soft-deleted operator/approval officer */
     public function restore($id)
     {
         $user = User::onlyTrashed()->findOrFail($id);
-        if (!in_array($user->role, [Role::OPERATOR, Role::APPROVAL_OFFICER])) {
+        if (!$user->role->isManageableStaff()) {
             abort(404);
         }
         $user->restore();
@@ -121,7 +125,7 @@ class OperatorController extends Controller
     /** Toggle active/inactive status */
     public function toggle(User $user)
     {
-        if (!in_array($user->role, [Role::OPERATOR, Role::APPROVAL_OFFICER])) {
+        if (!$user->role->isManageableStaff()) {
             abort(404);
         }
 
@@ -135,7 +139,7 @@ class OperatorController extends Controller
     /** Show password reset form */
     public function editPassword(User $user)
     {
-        if (!in_array($user->role, [Role::OPERATOR, Role::APPROVAL_OFFICER])) {
+        if (!$user->role->isManageableStaff()) {
             abort(404);
         }
         return view('admin.operators.password', compact('user'));
@@ -162,7 +166,7 @@ class OperatorController extends Controller
     /** Soft delete */
     public function destroy(User $user)
     {
-        if (!in_array($user->role, [Role::OPERATOR, Role::APPROVAL_OFFICER])) {
+        if (!$user->role->isManageableStaff()) {
             abort(404);
         }
         $user->delete();

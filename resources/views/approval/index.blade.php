@@ -12,7 +12,7 @@
     <div class="card">
         <div class="card-body">
             <table class="table">
-                <thead><tr><th>ID</th><th>User</th><th>Event</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>ID</th><th>User</th><th>Event</th><th>Submitted</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                 @foreach($requests as $req)
                     <tr>
@@ -21,13 +21,8 @@
                         <td>{{ $req->event->title ?? 'N/A' }}</td>
                         <td>{{ $req->created_at->format('M j, Y') }}</td>
                         <td>{{ ucfirst($req->status) }}</td>
-                        <td>
-                            <form method="POST" action="{{ route('approval.approve', $req->id) }}" class="d-inline">@csrf
-                                <button class="btn btn-success btn-sm">Approve</button>
-                            </form>
-                            <form method="POST" action="{{ route('approval.reject', $req->id) }}" class="d-inline">@csrf
-                                <button class="btn btn-danger btn-sm">Reject</button>
-                            </form>
+                        <td class="text-end">
+                            <a href="{{ route('approval.show', $req->id) }}" class="btn btn-outline-primary btn-sm">View</a>
                         </td>
                     </tr>
                 @endforeach

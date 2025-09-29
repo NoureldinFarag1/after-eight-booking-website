@@ -13,6 +13,7 @@ enum Role: string
     {
         return match($this) {
             self::ADMIN => 'Administrator',
+            self::APPROVAL_OFFICER => 'Approval Officer',
             self::OPERATOR => 'Operator',
             self::USER => 'User',
         };
@@ -30,10 +31,15 @@ enum Role: string
                 'tickets.view',
                 'users.manage',
             ],
+            self::APPROVAL_OFFICER => [
+                // Can only view and act on pending event requests
+                'event_requests.review',
+                'event_requests.approve',
+                'event_requests.reject',
+            ],
             self::OPERATOR => [
                 'tickets.scan',
                 'tickets.validate',
-                'events.view',
             ],
             self::USER => [
                 'events.view',
@@ -47,5 +53,21 @@ enum Role: string
     public function hasPermission(string $permission): bool
     {
         return in_array($permission, $this->permissions());
+    }
+
+    /**
+     * Roles that are managed through the current staff management UI (formerly "operators" page).
+     * Extend this list if additional staff-type roles are introduced later.
+     *
+     * @return Role[]
+     */
+    public static function manageableStaff(): array
+    {
+        return [self::OPERATOR, self::APPROVAL_OFFICER];
+    }
+
+    public function isManageableStaff(): bool
+    {
+        return in_array($this, self::manageableStaff(), true);
     }
 }

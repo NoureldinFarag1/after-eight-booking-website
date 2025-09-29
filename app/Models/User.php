@@ -95,6 +95,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is approval officer
+     */
+    public function isApprovalOfficer(): bool
+    {
+        return $this->role === Role::APPROVAL_OFFICER;
+    }
+
+    /**
      * Check if user is regular user
      */
     public function isUser(): bool

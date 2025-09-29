@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Create Operator')
+@section('title', 'Create Staff Member')
 
 @section('content')
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Create Operator</h5>
+                <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Create Staff Member</h5>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('admin.operators.store') }}">
@@ -42,19 +42,19 @@
                         <input type="password" name="password_confirmation" class="form-control" required>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        
-                        <div class="mb-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
                             <label for="role" class="form-label">Role</label>
-                            <select name="role" id="role" class="form-control" required>
-                                <option value="admin">Operator</option>
-                                <option value="approval_officer">Approval Officer</option>
+                            <select name="role" id="role" class="form-select" required>
+                                @foreach(\App\Enums\Role::manageableStaff() as $r)
+                                    <option value="{{ $r->value }}" {{ old('role')===$r->value ? 'selected' : '' }}>{{ $r->label() }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check2 me-1"></i>Create
-                        </button>
-                        <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <div class="col-md-8 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Create</button>
+                            <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
                     </div>
                 </form>
             </div>

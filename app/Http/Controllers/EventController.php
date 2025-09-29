@@ -324,7 +324,7 @@ class EventController extends Controller
      */
     public function togglePublish(Event $event)
     {
-        if (!Auth::user()?->isAdmin()) {
+        if (!Auth::user() || Auth::user()->role !== \App\Enums\Role::ADMIN) {
             if (request()->wantsJson()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }

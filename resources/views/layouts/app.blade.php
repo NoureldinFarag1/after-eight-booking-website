@@ -18,6 +18,15 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        /* Staff table layout stability */
+        .staff-table td, .staff-table th { vertical-align: middle; }
+        .staff-table .text-truncate { max-width: 180px; }
+        @media (max-width: 1200px) {
+            .staff-table td:nth-child(3),
+            .staff-table th:nth-child(3) { display:none; }
+        }
+    </style>
 </head>
 {{-- Allow child views to override body class (e.g. auth screens) --}}
 <body class="@yield('body_class','bg-light')">
@@ -32,18 +41,19 @@
 <div class="d-flex">
     <!-- Sidebar (fixed for md+ screens) -->
     <aside class="sidebar sidebar-fixed border-end d-none d-md-flex flex-column">
-        <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
-            <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="text-decoration-none d-flex align-items-center">
-                <i class="bi bi-calendar-event text-primary me-2 brand-icon"></i>
-                <span class="fw-semibold text-light brand-text">After Eight</span>
+        <div class="sidebar-brand">
+            <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="brand-logo-link" aria-label="After Eight Home">
+                <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight" class="brand-logo-full">
             </a>
         </div>
 
         <nav class="nav flex-column p-2">
-            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                <i class="bi bi-calendar-event me-2"></i>
-                <span class="label-text">Events</span>
-            </a>
+            @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
+                <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <span class="label-text">Events</span>
+                </a>
+            @endif
 
             @auth
                 @if($authUser->isAdmin())
@@ -52,14 +62,37 @@
                         <i class="bi bi-speedometer2 me-2"></i>
                         <span class="label-text">Dashboard</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}">
-                        <i class="bi bi-people me-2"></i>
-                        <span class="label-text">Operators</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}" href="{{ route('admin.admins.index') }}">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        <span class="label-text">Admins</span>
-                    </a>
+                    <!-- Staff submenu -->
+                    @php
+                        $isStaffSectionActive = request()->routeIs('admin.operators.*') || request()->routeIs('admin.admins.*');
+                        $roleFilter = request('role');
+                        $isOperatorsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'operator';
+                        $isApprovalsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'approval_officer';
+                        $isAdminsActive = request()->routeIs('admin.admins.*');
+                    @endphp
+                    <div class="nav-item has-submenu {{ $isStaffSectionActive ? 'submenu-open' : '' }}">
+                        <a class="nav-link d-flex align-items-center justify-content-between submenu-toggle" href="#" data-submenu="staff" aria-expanded="{{ $isStaffSectionActive ? 'true' : 'false' }}">
+                            <span class="d-flex align-items-center">
+                                <i class="bi bi-people me-2"></i>
+                                <span class="label-text">Staff</span>
+                            </span>
+                            <i class="bi bi-chevron-down submenu-chevron"></i>
+                        </a>
+                        <div class="submenu" data-submenu-content="staff">
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($isAdminsActive) aria-current="page" @endif>
+                                <i class="bi bi-shield-lock me-2"></i>
+                                <span class="label-text">Admins</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isOperatorsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'operator']) }}" title="View & manage operators" @if($isOperatorsActive) aria-current="page" @endif>
+                                <i class="bi bi-person-gear me-2"></i>
+                                <span class="label-text">Operators</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isApprovalsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($isApprovalsActive) aria-current="page" @endif>
+                                <i class="bi bi-check2-circle me-2"></i>
+                                <span class="label-text">Approval Officers</span>
+                            </a>
+                        </div>
+                    </div>
 
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
@@ -85,6 +118,17 @@
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                         <i class="bi bi-qr-code me-2"></i>
                         <span class="label-text">All Tickets</span>
+                    </a>
+                @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
+                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Approvals</div>
+                    <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <span class="label-text">Requests</span>
+                        </span>
+                        @if(($sharedPendingApprovals ?? 0) > 0)
+                            <span class="badge bg-warning text-dark ms-2 {{ ($sharedPendingApprovals ?? 0) > 25 ? 'badge-pulse' : '' }}">{{ $sharedPendingApprovals }}</span>
+                        @endif
                     </a>
                 @else
                     <div class="mt-2 small text-uppercase text-muted px-2 section-label">Account</div>
@@ -184,19 +228,20 @@
 
 <!-- Offcanvas Sidebar (for small screens) -->
 <div class="offcanvas offcanvas-start bg-black text-light" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
-    <div class="offcanvas-header border-bottom">
-        <h5 class="offcanvas-title d-flex align-items-center gap-2" id="mobileSidebarLabel">
-            <i class="bi bi-calendar-event text-primary" style="font-size: 1.2rem;"></i>
-            After Eight
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <div class="offcanvas-header border-bottom p-0 position-relative mobile-sidebar-header">
+        <div class="mobile-sidebar-brand w-100">
+            <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight" class="mobile-brand-img">
+        </div>
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
         <nav class="nav flex-column p-2">
-            <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                <i class="bi bi-calendar-event me-2"></i>
-                <span>Events</span>
-            </a>
+            @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
+                <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <span>Events</span>
+                </a>
+            @endif
 
             @auth
                 @if($authUser->isAdmin())
@@ -205,10 +250,37 @@
                         <i class="bi bi-speedometer2 me-2"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}" href="{{ route('admin.operators.index') }}">
-                        <i class="bi bi-people me-2"></i>
-                        <span>Operators</span>
-                    </a>
+                    <!-- Staff submenu (mobile) -->
+                    @php
+                        $mobileIsStaffSectionActive = request()->routeIs('admin.operators.*') || request()->routeIs('admin.admins.*');
+                        $mobileRoleFilter = request('role');
+                        $mobileOpsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'operator';
+                        $mobileApprovalsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'approval_officer';
+                        $mobileAdminsActive = request()->routeIs('admin.admins.*');
+                    @endphp
+                    <div class="nav-item has-submenu {{ $mobileIsStaffSectionActive ? 'submenu-open' : '' }}">
+                        <a class="nav-link d-flex align-items-center justify-content-between submenu-toggle" href="#" data-submenu="mobile-staff" aria-expanded="{{ $mobileIsStaffSectionActive ? 'true' : 'false' }}">
+                            <span class="d-flex align-items-center">
+                                <i class="bi bi-people me-2"></i>
+                                <span>Staff</span>
+                            </span>
+                            <i class="bi bi-chevron-down submenu-chevron"></i>
+                        </a>
+                        <div class="submenu" data-submenu-content="mobile-staff">
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileOpsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'operator']) }}" title="View & manage operators" @if($mobileOpsActive) aria-current="page" @endif>
+                                <i class="bi bi-person-gear me-2"></i>
+                                <span>Operators</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileApprovalsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($mobileApprovalsActive) aria-current="page" @endif>
+                                <i class="bi bi-check2-circle me-2"></i>
+                                <span>Approval Officers</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($mobileAdminsActive) aria-current="page" @endif>
+                                <i class="bi bi-shield-lock me-2"></i>
+                                <span>Admins</span>
+                            </a>
+                        </div>
+                    </div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
                         <span>Bookings</span>
@@ -233,6 +305,17 @@
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                         <i class="bi bi-qr-code me-2"></i>
                         <span>All Tickets</span>
+                    </a>
+                @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
+                    <div class="mt-2 small text-uppercase text-muted px-2">Approvals</div>
+                    <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <span>Requests</span>
+                        </span>
+                        @if(($sharedPendingApprovals ?? 0) > 0)
+                            <span class="badge bg-warning text-dark ms-2 {{ ($sharedPendingApprovals ?? 0) > 25 ? 'badge-pulse' : '' }}">{{ $sharedPendingApprovals }}</span>
+                        @endif
                     </a>
                 @else
                     <div class="mt-2 small text-uppercase text-muted px-2">Account</div>
@@ -288,9 +371,3 @@
 </html>
 
 
-@if(Auth::check() && Auth::user()->role === \App\Enums\Role::APPROVAL_OFFICER)
-    <a class="nav-link d-flex align-items-center {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
-        <i class="bi bi-check-circle me-2"></i>
-        <span class="label-text">Approval Requests</span>
-    </a>
-@endif

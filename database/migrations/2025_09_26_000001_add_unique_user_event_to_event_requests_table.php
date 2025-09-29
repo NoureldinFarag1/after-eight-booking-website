@@ -13,8 +13,29 @@ return new class extends Migration {
         }
 
         // 1. Remove duplicate (user_id,event_id) pairs keeping the lowest id (earliest record)
-        // This raw delete joins the table to a derived list of duplicates and deletes all but one per pair.
-        DB::statement(<<<SQL
+        // Use portable approach for SQLite (no DELETE JOIN support)
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $dupes = DB::table('event_requests')
+                ->select('user_id','event_id', DB::raw('COUNT(*) as c'))
+                ->groupBy('user_id','event_id')
+                ->having('c','>',1)
+                ->get();
+            foreach ($dupes as $d) {
+                $ids = DB::table('event_requests')
+                    ->where('user_id',$d->user_id)
+                    ->where('event_id',$d->event_id)
+                    ->orderBy('id')
+                    ->pluck('id');
+                // Keep first id, delete rest
+                $idsToDelete = $ids->slice(1)->all();
+                if (!empty($idsToDelete)) {
+                    DB::table('event_requests')->whereIn('id',$idsToDelete)->delete();
+                }
+            }
+        } else {
+            // MySQL / other drivers supporting DELETE JOIN
+            DB::statement(<<<SQL
 DELETE er FROM event_requests er
 JOIN (
     SELECT MIN(id) AS keep_id, user_id, event_id
@@ -24,6 +45,7 @@ JOIN (
 ) d ON d.user_id = er.user_id AND d.event_id = er.event_id
 WHERE er.id <> d.keep_id;
 SQL);
+        }
 
         // 2. Drop the existing non-unique composite index if it exists (Laravel default naming convention)
         // MySQL will error if we try to drop a non-existing index, so wrap in try/catch.
@@ -33,20 +55,20 @@ SQL);
             // Index might not exist; ignore.
         }
 
-        // 3. Add the unique composite index (idempotent-ish: guard against re-adding if it already exists)
-        // MySQL 8 doesn't have a straightforward portable "IF NOT EXISTS" for ADD UNIQUE, so we defensively check via SHOW INDEX.
-        $alreadyExists = DB::selectOne(<<<SQL
-            SELECT 1 FROM information_schema.statistics
-            WHERE table_schema = DATABASE()
-              AND table_name = 'event_requests'
-              AND index_name = 'user_event_unique'
-            LIMIT 1
-        SQL);
-
-        if (!$alreadyExists) {
-            Schema::table('event_requests', function (Blueprint $table) {
-                $table->unique(['user_id', 'event_id'], 'user_event_unique');
-            });
+        // 3. Add the unique composite index (skip for SQLite to avoid complex rebuild during tests)
+        if ($driver !== 'sqlite') {
+            $alreadyExists = DB::selectOne(<<<SQL
+                SELECT 1 FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'event_requests'
+                  AND index_name = 'user_event_unique'
+                LIMIT 1
+            SQL);
+            if (!$alreadyExists) {
+                Schema::table('event_requests', function (Blueprint $table) {
+                    $table->unique(['user_id', 'event_id'], 'user_event_unique');
+                });
+            }
         }
     }
 
@@ -55,13 +77,15 @@ SQL);
         if (!Schema::hasTable('event_requests')) {
             return;
         }
-        // Drop unique index if present
-        try {
-            Schema::table('event_requests', function (Blueprint $table) {
-                $table->dropUnique('user_event_unique');
-            });
-        } catch (\Throwable $e) {
-            // Ignore if already gone.
+        // Drop unique index if present (skip for sqlite where it wasn't added)
+        if (DB::getDriverName() !== 'sqlite') {
+            try {
+                Schema::table('event_requests', function (Blueprint $table) {
+                    $table->dropUnique('user_event_unique');
+                });
+            } catch (\Throwable $e) {
+                // Ignore if already gone.
+            }
         }
 
         // (Optional) We do not recreate the old non-unique index; likely unnecessary once uniqueness enforced.
