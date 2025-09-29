@@ -319,13 +319,13 @@ body.sidebar-collapsed-responsive .sidebar .guest-actions .btn .bi { margin-righ
 .offcanvas .has-submenu { position: relative; }
 .offcanvas .submenu-toggle { cursor: pointer; text-decoration: none !important; }
 .offcanvas .submenu-toggle:hover { text-decoration: none !important; }
-.offcanvas .submenu-chevron { 
-    transition: transform 0.25s ease; 
+.offcanvas .submenu-chevron {
+    transition: transform 0.25s ease;
     font-size: 0.75rem;
     color: #f8f9fa;
 }
-.offcanvas .has-submenu.submenu-open .submenu-chevron { 
-    transform: rotate(180deg); 
+.offcanvas .has-submenu.submenu-open .submenu-chevron {
+    transform: rotate(180deg);
 }
 .offcanvas .submenu {
     max-height: 0;

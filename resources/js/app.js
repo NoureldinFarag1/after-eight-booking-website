@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	   Sidebar Submenu Functionality
 	   ============================= */
 	const SUBMENU_KEY = 'ae.submenu.state';
-	
+
 	// Load saved submenu states
 	function loadSubmenuStates() {
 		try {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			return {};
 		}
 	}
-	
+
 	// Save submenu states
 	function saveSubmenuStates() {
 		try {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			localStorage.setItem(SUBMENU_KEY, JSON.stringify(states));
 		} catch {}
 	}
-	
+
 	// Apply saved states on load (called after offcanvas is ready)
 	function applySavedSubmenuStates() {
 		const savedStates = loadSubmenuStates();
@@ -53,28 +53,28 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 	}
-	
+
 	// Handle submenu toggle clicks using event delegation
 	document.addEventListener('click', (e) => {
 		const toggle = e.target.closest('.submenu-toggle');
 		if (!toggle) return;
-		
+
 		e.preventDefault();
 		e.stopPropagation();
-		
+
 		const parent = toggle.closest('.has-submenu');
 		if (!parent) return;
-		
+
 		const isOpen = parent.classList.contains('submenu-open');
-		
+
 		// Toggle state
 		parent.classList.toggle('submenu-open');
 		toggle.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
-		
+
 		// Save state
 		saveSubmenuStates();
 	});
-	
+
 	// Apply saved states initially
 	applySavedSubmenuStates();	/* =============================
 	   Modern Toast Notifications
@@ -253,19 +253,19 @@ document.addEventListener('DOMContentLoaded', () => {
 			pageLoader.classList.add('d-none');
 		}
 		window.addEventListener('pageshow', hidePageLoader);
-		
+
 		// Apply submenu states when offcanvas is shown
 		mobileSidebar.addEventListener('shown.bs.offcanvas', () => {
 			applySavedSubmenuStates();
 		});
-		
+
 		mobileSidebar.addEventListener('click', (e) => {
 			const link = e.target.closest('a.nav-link, a.btn');
 			if (!link) return;
-			
+
 			// Skip if it's a submenu toggle
 			if (link.classList.contains('submenu-toggle')) return;
-			
+
 			const href = link.getAttribute('href');
 			if (!href || href.startsWith('#') || link.getAttribute('target') === '_blank') return;
 			if (navTapLocked) { e.preventDefault(); return; }
