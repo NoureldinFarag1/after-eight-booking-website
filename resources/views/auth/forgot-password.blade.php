@@ -8,9 +8,16 @@
             <i class="bi bi-unlock text-primary" style="font-size:1.4rem;"></i>
             Reset Password
         </div>
-        <div class="auth-subtitle">Enter your account email and we'll send you a reset link.</div>
+        <div class="auth-subtitle">Enter your account email and we'll send you a secure reset link.</div>
         @if(session('success'))
-            <div class="alert alert-success py-2 mb-3 small">{{ session('success') }}</div>
+            <div class="alert alert-success py-2 mb-3 small">
+                <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
+            </div>
+        @endif
+        @if(session('status'))
+            <div class="alert alert-info py-2 mb-3 small">
+                <i class="bi bi-info-circle me-1"></i>{{ session('status') }}
+            </div>
         @endif
         <form method="POST" action="{{ route('password.email') }}" class="auth-form" novalidate>
             @csrf

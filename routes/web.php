@@ -38,6 +38,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
 
+// Public ticket verification (for QR codes)
+Route::get('/tickets/verify/{ticket}/{code}', [TicketController::class, 'verify'])->name('tickets.verify');
+
+// QR Code test page (temporary)
+Route::get('/qr-test', function () {
+    return view('qr-test');
+})->name('qr.test');
+
 // Authentication required routes
 Route::middleware(['auth', 'operator.redirect'])->group(function () {
 

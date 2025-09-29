@@ -218,4 +218,25 @@ class TicketController extends Controller
             ->with('success', 'Ticket status updated successfully.');
     }
 
+    /**
+     * Verify ticket from QR code (public route)
+     */
+    public function verify(Ticket $ticket, string $code)
+    {
+        if ($ticket->qr_code !== $code) {
+            return view('tickets.verify', [
+                'valid' => false,
+                'message' => 'Invalid QR code.'
+            ]);
+        }
+
+        $ticket->load(['event', 'booking.user', 'type']);
+
+        return view('tickets.verify', [
+            'valid' => true,
+            'ticket' => $ticket,
+            'message' => 'Valid ticket.'
+        ]);
+    }
+
 }

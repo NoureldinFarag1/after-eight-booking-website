@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\BookingConfirmationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -150,7 +151,7 @@ class BookingController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $event, $selectedType) {
+        $booking = DB::transaction(function () use ($validated, $event, $selectedType) {
             // With ticket-type-first model, a type must be selected when types exist
             $unitPrice = $selectedType ? $selectedType->price : 0;
             // Create booking
@@ -174,7 +175,17 @@ class BookingController extends Controller
                     'price' => $unitPrice,
                 ]);
             }
+
+            return $booking;
         });
+
+        // Load relationships for notification
+        $booking->load(['event', 'tickets.type', 'user']);
+
+        // Send booking confirmation email with QR codes
+        /** @var User $user */
+        $user = Auth::user();
+        $user->notify(new BookingConfirmationNotification($booking));
 
         return redirect()
             ->route('bookings.index')
