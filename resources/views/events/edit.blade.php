@@ -184,6 +184,18 @@
                         </div>
                     @endif
 
+                    <div class="mb-3">
+                        <label class="form-label">Finance Officer</label>
+                        <select name="finance_officer_id" class="form-control">
+                            <option value="">-- None --</option>
+                            @foreach($financeOfficers as $officer)
+                                <option value="{{ $officer->id }}" {{ old('finance_officer_id', isset($event) ? $event->finance_officer_id : '') == $officer->id ? 'selected' : '' }}>
+                                    {{ $officer->name }} ({{ $officer->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left me-1"></i>Back to Event

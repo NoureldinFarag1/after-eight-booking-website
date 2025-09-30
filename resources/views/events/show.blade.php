@@ -20,11 +20,11 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <h1 class="card-title h2">{{ $event->title }}</h1>
-@if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
-    <a href="{{ route('invitations.create', ['event_id' => $event->id]) }}" class="btn btn-success mb-3">
-        <i class="bi bi-envelope-open me-1"></i>Send Invitation for this Event
-    </a>
-@endif
+                            @if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
+                                <a href="{{ route('invitations.create', ['event_id' => $event->id]) }}" class="btn btn-success mb-3">
+                                    <i class="bi bi-envelope-open me-1"></i>Send Invitation for this Event
+                                </a>
+                            @endif
 
                         <span class="badge status-badge
                             @if($event->status->value === 'published') bg-success
@@ -132,6 +132,27 @@
             </div>
         </div>
 
+        @if(Auth::user()->isFinanceOfficer())
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Finance Officer Insights</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Revenue:</strong> ${{ number_format($insights['revenue'], 2) }}</p>
+                    <p><strong>Tickets Sold:</strong> {{ $insights['tickets_sold'] }}</p>
+                    <p><strong>Requests Submitted:</strong> {{ $insights['requests'] }}</p>
+                    <p><strong>Total Invitations:</strong> {{ $insights['invitations_total'] }}</p>
+
+                    <h5>Invitations by Admin</h5>
+                    <ul>
+                        @foreach($insights['invitations_by_admin'] as $inv)
+                            <li>{{ $inv['admin'] }}: {{ $inv['count'] }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        @endif
+
         @auth
             @if(auth()->user()->isAdmin())
                 <!-- Admin: Recent Bookings -->
@@ -154,6 +175,49 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        
+        @isset($totalRevenue)
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6>Total Revenue</h6>
+                    <h4>{{ number_format($totalRevenue, 2) }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6>Total Bookings</h6>
+                    <h4>{{ $totalBookings ?? 0 }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <h6>Total Invitations</h6>
+                    <h4>{{ $totalInvitations ?? 0 }}</h4>
+                </div>
+            </div>
+        </div>
+
+        @if(isset($invitationsByAdmin) && $invitationsByAdmin->count())
+        <div class="card mb-3">
+            <div class="card-header"><strong>Invitations by Admin</strong></div>
+            <div class="card-body">
+                <table class="table">
+                    <thead><tr><th>Admin</th><th>Count</th></tr></thead>
+                    <tbody>
+                        @foreach($invitationsByAdmin as $row)
+                            <tr>
+                                <td>{{ optional($row->creator)->name ?? 'System' }}</td>
+                                <td>{{ $row->total }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+        @endisset
+
                                         @foreach($event->bookings->take(10) as $booking)
                                             <tr>
                                                 <td>
@@ -262,6 +326,11 @@
                             <div class="alert alert-info text-center">
                                 <i class="bi bi-info-circle me-1"></i>
                                 Administrators cannot create bookings for events.
+                            </div>
+                        @elseif(auth()->user()->isFinanceOfficer())
+                            <div class="alert alert-warning text-center">
+                                <i class="bi bi-shield-lock me-1"></i>
+                                Finance Officers cannot create bookings or requests.
                             </div>
                         @else
                         @if($event->type === 'booking')

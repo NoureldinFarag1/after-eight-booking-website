@@ -8,12 +8,14 @@ enum Role: string
     case APPROVAL_OFFICER = 'approval_officer';
     case OPERATOR = 'operator';
     case USER = 'user';
+    case FINANCE_OFFICER = 'finance_officer';
 
     public function label(): string
     {
         return match($this) {
             self::ADMIN => 'Administrator',
             self::APPROVAL_OFFICER => 'Approval Officer',
+            self::FINANCE_OFFICER => 'Finance Officer',
             self::OPERATOR => 'Operator',
             self::USER => 'User',
         };
@@ -63,7 +65,7 @@ enum Role: string
      */
     public static function manageableStaff(): array
     {
-        return [self::OPERATOR, self::APPROVAL_OFFICER];
+        return [self::OPERATOR, self::APPROVAL_OFFICER, self::FINANCE_OFFICER];
     }
 
     public function isManageableStaff(): bool

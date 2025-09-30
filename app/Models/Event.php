@@ -26,6 +26,7 @@ class Event extends Model
         'status',
         'image_url',
         'terms_conditions',
+        'finance_officer_id',
     ];
 
     protected $casts = [
@@ -131,4 +132,13 @@ class Event extends Model
         return $this->hasMany(EventRequest::class);
     }
 
+    public function invitations()
+    {
+        return $this->hasMany(Invitation::class);
+    }
+
+    public function financeOfficer()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'finance_officer_id');
+    }
 }

@@ -40,6 +40,8 @@ class InvitationController extends Controller
             'message'  => 'nullable|string|max:1000',
             'event_id' => 'nullable|exists:events,id',
         ]);
+        
+        $validated['sender_id'] = auth()->id();
 
         Invitation::create($validated);
 

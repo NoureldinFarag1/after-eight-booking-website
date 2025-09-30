@@ -22,16 +22,18 @@ class EventController extends Controller
     {
         $query = Event::query();
 
-    /** @var User|null $user */
-    $user = Auth::user();
+        /** @var User|null $user */
+        $user = Auth::user();
         $isAdmin = $user && $user->isAdmin();
 
-        // Base scope for non-admins: only published upcoming events
         if (!$isAdmin) {
             $query->published()->upcoming();
         }
 
-        // Search (title/location)
+        if ($user && $user->isFinanceOfficer()) {
+            $query->where('finance_officer_id', $user->id);
+        }
+
         if ($search = trim($request->input('q', ''))) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
@@ -39,7 +41,6 @@ class EventController extends Controller
             });
         }
 
-        // Status filter (admin only)
         if ($isAdmin && ($status = $request->input('status'))) {
             $validStatuses = collect(EventStatus::cases())->pluck('value')->all();
             if (in_array($status, $validStatuses, true)) {
@@ -47,14 +48,12 @@ class EventController extends Controller
             }
         }
 
-        // Type filter (booking|request)
         if ($type = $request->input('type')) {
             if (in_array($type, ['booking', 'request'], true)) {
                 $query->where('type', $type);
             }
         }
 
-        // Date range filters
         if ($from = $request->input('date_from')) {
             $query->whereDate('event_date', '>=', $from);
         }
@@ -62,7 +61,6 @@ class EventController extends Controller
             $query->whereDate('event_date', '<=', $to);
         }
 
-        // Capacity filters (admin only)
         if ($isAdmin) {
             if ($minCap = $request->input('capacity_min')) {
                 if (is_numeric($minCap)) {
@@ -76,7 +74,6 @@ class EventController extends Controller
             }
         }
 
-        // Sorting options
         $sort = $request->input('sort', 'date_asc');
         switch ($sort) {
             case 'date_desc':
@@ -119,7 +116,8 @@ class EventController extends Controller
      */
     public function create()
     {
-        return view('events.create');
+        $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
+        return view('events.create', compact('financeOfficers'));
     }
 
     /**
@@ -133,12 +131,12 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_date' => 'required|date|after_or_equal:today',
             'event_time' => 'required|date_format:H:i',
-                'type' => 'required|in:booking,request',
-                'capacity' => 'required|integer|min:1',
+            'type' => 'required|in:booking,request',
+            'capacity' => 'required|integer|min:1',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',
-            // Optional ticket types on create
+            'finance_officer_id' => 'nullable|exists:users,id',
             'ticket_types' => 'nullable|array|max:50',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
@@ -146,43 +144,28 @@ class EventController extends Controller
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
 
-        // Handle image upload
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('events', 'public');
         }
 
-        // Validate that initial ticket type capacities (if any) do not exceed event capacity
-        $types = $request->input('ticket_types', []);
-        if (!empty($types) && $request->input('type') === 'booking') {
-            $sumCap = collect($types)
-                ->sum(function ($t) {
-                    return isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : 0;
-                });
-            if ($sumCap > (int)$validated['capacity']) {
-                return back()
-                    ->withErrors(['ticket_types' => 'Sum of ticket type capacities ('. $sumCap .') exceeds event capacity ('. $validated['capacity'] .').'])
-                    ->withInput();
-            }
-        }
+        $event = Event::create([
+            ...$validated,
+            'finance_officer_id' => $request->finance_officer_id,
+        ]);
 
-        $event = Event::create($validated);
-
-        // Create ticket types if provided and event is bookable type
         $types = $request->input('ticket_types', []);
         if (!empty($types) && $request->input('type') === 'booking') {
             $payload = collect($types)
                 ->filter(fn($t) => isset($t['name']) && $t['name'] !== '')
-                ->map(function ($t) {
-                    return [
-                        'name' => $t['name'],
-                        'description' => $t['description'] ?? null,
-                        'price' => (float)($t['price'] ?? 0),
-                        'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
-                        'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                })->values()->all();
+                ->map(fn($t) => [
+                    'name' => $t['name'],
+                    'description' => $t['description'] ?? null,
+                    'price' => (float)($t['price'] ?? 0),
+                    'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
+                    'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->values()->all();
 
             if (!empty($payload)) {
                 $event->ticketTypes()->insert($payload);
@@ -199,9 +182,47 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load(['bookings.user', 'tickets']);
+        $event->load(['bookings.user', 'tickets', 'invitations.sender']);
 
-        return view('events.show', compact('event'));
+        $user = Auth::user();
+
+        // Finance Officer Insights
+        $insights = [];
+        if ($user && $user->isFinanceOfficer()) {
+            // Total revenue (from bookings)
+            $totalRevenue = $event->bookings()->sum('total_amount');
+
+            // Number of tickets sold
+            $ticketsSold = $event->tickets()->count();
+
+            // Number of requests submitted (if event type is request)
+            $requestsSubmitted = $event->bookings()
+                ->when($event->type === 'request', fn($q) => $q)
+                ->count();
+
+            // Invitations count
+            $totalInvitations = $event->invitations()->count();
+
+            // Invitations grouped by admin sender
+            $invitationsByAdmin = $event->invitations()
+                ->with('sender:id,name')
+                ->get()
+                ->groupBy('sender_id')
+                ->map(fn($group) => [
+                    'admin' => $group->first()->sender->name ?? 'Unknown',
+                    'count' => $group->count()
+                ])->values();
+
+            $insights = [
+                'revenue' => $totalRevenue,
+                'tickets_sold' => $ticketsSold,
+                'requests' => $requestsSubmitted,
+                'invitations_total' => $totalInvitations,
+                'invitations_by_admin' => $invitationsByAdmin,
+            ];
+        }
+
+        return view('events.show', compact('event', 'insights'));
     }
 
     /**
@@ -209,7 +230,8 @@ class EventController extends Controller
      */
     public function edit(Event $event)
     {
-        return view('events.edit', compact('event'));
+        $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
+        return view('events.edit', compact('event', 'financeOfficers'));
     }
 
     /**
@@ -223,12 +245,12 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_date' => 'required|date|after_or_equal:today',
             'event_time' => 'required|date_format:H:i',
-                'capacity' => 'required|integer|min:1',
+            'capacity' => 'required|integer|min:1',
             'type' => 'required|in:booking,request',
             'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'terms_conditions' => 'nullable|string',
-            // Optional new ticket types to add on update
+            'finance_officer_id' => 'nullable|exists:users,id',
             'ticket_types' => 'nullable|array|max:50',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
@@ -236,53 +258,41 @@ class EventController extends Controller
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
 
-        // Prevent lowering event capacity below already booked seats or allocated ticket-type capacity
-        $bookedSeats = $event->bookings()->sum('quantity');
-        $allocatedCapacity = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
-        if ((int)$validated['capacity'] < max($bookedSeats, $allocatedCapacity)) {
-            return back()
-                ->withErrors(['capacity' => 'Capacity cannot be less than already booked seats ('. $bookedSeats .') or allocated ticket type capacity ('. $allocatedCapacity .').'])
-                ->withInput();
-        }
-
-        // Handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image if exists
             if ($event->image_url) {
                 Storage::disk('public')->delete($event->image_url);
             }
             $validated['image_url'] = $request->file('image')->store('events', 'public');
         }
 
-        $event->update($validated);
+        $event->update([
+            ...$validated,
+            'finance_officer_id' => $request->finance_officer_id,
+        ]);
 
-        // Optionally add new ticket types when editing (manage existing via dedicated page)
         $types = $request->input('ticket_types', []);
         if (!empty($types) && $request->input('type') === 'booking') {
-            // Validate that new types do not exceed remaining allocatable capacity
             $allocated = $event->ticketTypes()->whereNotNull('capacity')->sum('capacity');
             $remaining = max(0, (int)$validated['capacity'] - $allocated);
-            $sumNew = collect($types)->sum(function ($t) {
-                return isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : 0;
-            });
+            $sumNew = collect($types)->sum(fn($t) => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : 0);
+
             if ($sumNew > $remaining) {
                 return back()
                     ->withErrors(['ticket_types' => 'New ticket type capacities ('. $sumNew .') exceed remaining allocatable capacity ('. $remaining .').'])
                     ->withInput();
             }
+
             $payload = collect($types)
                 ->filter(fn($t) => isset($t['name']) && $t['name'] !== '')
-                ->map(function ($t) {
-                    return [
-                        'name' => $t['name'],
-                        'description' => $t['description'] ?? null,
-                        'price' => (float)($t['price'] ?? 0),
-                        'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
-                        'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                })->values()->all();
+                ->map(fn($t) => [
+                    'name' => $t['name'],
+                    'description' => $t['description'] ?? null,
+                    'price' => (float)($t['price'] ?? 0),
+                    'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
+                    'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->values()->all();
 
             if (!empty($payload)) {
                 $event->ticketTypes()->insert($payload);
@@ -299,14 +309,12 @@ class EventController extends Controller
      */
     public function destroy(Event $event)
     {
-        // Check if event has bookings
         if ($event->bookings()->count() > 0) {
             return redirect()
                 ->route('events.index')
                 ->with('error', 'Cannot delete event with existing bookings.');
         }
 
-        // Delete image if exists
         if ($event->image_url) {
             Storage::disk('public')->delete($event->image_url);
         }
@@ -318,10 +326,6 @@ class EventController extends Controller
             ->with('success', 'Event deleted successfully!');
     }
 
-    /**
-     * Quick status toggle (admin index action) – publish or revert to draft.
-     * Only allowed for draft|published states; cancelled/completed immutable here.
-     */
     public function togglePublish(Event $event)
     {
         if (!Auth::user() || Auth::user()->role !== \App\Enums\Role::ADMIN) {
@@ -364,35 +368,27 @@ class EventController extends Controller
         return back()->with('success', $msg);
     }
 
-    /**
-     * Admin dashboard view
-     */
     public function dashboard()
     {
-        // Basic Event Statistics
         $totalEvents = Event::query()->count();
         $publishedEvents = Event::query()->published()->count();
         $upcomingEvents = Event::query()->upcoming()->count();
         $pastEvents = Event::query()->past()->count();
 
-        // Booking Statistics
         $totalBookings = Event::withCount('bookings')->get()->sum('bookings_count');
         $totalTickets = \App\Models\Ticket::count();
         $scannedTickets = \App\Models\Ticket::whereNotNull('scanned_at')->count();
         $validTickets = \App\Models\Ticket::where('status', \App\Enums\TicketStatus::VALID)->count();
 
-        // Revenue Statistics (sum of booking totals)
         $totalRevenue = Event::join('bookings', 'events.id', '=', 'bookings.event_id')
             ->sum('bookings.total_amount');
 
-        // Operator Statistics
         $operators = User::where('role', \App\Enums\Role::OPERATOR)
             ->withCount(['scannedTickets as total_scans'])
             ->get();
         $totalOperators = $operators->count();
         $activeOperators = $operators->where('total_scans', '>', 0)->count();
 
-        // Recent Events with enhanced data
         $recentEvents = Event::query()
             ->withCount(['bookings', 'tickets'])
             ->with(['tickets' => function($query) {
@@ -409,7 +405,6 @@ class EventController extends Controller
                 return $event;
             });
 
-        // Event Performance Data (for charts)
         $eventPerformance = Event::query()
             ->withCount(['bookings', 'tickets'])
             ->with(['tickets' => function($query) {
@@ -426,13 +421,13 @@ class EventController extends Controller
                     'bookings' => $event->bookings_count,
                     'tickets_sold' => $event->tickets_count,
                     'tickets_scanned' => $event->tickets->count(),
-                    // Total revenue as sum of ticket prices
                     'revenue' => \App\Models\Ticket::where('event_id', $event->id)->sum('price'),
                     'attendance_rate' => $event->tickets_count > 0
                         ? round(($event->tickets->count() / $event->tickets_count) * 100, 1)
                         : 0
                 ];
             });
+
         $operatorStats = \App\Models\User::where('role', \App\Enums\Role::OPERATOR)
             ->select('id', 'name', 'email', 'created_at')
             ->withCount(['scannedTickets as total_scans'])
@@ -465,7 +460,6 @@ class EventController extends Controller
                 ];
             });
 
-        // Daily Scan Activity (last 7 days)
         $dailyScanActivity = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
