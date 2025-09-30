@@ -28,7 +28,7 @@
                         <p><strong>Booking Reference:</strong> {{ $booking->booking_reference }}</p>
                         <p><strong>Booking Date:</strong> {{ $booking->booking_date->format('l, F j, Y g:i A') }}</p>
                         <p><strong>Quantity:</strong> {{ $booking->quantity }} ticket{{ $booking->quantity > 1 ? 's' : '' }}</p>
-                        <p><strong>Total Amount:</strong> ${{ number_format($booking->total_amount, 2) }}</p>
+                        <p><strong>Total Amount:</strong> EGP {{ number_format($booking->total_amount, 2) }}</p>
 
                         @if($booking->notes)
                             <p><strong>Notes:</strong> {{ $booking->notes }}</p>
@@ -74,8 +74,8 @@
                                             @endphp
                                             @if($firstTicket)
                                                 <p>
-                                                    <i class="bi bi-currency-dollar me-1"></i>
-                                                    ${{ number_format($firstTicket->price, 2) }} per ticket
+                                                    <i class="bi bi-cash-coin me-1"></i>
+                                                    EGP {{ number_format($firstTicket->price, 2) }} per ticket
                                                     @if($firstTicket->type)
                                                         <span class="text-muted">— {{ $firstTicket->type->name }}</span>
                                                     @endif

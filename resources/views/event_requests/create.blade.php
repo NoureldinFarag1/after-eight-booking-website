@@ -31,7 +31,7 @@
                     <select name="primary_ticket_type_id" class="form-select" required>
                         <option value="">Select type</option>
                         @foreach($ticketTypes as $tt)
-                            <option value="{{ $tt->id }}" {{ (int)old('primary_ticket_type_id') === $tt->id ? 'selected' : '' }}>{{ $tt->name }} @if(!is_null($tt->price)) - ${{ number_format($tt->price,2) }} @endif</option>
+                            <option value="{{ $tt->id }}" {{ (int)old('primary_ticket_type_id') === $tt->id ? 'selected' : '' }}>{{ $tt->name }} @if(!is_null($tt->price)) - EGP {{ number_format($tt->price,2) }} @endif</option>
                         @endforeach
                     </select>
                     @error('primary_ticket_type_id')<div class="text-danger small">{{ $message }}</div>@enderror

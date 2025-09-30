@@ -9,20 +9,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invitations', function (Blueprint $table) {
-
-            $table->foreignId('sender_id')
-                  ->after('event_id')
-                  ->constrained('users')
-                  ->onDelete('cascade');
+            // Only add sender_id if it doesn't exist
+            if (!Schema::hasColumn('invitations', 'sender_id')) {
+                $table->foreignId('sender_id')
+                      ->after('event_id')
+                      ->constrained('users')
+                      ->onDelete('cascade');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('invitations', function (Blueprint $table) {
-
-            $table->dropForeign(['sender_id']);
-            $table->dropColumn('sender_id');
+            if (Schema::hasColumn('invitations', 'sender_id')) {
+                $table->dropForeign(['sender_id']);
+                $table->dropColumn('sender_id');
+            }
         });
     }
 };

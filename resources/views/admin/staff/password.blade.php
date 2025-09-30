@@ -13,7 +13,7 @@
                 <div class="mb-3">
                     <strong>{{ $user->role->label() }}:</strong> {{ $user->name }} ({{ $user->email }})
                 </div>
-                <form method="POST" action="{{ route('admin.operators.password.update', $user) }}">
+                <form method="POST" action="{{ route('admin.staff.password.update', $user) }}">
                     @csrf
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
@@ -28,7 +28,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check2 me-1"></i>Update Password
                         </button>
-                        <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="{{ route('admin.staff.index') }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
             </div>

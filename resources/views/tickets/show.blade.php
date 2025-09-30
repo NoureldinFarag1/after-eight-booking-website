@@ -37,7 +37,7 @@
                             <p class="mb-1"><strong>Type:</strong> {{ $ticket->type->name }}</p>
                         @endif
                         @if(!is_null($ticket->price))
-                            <p class="mb-1"><strong>Price:</strong> ${{ number_format($ticket->price, 2) }}</p>
+                            <p class="mb-1"><strong>Price:</strong> EGP {{ number_format($ticket->price, 2) }}</p>
                         @endif
                         @if($ticket->seat_number)
                             <p><strong>Seat Number:</strong> {{ $ticket->seat_number }}</p>
@@ -133,7 +133,7 @@
                                         <i class="bi bi-ticket-detailed me-1"></i>
                                         Type: {{ $ticket->type->name }}
                                         @if(!is_null($ticket->price))
-                                            • ${{ number_format($ticket->price, 2) }}
+                                            • EGP {{ number_format($ticket->price, 2) }}
                                         @endif
                                     </p>
                                 @endif
@@ -180,8 +180,8 @@
                                             </p>
                                             @if(!is_null($ticket->price))
                                                 <p class="mb-1">
-                                                    <i class="bi bi-currency-dollar text-primary me-1"></i>
-                                                    ${{ number_format($ticket->price, 2) }}
+                                                    <i class="bi bi-cash-coin text-primary me-1"></i>
+                                                    EGP {{ number_format($ticket->price, 2) }}
                                                 </p>
                                             @endif
                                         </div>

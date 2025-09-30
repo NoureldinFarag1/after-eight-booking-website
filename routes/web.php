@@ -3,10 +3,10 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\EventRequestController;
-use App\Http\Controllers\Admin\OperatorController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketTypeController;
+use App\Http\Controllers\EventRequestController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite; // still used indirectly if needed
@@ -69,15 +69,20 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
             Route::delete('ticket-types/{ticketType}', [TicketTypeController::class, 'destroy'])->name('admin.events.ticket-types.destroy');
         });
 
-        // Operator management (Admin only)
-    Route::get('/admin/operators', [OperatorController::class, 'index'])->name('admin.operators.index');
-    Route::get('/admin/operators/create', [OperatorController::class, 'create'])->name('admin.operators.create');
-    Route::post('/admin/operators', [OperatorController::class, 'store'])->name('admin.operators.store');
-    Route::patch('/admin/operators/{user}/toggle', [OperatorController::class, 'toggle'])->name('admin.operators.toggle');
-    Route::get('/admin/operators/{user}/password', [OperatorController::class, 'editPassword'])->name('admin.operators.password.edit');
-    Route::post('/admin/operators/{user}/password', [OperatorController::class, 'updatePassword'])->name('admin.operators.password.update');
-    Route::delete('/admin/operators/{user}', [OperatorController::class, 'destroy'])->name('admin.operators.destroy');
-    Route::patch('/admin/operators/{id}/restore', [OperatorController::class, 'restore'])->name('admin.operators.restore');
+        // Staff management (Admin only) - includes operators, approval officers, and finance officers
+    Route::get('/admin/staff', [StaffController::class, 'index'])->name('admin.staff.index');
+    Route::get('/admin/staff/create', [StaffController::class, 'create'])->name('admin.staff.create');
+    Route::post('/admin/staff', [StaffController::class, 'store'])->name('admin.staff.store');
+    Route::patch('/admin/staff/{user}/toggle', [StaffController::class, 'toggle'])->name('admin.staff.toggle');
+    Route::get('/admin/staff/{user}/password', [StaffController::class, 'editPassword'])->name('admin.staff.password.edit');
+    Route::post('/admin/staff/{user}/password', [StaffController::class, 'updatePassword'])->name('admin.staff.password.update');
+    Route::delete('/admin/staff/{user}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
+    Route::patch('/admin/staff/{id}/restore', [StaffController::class, 'restore'])->name('admin.staff.restore');
+
+    // Redirect old operators URL to new staff URL for backward compatibility
+    Route::get('/admin/operators', function() {
+        return redirect()->route('admin.staff.index');
+    });
     });
 
     // Booking routes

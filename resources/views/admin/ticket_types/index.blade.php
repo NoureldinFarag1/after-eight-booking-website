@@ -101,7 +101,7 @@
                                       <div class="fw-semibold">{{ $type->name }}</div>
                                       <div class="text-muted small">{{ $type->description }}</div>
                                   </td>
-                                  <td>${{ number_format($type->price, 2) }}</td>
+                                  <td>EGP {{ number_format($type->price, 2) }}</td>
                                   <td>{{ $type->capacity ?? '—' }}</td>
                                   <td>
                                       <span class="badge {{ $type->is_active ? 'bg-success' : 'bg-secondary' }}">

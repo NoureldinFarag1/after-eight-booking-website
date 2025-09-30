@@ -68,11 +68,11 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6 class="card-title">Total Revenue</h6>
-                                <h2 class="mb-0">${{ number_format($totalRevenue, 0) }}</h2>
+                                <h2 class="mb-0">EGP {{ number_format($totalRevenue, 0) }}</h2>
                                 <small>{{ $activeOperators }}/{{ $totalOperators }} operators active</small>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                                <i class="bi bi-cash-coin" style="font-size: 2rem;"></i>
                             </div>
                         </div>
                     </div>
@@ -265,7 +265,7 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <strong>${{ number_format($event['revenue'], 0) }}</strong>
+                                                    <strong>EGP {{ number_format($event['revenue'], 0) }}</strong>
                                                 </td>
                                                 <td>
                                                     @php
@@ -382,7 +382,7 @@
                                                                     $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
                                                                 @endphp
                                                                 @if($types->count() > 0)
-                                                                    From ${{ number_format($types->min('price'), 2) }}
+                                                                    From EGP {{ number_format($types->min('price'), 2) }}
                                                                 @else
                                                                     Pricing TBA
                                                                 @endif

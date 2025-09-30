@@ -30,7 +30,7 @@ class EventController extends Controller
             $query->published()->upcoming();
         }
 
-        if ($user && $user->isFinanceOfficer()) {
+        if ($user?->isFinanceOfficer()) {
             $query->where('finance_officer_id', $user->id);
         }
 
@@ -151,6 +151,7 @@ class EventController extends Controller
         $event = Event::create([
             ...$validated,
             'finance_officer_id' => $request->finance_officer_id,
+            'initial_capacity' => $validated['capacity'], // Store the original capacity
         ]);
 
         $types = $request->input('ticket_types', []);
@@ -186,9 +187,9 @@ class EventController extends Controller
 
         $user = Auth::user();
 
-        // Finance Officer Insights
+                // Finance Officer Insights
         $insights = [];
-        if ($user && $user->isFinanceOfficer()) {
+        if ($user && $user->role === \App\Enums\Role::FINANCE_OFFICER) {
             // Total revenue (from bookings)
             $totalRevenue = $event->bookings()->sum('total_amount');
 

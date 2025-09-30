@@ -10,7 +10,7 @@
                 <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Create Staff Member</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('admin.operators.store') }}">
+                <form method="POST" action="{{ route('admin.staff.store') }}">
                     @csrf
 
                     <div class="mb-3">
@@ -21,7 +21,7 @@
 
                     <div class="mb-2">
                         <label class="form-label">Email</label>
-                        <input type="text" class="form-control" value="Auto-generated from name (e.g. operator-create-test@aftereight.com)" disabled>
+                        <input type="text" class="form-control" value="Auto-generated from name (e.g. john-doe@aftereight.com)" disabled>
                         <div class="form-text">Email will be generated automatically after you submit.</div>
                     </div>
 
@@ -53,7 +53,7 @@
                         </div>
                         <div class="col-md-8 d-flex gap-2">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Create</button>
-                            <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <a href="{{ route('admin.staff.index') }}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </div>
                 </form>

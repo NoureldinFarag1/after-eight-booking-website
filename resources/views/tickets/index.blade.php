@@ -61,7 +61,7 @@
                                             <i class="bi bi-ticket-detailed me-1"></i>
                                             <strong>Type:</strong> {{ $ticket->type->name }}
                                             @if(!is_null($ticket->price))
-                                                <span class="text-muted">• ${{ number_format($ticket->price, 2) }}</span>
+                                                <span class="text-muted">• EGP {{ number_format($ticket->price, 2) }}</span>
                                             @endif
                                         </p>
                                     @endif

@@ -106,10 +106,10 @@
                             </div>
                         @endif
                         <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-currency-dollar text-primary me-2"></i>
+                            <i class="bi bi-cash-coin text-primary me-2"></i>
                             <span>
                                 @if($types->count() > 0)
-                                    From ${{ number_format($types->min('price'), 2) }}
+                                    From EGP {{ number_format($types->min('price'), 2) }}
                                 @else
                                     Pricing will be announced
                                 @endif
@@ -138,7 +138,7 @@
                     <h4>Finance Officer Insights</h4>
                 </div>
                 <div class="card-body">
-                    <p><strong>Total Revenue:</strong> ${{ number_format($insights['revenue'], 2) }}</p>
+                    <p><strong>Total Revenue:</strong> EGP {{ number_format($insights['revenue'], 2) }}</p>
                     <p><strong>Tickets Sold:</strong> {{ $insights['tickets_sold'] }}</p>
                     <p><strong>Requests Submitted:</strong> {{ $insights['requests'] }}</p>
                     <p><strong>Total Invitations:</strong> {{ $insights['invitations_total'] }}</p>
@@ -175,7 +175,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        
+
         @isset($totalRevenue)
         <div class="row mb-3">
             <div class="col-md-3">
@@ -227,7 +227,7 @@
                                                 </td>
                                                 <td>{{ $booking->user->name }}</td>
                                                 <td>{{ $booking->quantity }}</td>
-                                                <td>${{ number_format($booking->total_amount, 2) }}</td>
+                                                <td>EGP {{ number_format($booking->total_amount, 2) }}</td>
                                                 <td>
                                                     <span class="badge
                                                         @if($booking->status->value === 'confirmed') bg-success
@@ -346,8 +346,8 @@
                                             <option value="">Select type</option>
                                             @foreach($types as $t)
                                                 <option value="{{ $t->id }}" data-price="{{ $t->price }}">
-                                                    {{ $t->name }} — ${{ number_format($t->price, 2) }}
-                                                    @if($t->capacity !== null) (cap: {{ $t->capacity }}) @endif
+                                                    {{ $t->name }} — EGP {{ number_format($t->price, 2) }}
+                                                    @if($isAdmin && $t->capacity !== null) (cap: {{ $t->capacity }}) @endif
                                                 </option>
                                             @endforeach
                                         </select>
@@ -359,13 +359,18 @@
                                 @endif
 
                                 @php
-                                    $maxTickets = min(10, $event->getAvailableSeatsAttribute());
+                                    // For admins, show actual availability; for users, limit to reasonable booking size
+                                    $maxTickets = $isAdmin ? min(10, $event->getAvailableSeatsAttribute()) : 10;
                                 @endphp
                                 <div class="mb-3">
                                     <label for="quantity" class="form-label">Number of Tickets</label>
-                                    @if($maxTickets < 1)
+                                    @if($isAdmin && $maxTickets < 1)
                                         <div class="alert alert-warning mb-0">
                                             No seats available for booking.
+                                        </div>
+                                    @elseif(!$isAdmin && $event->isSoldOut())
+                                        <div class="alert alert-warning mb-0">
+                                            This event is currently sold out.
                                         </div>
                                     @else
                                         <select class="form-select" id="quantity" name="quantity" required>
@@ -392,7 +397,7 @@
                                     <div class="d-flex justify-content-between">
                                         <span>Total:</span>
                                         <span class="fw-bold text-primary" id="total-price">
-                                            $0.00
+                                            EGP 0.00
                                         </span>
                                     </div>
                                 </div>
@@ -424,8 +429,8 @@
                                     function update() {
                                         const unitPrice = currentUnitPrice();
                                         const qty = parseInt(quantityEl.value || '0', 10);
-                                        if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? '$' + unitPrice.toFixed(2) : '{{ $types->count() > 0 ? 'Select a ticket type' : 'Pricing will be announced' }}';
-                                        totalEl.textContent = unitPrice > 0 && qty > 0 ? '$' + (qty * unitPrice).toFixed(2) : '$0.00';
+                                        if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? 'EGP ' + unitPrice.toFixed(2) : '{{ $types->count() > 0 ? 'Select a ticket type' : 'Pricing will be announced' }}';
+                                        totalEl.textContent = unitPrice > 0 && qty > 0 ? 'EGP ' + (qty * unitPrice).toFixed(2) : 'EGP 0.00';
                                     }
 
                                     if (hasTypes) {

@@ -6,11 +6,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h4 mb-0"><i class="bi bi-people me-2"></i>Staff Members</h1>
     <div class="d-flex gap-2">
-        <a href="{{ route('admin.operators.index', ['status' => !empty($showDeleted) ? null : 'deleted', 'q' => $q ?? null]) }}" class="btn btn-outline-secondary">
+        <a href="{{ route('admin.staff.index', ['status' => !empty($showDeleted) ? null : 'deleted', 'q' => $q ?? null]) }}" class="btn btn-outline-secondary">
             <i class="bi bi-archive me-1"></i>{{ !empty($showDeleted) ? 'Show Active' : 'Show Deleted' }}
         </a>
         @empty($showDeleted)
-            <a href="{{ route('admin.operators.create') }}" class="btn btn-primary">
+            <a href="{{ route('admin.staff.create') }}" class="btn btn-primary">
                 <i class="bi bi-person-plus me-1"></i>Create Staff
             </a>
         @endempty
@@ -20,7 +20,7 @@
 
 <div class="card">
     <div class="card-body border-bottom">
-        <form method="GET" action="{{ route('admin.operators.index') }}" class="row g-2 align-items-end">
+        <form method="GET" action="{{ route('admin.staff.index') }}" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label for="q" class="form-label mb-0 small text-muted">Search</label>
                 <input type="text" name="q" id="q" value="{{ $q ?? '' }}" class="form-control" placeholder="Search name or email">
@@ -45,7 +45,7 @@
             </div>
             <div class="col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-funnel me-1"></i>Filter</button>
-                <a href="{{ route('admin.operators.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i>Reset</a>
+                <a href="{{ route('admin.staff.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i>Reset</a>
             </div>
         </form>
     </div>
@@ -90,24 +90,26 @@
                                         </button>
                                     </form>
                                 @else
-                                <form action="{{ route('admin.operators.toggle', $op) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-sm {{ $op->active ? 'btn-outline-warning' : 'btn-outline-success' }} mb-1">
-                                        <i class="bi {{ $op->active ? 'bi-slash-circle' : 'bi-check-circle' }} me-1"></i>
-                                        {{ $op->active ? 'Deactivate' : 'Activate' }}
-                                    </button>
-                                </form>
-                                <a href="{{ route('admin.operators.password.edit', $op) }}" class="btn btn-sm btn-outline-primary mb-1">
-                                    <i class="bi bi-key me-1"></i>Reset Password
-                                </a>
-                                <form action="{{ route('admin.operators.destroy', $op) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete operator {{ $op->name }}?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
-                                        <i class="bi bi-trash me-1"></i>Delete
-                                    </button>
-                                </form>
+                                <form action="{{ route('admin.staff.toggle-status', $user) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi {{ $user->is_active ? 'bi-x-circle' : 'bi-check-circle' }} me-1"></i>
+                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('admin.staff.password', $user) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-key me-1"></i>
+                                        Password
+                                    </a>
+                                    <form action="{{ route('admin.staff.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash me-1"></i>
+                                            Delete
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>

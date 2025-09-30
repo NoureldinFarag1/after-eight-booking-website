@@ -44,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
             return $user && $user->role === \App\Enums\Role::ADMIN;
         });
 
+        // Currency formatting helper for EGP
+        View::share('formatEGP', function($amount, $decimals = 2) {
+            return 'EGP ' . number_format($amount, $decimals);
+        });
+
         // Share cached pending approvals count (30s cache) to avoid duplicate queries in layout
         View::composer('*', function($view){
             $user = Auth::user();

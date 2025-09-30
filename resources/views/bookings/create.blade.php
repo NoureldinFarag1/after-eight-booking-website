@@ -45,7 +45,11 @@
                                 </p>
                                 <p class="mb-1">
                                     <i class="bi bi-people text-primary me-1"></i>
-                                    {{ $event->getAvailableSeatsAttribute() }} seats available
+                                    @if(auth()->user()->isAdmin())
+                                        {{ $event->getAvailableSeatsAttribute() }} seats available
+                                    @else
+                                        Registration Available
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -76,8 +80,8 @@
                                     <option value="">Select type</option>
                                     @foreach($types as $t)
                                         <option value="{{ $t->id }}" data-price="{{ $t->price }}" {{ old('ticket_type_id') == $t->id ? 'selected' : '' }}>
-                                            {{ $t->name }} — ${{ number_format($t->price, 2) }}
-                                            @if(!is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                            {{ $t->name }} — EGP {{ number_format($t->price, 2) }}
+                                            @if(auth()->user()->isAdmin() && !is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
                                         </option>
                                     @endforeach
                                 </select>
@@ -94,7 +98,10 @@
                                     name="quantity"
                                     required>
                                 <option value="">Select quantity</option>
-                                @for($i = 1; $i <= min(10, $event->getAvailableSeatsAttribute()); $i++)
+                                @php
+                                    $maxTickets = auth()->user()->isAdmin() ? min(10, $event->getAvailableSeatsAttribute()) : 10;
+                                @endphp
+                                @for($i = 1; $i <= $maxTickets; $i++)
                                     <option value="{{ $i }}" {{ old('quantity') == $i ? 'selected' : '' }}>
                                         {{ $i }} ticket{{ $i > 1 ? 's' : '' }}
                                     </option>
@@ -125,16 +132,16 @@
                             <h6 class="card-title">Order Summary</h6>
                             <div class="d-flex justify-content-between">
                                 <span>Tickets (<span id="summary-quantity">0</span>):</span>
-                                <span id="summary-subtotal">$0.00</span>
+                                <span id="summary-subtotal">EGP 0.00</span>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <span>Service Fee:</span>
-                                <span>$0.00</span>
+                                <span>EGP 0.00</span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between fw-bold h5">
                                 <span>Total:</span>
-                                <span class="text-primary" id="summary-total">$0.00</span>
+                                <span class="text-primary" id="summary-total">EGP 0.00</span>
                             </div>
                         </div>
                     </div>
@@ -209,15 +216,15 @@
 
             const unitPriceEl = document.getElementById('unit-price');
             if (unitPriceEl) {
-                unitPriceEl.textContent = pricePerTicket > 0 ? '$' + pricePerTicket.toFixed(2) : 'Free';
+                unitPriceEl.textContent = pricePerTicket > 0 ? 'EGP ' + pricePerTicket.toFixed(2) : 'Free';
             }
 
             if (pricePerTicket > 0 && quantity > 0) {
-                summarySubtotal.textContent = '$' + subtotal.toFixed(2);
-                summaryTotal.textContent = '$' + subtotal.toFixed(2);
+                summarySubtotal.textContent = 'EGP ' + subtotal.toFixed(2);
+                summaryTotal.textContent = 'EGP ' + subtotal.toFixed(2);
             } else {
-                summarySubtotal.textContent = quantity > 0 ? '$0.00' : '$0.00';
-                summaryTotal.textContent = quantity > 0 ? '$0.00' : '$0.00';
+                summarySubtotal.textContent = quantity > 0 ? 'EGP 0.00' : 'EGP 0.00';
+                summaryTotal.textContent = quantity > 0 ? 'EGP 0.00' : 'EGP 0.00';
             }
         }
 

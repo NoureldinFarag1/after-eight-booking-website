@@ -219,7 +219,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Total Amount:</span>
-                    <span class="detail-value"><strong>${{ number_format($booking->total_amount, 2) }}</strong></span>
+                    <span class="detail-value"><strong>EGP {{ number_format($booking->total_amount, 2) }}</strong></span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Number of Tickets:</span>
@@ -276,7 +276,7 @@
 
                     <div class="detail-row">
                         <span class="detail-label">Price:</span>
-                        <span class="detail-value">${{ number_format($ticket->price, 2) }}</span>
+                        <span class="detail-value">EGP {{ number_format($ticket->price, 2) }}</span>
                     </div>
 
                     <div class="qr-code-container">

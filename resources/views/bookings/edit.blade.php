@@ -67,7 +67,7 @@
                             <label class="form-label">Booking Details</label>
                             <div class="form-control-plaintext">
                                 <div><strong>Quantity:</strong> {{ $booking->quantity }} tickets</div>
-                                <div><strong>Total Amount:</strong> ${{ number_format($booking->total_amount, 2) }}</div>
+                                <div><strong>Total Amount:</strong> EGP {{ number_format($booking->total_amount, 2) }}</div>
                             </div>
                         </div>
                     </div>

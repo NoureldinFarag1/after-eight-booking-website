@@ -8,12 +8,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class OperatorController extends Controller
+class StaffController extends Controller
 {
-    // Route protection handled in routes/web.php via middleware('role:admin') or can:staff.manage.
-    // Keeping constructor empty to avoid undefined middleware() base method (base Controller is minimal).
     /**
-     * List operators & approval officers
+     * List all manageable staff members.
      */
     public function index(Request $request)
     {
@@ -48,7 +46,7 @@ class OperatorController extends Controller
             });
         }
 
-        $operators = $query->latest()->paginate(15)->appends([
+        $staff = $query->latest()->paginate(15)->appends([
             'status' => $status,
             'q' => $q !== '' ? $q : null,
             'role' => $roleFilter,
@@ -56,19 +54,19 @@ class OperatorController extends Controller
 
         $showDeleted = $status === 'deleted';
         $manageableRoles = $manageable;
-        return view('admin.operators.index', compact('operators', 'showDeleted', 'status', 'q', 'manageableRoles', 'roleFilter'));
+        return view('admin.staff.index', compact('staff', 'showDeleted', 'status', 'q', 'manageableRoles', 'roleFilter'));
     }
 
     /**
-     * Show create form
+     * Show create form for a staff member.
      */
     public function create()
     {
-        return view('admin.operators.create');
+        return view('admin.staff.create');
     }
 
     /**
-     * Store a new operator or approval officer
+     * Store a new staff member.
      */
     public function store(Request $request)
     {
@@ -103,14 +101,13 @@ class OperatorController extends Controller
             'role' => $validated['role'],
         ]);
 
-        // Always return to staff listing (admin area) – avoids 403 for admin after creating approval officer
         $roleLabel = str_replace('_',' ', $user->role->value);
         return redirect()
-            ->route('admin.operators.index')
+            ->route('admin.staff.index')
             ->with('success', ucfirst($roleLabel).' account created for '.$user->name.'.');
     }
 
-    /** Restore a soft-deleted operator/approval officer */
+    /** Restore a soft-deleted staff member. */
     public function restore($id)
     {
         $user = User::onlyTrashed()->findOrFail($id);
@@ -118,11 +115,11 @@ class OperatorController extends Controller
             abort(404);
         }
         $user->restore();
-        return redirect()->route('admin.operators.index', ['status' => 'deleted'])
+        return redirect()->route('admin.staff.index', ['status' => 'deleted'])
             ->with('success', ucfirst(str_replace('_', ' ', $user->role->value)) . ' ' . $user->name . ' restored.');
     }
 
-    /** Toggle active/inactive status */
+    /** Toggle active/inactive status. */
     public function toggle(User $user)
     {
         if (!$user->role->isManageableStaff()) {
@@ -132,23 +129,23 @@ class OperatorController extends Controller
         $user->active = !$user->active;
         $user->save();
 
-        return redirect()->route('admin.operators.index')
+        return redirect()->route('admin.staff.index')
             ->with('success', $user->name . ' is now ' . ($user->active ? 'Active' : 'Inactive'));
     }
 
-    /** Show password reset form */
+    /** Show password reset form. */
     public function editPassword(User $user)
     {
         if (!$user->role->isManageableStaff()) {
             abort(404);
         }
-        return view('admin.operators.password', compact('user'));
+        return view('admin.staff.password', compact('user'));
     }
 
-    /** Update password */
+    /** Update password. */
     public function updatePassword(Request $request, User $user)
     {
-        if (!in_array($user->role, [Role::OPERATOR, Role::APPROVAL_OFFICER])) {
+        if (!$user->role->isManageableStaff()) {
             abort(404);
         }
 
@@ -159,18 +156,18 @@ class OperatorController extends Controller
         $user->password = Hash::make($validated['password']);
         $user->save();
 
-        return redirect()->route('admin.operators.index')
+        return redirect()->route('admin.staff.index')
             ->with('success', 'Password reset for ' . $user->name . '.');
     }
 
-    /** Soft delete */
+    /** Soft delete a staff member. */
     public function destroy(User $user)
     {
         if (!$user->role->isManageableStaff()) {
             abort(404);
         }
         $user->delete();
-        return redirect()->route('admin.operators.index')
+        return redirect()->route('admin.staff.index')
             ->with('success', ucfirst(str_replace('_', ' ', $user->role->value)) . ' ' . $user->name . ' deleted.');
     }
 }

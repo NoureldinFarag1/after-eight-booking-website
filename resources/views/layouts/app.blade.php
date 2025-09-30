@@ -68,6 +68,7 @@
                         $roleFilter = request('role');
                         $isOperatorsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'operator';
                         $isApprovalsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'approval_officer';
+                        $isFinanceActive = request()->routeIs('admin.operators.*') && $roleFilter === 'finance_officer';
                         $isAdminsActive = request()->routeIs('admin.admins.*');
                     @endphp
                     <div class="nav-item has-submenu {{ $isStaffSectionActive ? 'submenu-open' : '' }}">
@@ -79,17 +80,21 @@
                             <i class="bi bi-chevron-down submenu-chevron"></i>
                         </a>
                         <div class="submenu" data-submenu-content="staff">
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $isAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($isAdminsActive) aria-current="page" @endif>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isAdminsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'admin']) }}" @if($isAdminsActive) aria-current="page" @endif>
                                 <i class="bi bi-shield-lock me-2"></i>
                                 <span class="label-text">Admins</span>
                             </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $isOperatorsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'operator']) }}" title="View & manage operators" @if($isOperatorsActive) aria-current="page" @endif>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isOperatorsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'operator']) }}" title="View & manage operators" @if($isOperatorsActive) aria-current="page" @endif>
                                 <i class="bi bi-person-gear me-2"></i>
                                 <span class="label-text">Operators</span>
                             </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $isApprovalsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($isApprovalsActive) aria-current="page" @endif>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isApprovalsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($isApprovalsActive) aria-current="page" @endif>
                                 <i class="bi bi-check2-circle me-2"></i>
                                 <span class="label-text">Approval Officers</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isFinanceActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'finance_officer']) }}" title="View & manage finance officers" @if($isFinanceActive) aria-current="page" @endif>
+                                <i class="bi bi-cash-coin me-2"></i>
+                                <span class="label-text">Finance Officers</span>
                             </a>
                         </div>
                     </div>
@@ -256,6 +261,7 @@
                         $mobileRoleFilter = request('role');
                         $mobileOpsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'operator';
                         $mobileApprovalsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'approval_officer';
+                        $mobileFinanceActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'finance_officer';
                         $mobileAdminsActive = request()->routeIs('admin.admins.*');
                     @endphp
                     <div class="nav-item has-submenu {{ $mobileIsStaffSectionActive ? 'submenu-open' : '' }}">
@@ -267,17 +273,21 @@
                             <i class="bi bi-chevron-down submenu-chevron"></i>
                         </a>
                         <div class="submenu" data-submenu-content="mobile-staff">
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileOpsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'operator']) }}" title="View & manage operators" @if($mobileOpsActive) aria-current="page" @endif>
-                                <i class="bi bi-person-gear me-2"></i>
-                                <span>Operators</span>
-                            </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileApprovalsActive ? 'active' : '' }}" href="{{ route('admin.operators.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($mobileApprovalsActive) aria-current="page" @endif>
-                                <i class="bi bi-check2-circle me-2"></i>
-                                <span>Approval Officers</span>
-                            </a>
                             <a class="nav-link submenu-link d-flex align-items-center {{ $mobileAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($mobileAdminsActive) aria-current="page" @endif>
                                 <i class="bi bi-shield-lock me-2"></i>
                                 <span>Admins</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileOpsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'operator']) }}" title="View & manage operators" @if($mobileOpsActive) aria-current="page" @endif>
+                                <i class="bi bi-person-gear me-2"></i>
+                                <span>Operators</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileApprovalsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($mobileApprovalsActive) aria-current="page" @endif>
+                                <i class="bi bi-check2-circle me-2"></i>
+                                <span>Approval Officers</span>
+                            </a>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileFinanceActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'finance_officer']) }}" title="View & manage finance officers" @if($mobileFinanceActive) aria-current="page" @endif>
+                                <i class="bi bi-cash-coin me-2"></i>
+                                <span>Finance Officers</span>
                             </a>
                         </div>
                     </div>

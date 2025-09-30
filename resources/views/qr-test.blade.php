@@ -37,7 +37,7 @@
                                     <div class="card">
                                         <div class="card-body text-center">
                                             <h6>{{ $ticket->ticket_number }}</h6>
-                                            <p class="text-muted">Price: ${{ $ticket->price }}</p>
+                                            <p class="text-muted">Price: EGP {{ $ticket->price }}</p>
 
                                             @if(isset($qrCodePaths[$ticket->id]))
                                                 @php

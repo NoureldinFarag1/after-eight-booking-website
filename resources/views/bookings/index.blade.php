@@ -139,7 +139,7 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Total</div>
-                                        <div class="fw-bold text-primary">${{ number_format($booking->total_amount, 2) }}</div>
+                                        <div class="fw-bold text-primary">EGP {{ number_format($booking->total_amount, 2) }}</div>
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Tickets</div>
