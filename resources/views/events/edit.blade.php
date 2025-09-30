@@ -176,6 +176,21 @@
                         @enderror
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fee_type" class="form-label">Fee Type</label>
+                            <select name="fee_type" id="fee_type" class="form-select">
+                                <option value="">No Fee</option>
+                                <option value="fixed" {{ old('fee_type', $event->fee_type) === 'fixed' ? 'selected' : '' }}>Fixed Amount</option>
+                                <option value="percentage" {{ old('fee_type', $event->fee_type) === 'percentage' ? 'selected' : '' }}>Percentage</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fee_amount" class="form-label">Fee Amount</label>
+                            <input type="number" name="fee_amount" id="fee_amount" class="form-control" value="{{ old('fee_amount', $event->fee_amount) }}" min="0" step="0.01">
+                        </div>
+                    </div>
+
                     @if($event->bookings->count() > 0)
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-1"></i>
@@ -194,6 +209,18 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Assign Operators</label>
+                        <select name="operators[]" class="form-control" multiple>
+                            @foreach($operators as $operator)
+                                <option value="{{ $operator->id }}" {{ in_array($operator->id, $event->operators->pluck('id')->toArray()) ? 'selected' : '' }}>
+                                    {{ $operator->name }} ({{ $operator->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Select one or more operators to assign to this event.</div>
                     </div>
 
                     <div class="d-flex justify-content-between">

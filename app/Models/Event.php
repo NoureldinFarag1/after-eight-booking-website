@@ -26,6 +26,8 @@ class Event extends Model
         'status',
         'image_url',
         'terms_conditions',
+        'fee_type',
+        'fee_amount',
         'finance_officer_id',
     ];
 
@@ -33,7 +35,24 @@ class Event extends Model
         'event_date' => 'date',
         'event_time' => 'datetime',
         'status' => EventStatus::class,
+        'fee_amount' => 'float',
     ];
+
+    public function calculateFee(float $total): float
+    {
+        if ($this->fee_type === 'percentage' && $this->fee_amount > 0) {
+            return ($total * $this->fee_amount) / 100;
+        }
+        if ($this->fee_type === 'fixed' && $this->fee_amount > 0) {
+            return $this->fee_amount;
+        }
+        return 0.0;
+    }
+
+    public function getTotalWithFees(float $total): float
+    {
+        return $total + $this->calculateFee($total);
+    }
 
     public function getAllocatedCapacityAttribute(): int
     {
@@ -140,5 +159,10 @@ class Event extends Model
     public function financeOfficer()
     {
         return $this->belongsTo(\App\Models\User::class, 'finance_officer_id');
+    }
+
+    public function operators()
+    {
+        return $this->belongsToMany(User::class, 'event_operator', 'event_id', 'user_id');
     }
 }

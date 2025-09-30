@@ -33,9 +33,9 @@ class StaffController extends Controller
             $query->onlyTrashed();
         } else {
             if ($status === 'active') {
-                $query->where('active', true);
+                $query->where('is_active', true);
             } elseif ($status === 'inactive') {
-                $query->where('active', false);
+                $query->where('is_active', false);
             }
         }
 
@@ -46,7 +46,7 @@ class StaffController extends Controller
             });
         }
 
-        $staff = $query->latest()->paginate(15)->appends([
+        $users = $query->latest()->paginate(15)->appends([
             'status' => $status,
             'q' => $q !== '' ? $q : null,
             'role' => $roleFilter,
@@ -54,7 +54,7 @@ class StaffController extends Controller
 
         $showDeleted = $status === 'deleted';
         $manageableRoles = $manageable;
-        return view('admin.staff.index', compact('staff', 'showDeleted', 'status', 'q', 'manageableRoles', 'roleFilter'));
+        return view('admin.staff.index', compact('users', 'showDeleted', 'status', 'q', 'manageableRoles', 'roleFilter'));
     }
 
     /**
@@ -125,12 +125,11 @@ class StaffController extends Controller
         if (!$user->role->isManageableStaff()) {
             abort(404);
         }
-
-        $user->active = !$user->active;
+        $user->is_active = !$user->is_active;
         $user->save();
 
         return redirect()->route('admin.staff.index')
-            ->with('success', $user->name . ' is now ' . ($user->active ? 'Active' : 'Inactive'));
+        ->with('success', $user->name . ' is now ' . ($user->is_active ? 'Active' : 'Inactive'));
     }
 
     /** Show password reset form. */

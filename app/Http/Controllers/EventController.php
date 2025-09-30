@@ -117,7 +117,8 @@ class EventController extends Controller
     public function create()
     {
         $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
-        return view('events.create', compact('financeOfficers'));
+        $operators = User::where('role', \App\Enums\Role::OPERATOR)->where('is_active', true)->get();
+        return view('events.create', compact('financeOfficers', 'operators'));
     }
 
     /**
@@ -129,30 +130,49 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
-            'event_date' => 'required|date|after_or_equal:today',
+            'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
-            'type' => 'required|in:booking,request',
             'capacity' => 'required|integer|min:1',
-            'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'type' => 'required|in:booking,request',
+            'status' => 'required|in:draft,published,cancelled',
+            'image' => 'nullable|image|max:2048',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
-            'ticket_types' => 'nullable|array|max:50',
-            'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
+            'fee_type' => 'nullable|in:fixed,percentage',
+            'fee_amount' => 'nullable|numeric|min:0',
+            'operators' => 'nullable|array',
+            'operators.*' => 'exists:users,id',
+            'ticket_types' => 'nullable|array',
+            'ticket_types.*.name' => 'required_with:ticket_types|string|max:255|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image_url'] = $request->file('image')->store('events', 'public');
+            $validated['image_url'] = $request->file('image')->store('event_images', 'public');
         }
 
         $event = Event::create([
-            ...$validated,
-            'finance_officer_id' => $request->finance_officer_id,
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'location' => $validated['location'],
+            'event_date' => $validated['event_date'],
+            'event_time' => $validated['event_time'],
+            'capacity' => $validated['capacity'],
+            'type' => $validated['type'],
+            'status' => $validated['status'],
+            'image_url' => $validated['image_url'] ?? null,
+            'terms_conditions' => $validated['terms_conditions'],
+            'finance_officer_id' => $validated['finance_officer_id'],
+            'fee_type' => $validated['fee_type'],
+            'fee_amount' => $validated['fee_amount'],
             'initial_capacity' => $validated['capacity'], // Store the original capacity
         ]);
+
+        if (!empty($validated['operators'])) {
+            $event->operators()->sync($validated['operators']);
+        }
 
         $types = $request->input('ticket_types', []);
         if (!empty($types) && $request->input('type') === 'booking') {
@@ -232,7 +252,8 @@ class EventController extends Controller
     public function edit(Event $event)
     {
         $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
-        return view('events.edit', compact('event', 'financeOfficers'));
+        $operators = User::where('role', \App\Enums\Role::OPERATOR)->where('is_active', true)->get();
+        return view('events.edit', compact('event', 'financeOfficers', 'operators'));
     }
 
     /**
@@ -244,15 +265,20 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
-            'event_date' => 'required|date|after_or_equal:today',
+            'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
             'capacity' => 'required|integer|min:1',
             'type' => 'required|in:booking,request',
-            'status' => ['required', Rule::in(array_column(EventStatus::cases(), 'value'))],
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'status' => 'required|in:draft,published,cancelled',
+            'image' => 'nullable|image|max:2048',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
-            'ticket_types' => 'nullable|array|max:50',
+            'fee_type' => 'nullable|in:fixed,percentage',
+            'fee_amount' => 'nullable|numeric|min:0',
+            'operators' => 'nullable|array',
+            'operators.*' => 'exists:users,id',
+            'ticket_types' => 'nullable|array',
+            'ticket_types.*.id' => 'nullable|integer|exists:ticket_types,id',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
@@ -260,16 +286,34 @@ class EventController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
+            // Delete old image if it exists
             if ($event->image_url) {
                 Storage::disk('public')->delete($event->image_url);
             }
-            $validated['image_url'] = $request->file('image')->store('events', 'public');
+            $validated['image_url'] = $request->file('image')->store('event_images', 'public');
         }
 
         $event->update([
-            ...$validated,
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'location' => $validated['location'],
+            'event_date' => $validated['event_date'],
+            'event_time' => $validated['event_time'],
+            'capacity' => $validated['capacity'],
+            'type' => $validated['type'],
+            'status' => $validated['status'],
+            'image_url' => $validated['image_url'] ?? $event->image_url,
+            'terms_conditions' => $validated['terms_conditions'],
+            'fee_type' => $validated['fee_type'],
+            'fee_amount' => $validated['fee_amount'],
             'finance_officer_id' => $request->finance_officer_id,
         ]);
+
+        if (!empty($validated['operators'])) {
+            $event->operators()->sync($validated['operators']);
+        } else {
+            $event->operators()->detach();
+        }
 
         $types = $request->input('ticket_types', []);
         if (!empty($types) && $request->input('type') === 'booking') {

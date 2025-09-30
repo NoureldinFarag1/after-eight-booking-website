@@ -64,7 +64,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($operators as $op)
+                    @forelse($users as $op)
                         <tr class="staff-row">
                             <td class="text-truncate" style="max-width:160px">{{ $op->name }}</td>
                             <td class="text-truncate" style="max-width:200px">{{ $op->email }}</td>
@@ -73,7 +73,7 @@
                             <td class="whitespace-nowrap">
                                 @if(!empty($showDeleted))
                                     <span class="badge bg-dark" @if($op->deleted_at) title="Deleted {{ $op->deleted_at->diffForHumans() }}" @endif>Deleted</span>
-                                @elseif($op->active)
+                                @elseif($op->is_active)
                                     <span class="badge bg-success">Active</span>
                                 @else
                                     <span class="badge bg-secondary">Inactive</span>
@@ -82,7 +82,7 @@
                             <td class="text-muted small" style="white-space:nowrap">{{ $op->created_at?->diffForHumans() }}</td>
                             <td class="text-end text-nowrap" style="white-space:nowrap">
                                 @if(!empty($showDeleted))
-                                    <form action="{{ route('admin.operators.restore', $op->id) }}" method="POST" class="d-inline">
+                                    <form action="{{ route('admin.staff.restore', $op->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn btn-sm btn-outline-success mb-1">
@@ -90,19 +90,19 @@
                                         </button>
                                     </form>
                                 @else
-                                <form action="{{ route('admin.staff.toggle-status', $user) }}" method="POST" class="d-inline">
+                                <form action="{{ route('admin.staff.toggle', $op) }}" method="POST" class="d-inline">
                                         @csrf
-                                        @method('PUT')
+                                        @method('PATCH')
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi {{ $user->is_active ? 'bi-x-circle' : 'bi-check-circle' }} me-1"></i>
-                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                            <i class="bi {{ $op->is_active ? 'bi-x-circle' : 'bi-check-circle' }} me-1"></i>
+                                            {{ $op->is_active ? 'Deactivate' : 'Activate' }}
                                         </button>
                                     </form>
-                                    <a href="{{ route('admin.staff.password', $user) }}" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ route('admin.staff.password.edit', $op) }}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-key me-1"></i>
                                         Password
                                     </a>
-                                    <form action="{{ route('admin.staff.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                                    <form action="{{ route('admin.staff.destroy', $op) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -122,8 +122,8 @@
             </table>
         </div>
     </div>
-    @if(method_exists($operators, 'links'))
-        <div class="card-footer">{{ $operators->links() }}</div>
+    @if(method_exists($users, 'links'))
+        <div class="card-footer">{{ $users->links() }}</div>
     @endif
 </div>
 @endsection

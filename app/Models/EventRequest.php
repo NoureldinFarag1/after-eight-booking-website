@@ -14,6 +14,9 @@ class EventRequest extends Model
         'user_id',
         'payload',
         'status',
+        'approved_at',
+        'expires_at',
+        'paid_at',
         'primary_name',
         'primary_email',
         'primary_social_url',
@@ -26,6 +29,9 @@ class EventRequest extends Model
         'guests' => 'array',
         'payload' => 'array',
         'attendee_count' => 'integer',
+        'approved_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'paid_at' => 'datetime',
     ];
 
     public function event()

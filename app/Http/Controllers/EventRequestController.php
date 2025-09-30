@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use App\Enums\EventRequestStatus;
+use App\Notifications\RequestApprovedForPaymentNotification;
+use Illuminate\Support\Facades\Notification;
 
 class EventRequestController extends Controller
 {
@@ -348,52 +351,23 @@ class EventRequestController extends Controller
     {
         $user = Auth::user();
         if (! $user || ($user->role !== Role::ADMIN)) {
-            abort(403);
+            abort(403, 'Unauthorized');
         }
-        if ($eventRequest->status !== 'pending') {
-            return back()->with('warning', 'This request has already been ' . $eventRequest->status . ' and cannot be changed.');
-        }
-        $event = $eventRequest->event()->lockForUpdate()->first();
-
-        // Safeguard: ensure enough seats remain
-        $needed = $eventRequest->attendee_count ?? (1 + (is_array($eventRequest->guests) ? count($eventRequest->guests) : 0));
-        if ($event->getAvailableSeatsAttribute() < $needed) {
-            return back()->with('error', 'Not enough available seats to approve this request (needs ' . $needed . ').');
+        if ($eventRequest->status !== EventRequestStatus::PENDING->value) {
+            return back()->with('error', 'This request is not pending and cannot be approved.');
         }
 
-        // Wrap in transaction to maintain consistency
-        DB::transaction(function () use ($eventRequest, $user, $event) {
+        $eventRequest->update([
+            'status' => EventRequestStatus::AWAITING_PAYMENT->value,
+            'approved_at' => now(),
+            'expires_at' => now()->addHours(24),
+            'admin_id' => $user->id,
+        ]);
 
-            // Decrement ticket type capacities if present in payload or columns
-            if ($eventRequest->primary_ticket_type_id) {
-                $primaryType = \App\Models\TicketType::where('id', $eventRequest->primary_ticket_type_id)->lockForUpdate()->first();
-                if ($primaryType && !is_null($primaryType->capacity) && $primaryType->capacity > 0) {
-                    $primaryType->capacity = max(0, $primaryType->capacity - 1);
-                    $primaryType->save();
-                }
-            }
-            if (is_array($eventRequest->guests)) {
-                $grouped = collect($eventRequest->guests)
-                    ->filter(fn($g) => is_array($g) && isset($g['ticket_type_id']))
-                    ->groupBy('ticket_type_id')
-                    ->map(fn($group) => count($group));
-                foreach ($grouped as $ticketTypeId => $count) {
-                    $tt = \App\Models\TicketType::where('id', $ticketTypeId)->lockForUpdate()->first();
-                    if ($tt && !is_null($tt->capacity) && $tt->capacity > 0) {
-                        $tt->capacity = max(0, $tt->capacity - $count);
-                        $tt->save();
-                    }
-                }
-            }
+        // Notify the user their request was approved and they can now pay
+        Notification::send($eventRequest->user, new RequestApprovedForPaymentNotification($eventRequest));
 
-            $eventRequest->status = 'approved';
-            if (Schema::hasColumn('event_requests', 'admin_id')) {
-                $eventRequest->admin_id = $user->id;
-            }
-            $eventRequest->save();
-        });
-
-        return back()->with('success', 'Request approved.');
+        return back()->with('success', 'Request approved and user has been notified to complete payment.');
     }
 
     // Decline a request (admin only)
