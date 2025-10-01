@@ -48,6 +48,13 @@
         </div>
 
         <nav class="nav flex-column p-2">
+
+    @auth
+        <div class="px-2 py-1">
+            <small class="text-muted">ROLE: {{ is_object(auth()->user()->role) ? auth()->user()->role->value : auth()->user()->role }}</small>
+        </div>
+    @endauth
+
             @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
                 <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                     <i class="bi bi-calendar-event me-2"></i>
@@ -80,7 +87,7 @@
                             <i class="bi bi-chevron-down submenu-chevron"></i>
                         </a>
                         <div class="submenu" data-submenu-content="staff">
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $isAdminsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'admin']) }}" @if($isAdminsActive) aria-current="page" @endif>
+                            <a class="nav-link submenu-link d-flex align-items-center {{ $isAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($isAdminsActive) aria-current="page" @endif>
                                 <i class="bi bi-shield-lock me-2"></i>
                                 <span class="label-text">Admins</span>
                             </a>
@@ -97,6 +104,9 @@
                                 <span class="label-text">Finance Officers</span>
                             </a>
                         </div>
+
+
+
                     </div>
 
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
@@ -107,6 +117,15 @@
                         <i class="bi bi-qr-code me-2"></i>
                         <span class="label-text">Tickets</span>
                     </a>
+
+                    {{-- fixed Insights for finance officers in admin branch --}}
+                    @if(auth()->check() && auth()->user()->isFinanceOfficer())
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span class="label-text">Insights</span>
+                        </a>
+                    @endif
+
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}">
                         <i class="bi bi-bell me-2 position-relative"></i>
                         <span class="label-text">Requests</span>
@@ -145,6 +164,15 @@
                         <i class="bi bi-qr-code me-2"></i>
                         <span class="label-text">My Tickets</span>
                     </a>
+
+                    {{-- fixed Insights for finance officers in account branch --}}
+                    @if(auth()->check() && auth()->user()->isFinanceOfficer())
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span class="label-text">Insights</span>
+                        </a>
+                    @endif
+
                 @endif
 
 
@@ -299,6 +327,15 @@
                         <i class="bi bi-qr-code me-2"></i>
                         <span>Tickets</span>
                     </a>
+
+                    {{-- fixed Insights for finance officers in mobile admin branch --}}
+                    @if(auth()->check() && auth()->user()->isFinanceOfficer())
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span class="label-text">Insights</span>
+                        </a>
+                    @endif
+
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}">
                         <i class="bi bi-bell me-2 position-relative"></i>
                         <span>Requests</span>
@@ -337,6 +374,15 @@
                         <i class="bi bi-qr-code me-2"></i>
                         <span>My Tickets</span>
                     </a>
+
+                    {{-- fixed Insights for finance officers in mobile account branch --}}
+                    @if(auth()->check() && auth()->user()->isFinanceOfficer())
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span class="label-text">Insights</span>
+                        </a>
+                    @endif
+
                 @endif
 
 
@@ -379,5 +425,3 @@
 </div>
 </body>
 </html>
-
-

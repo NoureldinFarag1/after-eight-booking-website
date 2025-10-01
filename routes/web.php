@@ -160,6 +160,12 @@ Route::resource('invitations', \App\Http\Controllers\InvitationController::class
         ->only(['index', 'create', 'store']);
 });
 
+
+// Finance insights (finance officers only)
+Route::middleware(['auth','role:finance_officer'])->group(function () {
+    Route::get('/insights', [\App\Http\Controllers\Finance\InsightsController::class, 'index'])->name('finance.insights');
+});
+
 // Google OAuth
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
