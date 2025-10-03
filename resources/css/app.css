@@ -7,8 +7,8 @@ body {
 :root {
 	--ae-primary: #dc3545;
 	--ae-primary-rgb: 220, 53, 69;
-	--ae-sidebar-width: 240px;
-	--ae-sidebar-width-collapsed: 72px;
+	--ae-sidebar-width: 240px; /* single source of truth */
+	--ae-sidebar-width-collapsed: 52px; /* icon-only collapsed width */
 	--ae-color-bg-root: #000;
 	--ae-color-bg-header: #000;
 	--ae-color-bg-sidebar: #000;
@@ -198,6 +198,7 @@ header.app-header .btn-outline-light:focus-visible {
 
 /* Sidebar styles (black/white/red) */
 .sidebar { background-color: var(--ae-color-bg-sidebar); color: var(--ae-color-text); }
+.sidebar { position: relative; z-index: 1900; }
 .sidebar .nav-link { color: var(--ae-color-text); padding: .5rem .75rem; border-radius: .375rem; position: relative; }
 .sidebar .nav-link { width: 100%; }
 /* Ensure offcanvas header occupies full width with no extra spacing */
@@ -252,13 +253,74 @@ body.sidebar-collapsed .sidebar .submenu-chevron,
 body.sidebar-collapsed-responsive .sidebar .submenu-chevron {
     display: none !important;
 }
-body.sidebar-collapsed .sidebar .has-submenu .submenu,
-body.sidebar-collapsed-responsive .sidebar .has-submenu .submenu {
-    display: none !important;
+/* Collapsed sidebar: convert submenus to flyouts instead of disabling them */
+body.sidebar-collapsed .sidebar,
+body.sidebar-collapsed-responsive .sidebar { overflow: visible; }
+
+body.sidebar-collapsed .sidebar .has-submenu,
+body.sidebar-collapsed-responsive .sidebar .has-submenu { position: relative; }
+
+body.sidebar-collapsed .sidebar .has-submenu > .submenu,
+body.sidebar-collapsed-responsive .sidebar .has-submenu > .submenu {
+	position: absolute;
+	/* Slight overlap so it doesn't jut far into content (adjusted for 52px width) */
+	left: calc(var(--ae-sidebar-width-collapsed, 52px) - 4px);
+	top: 0;
+	min-width: 150px; /* narrower for icon-only */
+	max-width: 200px;
+	max-height: 340px;
+	overflow-y: auto;
+	background: var(--ae-color-bg-sidebar);
+	border: 1px solid var(--ae-color-border-card);
+	box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+	padding: .35rem .4rem; /* tighter padding */
+	z-index: 2600; /* ensure above main content & header */
+	opacity: 0;
+	visibility: hidden;
+	transform: translateX(4px) scale(.98);
+	transition: opacity .18s ease, transform .18s ease, visibility .18s;
 }
+
+/* Show flyout on hover or when programmatically opened */
+body.sidebar-collapsed .sidebar .has-submenu:hover > .submenu,
+body.sidebar-collapsed-responsive .sidebar .has-submenu:hover > .submenu,
+body.sidebar-collapsed .sidebar .has-submenu.submenu-open > .submenu,
+body.sidebar-collapsed-responsive .sidebar .has-submenu.submenu-open > .submenu {
+	opacity: 1;
+	visibility: visible;
+	transform: translateX(0) scale(1);
+	transition-delay: 40ms; /* quick appear */
+}
+
+/* Delay hide to reduce diagonal flicker */
+body.sidebar-collapsed .sidebar .has-submenu > .submenu,
+body.sidebar-collapsed-responsive .sidebar .has-submenu > .submenu { transition-delay: 120ms; }
+
+/* Keep toggle clickable */
 body.sidebar-collapsed .sidebar .submenu-toggle,
-body.sidebar-collapsed-responsive .sidebar .submenu-toggle {
-    pointer-events: none;
+body.sidebar-collapsed-responsive .sidebar .submenu-toggle { pointer-events: auto; }
+/* Align submenu toggle icon with other icons when collapsed */
+body.sidebar-collapsed .sidebar .submenu-toggle,
+body.sidebar-collapsed-responsive .sidebar .submenu-toggle { justify-content: center !important; }
+/* Compact submenu link spacing inside flyout when collapsed */
+body.sidebar-collapsed .sidebar .has-submenu > .submenu .submenu-link,
+body.sidebar-collapsed-responsive .sidebar .has-submenu > .submenu .submenu-link {
+	margin-left: .4rem; /* minimal indent */
+	padding: .30rem .45rem;
+	font-size: .8rem;
+	line-height: 1.1;
+}
+body.sidebar-collapsed .sidebar .has-submenu > .submenu .submenu-link .bi,
+body.sidebar-collapsed-responsive .sidebar .has-submenu > .submenu .submenu-link .bi { font-size: .95rem; }
+
+/* Optional: truncate overly long labels so flyout stays compact */
+body.sidebar-collapsed .sidebar .has-submenu > .submenu .submenu-link .label-text,
+body.sidebar-collapsed-responsive .sidebar .has-submenu > .submenu .submenu-link .label-text {
+	display: inline-block;
+	max-width: 110px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .sidebar .nav-link.active::before {
@@ -284,8 +346,8 @@ footer.bg-dark { background-color: #000 !important; }
 .brand-logo-link:hover .brand-logo-full,
 .brand-logo-link:focus .brand-logo-full { filter: drop-shadow(0 0 6px rgba(var(--ae-primary-rgb),0.55)) brightness(1.08) contrast(1.08); opacity:1; }
 .brand-logo-link:focus-visible { outline:2px solid rgba(var(--ae-primary-rgb),0.65); outline-offset:3px; border-radius:8px; }
-body.sidebar-collapsed .sidebar-brand, body.sidebar-collapsed-responsive .sidebar-brand { height:52px; }
-body.sidebar-collapsed .brand-logo-full, body.sidebar-collapsed-responsive .brand-logo-full { padding:4px 6px; max-width:60px; }
+body.sidebar-collapsed .sidebar-brand, body.sidebar-collapsed-responsive .sidebar-brand { height:44px; }
+body.sidebar-collapsed .brand-logo-full, body.sidebar-collapsed-responsive .brand-logo-full { padding:2px 2px; max-width:46px; }
 /* Precise centering for mobile offcanvas logo */
 #mobileSidebar .offcanvas-header.mobile-sidebar-header { display:block; padding:0; }
 #mobileSidebar .mobile-sidebar-brand { display:flex; justify-content:center; align-items:center; text-align:center; }
@@ -430,10 +492,18 @@ body.sidebar-collapsed-responsive .sidebar .nav-link { justify-content: center; 
 body.sidebar-collapsed .sidebar .nav-link .bi,
 body.sidebar-collapsed-responsive .sidebar .nav-link .bi { margin-right: 0 !important; }
 /* remove inner paddings/radii to keep items inline edge-to-edge */
+/* Icon-only: strip all padding and reduce height */
 body.sidebar-collapsed .sidebar .nav-link,
-body.sidebar-collapsed-responsive .sidebar .nav-link { padding-left: 0; padding-right: 0; border-radius: 0; min-height: 44px; }
+body.sidebar-collapsed-responsive .sidebar .nav-link { padding:0; border-radius:0; min-height:40px; }
+body.sidebar-collapsed .sidebar .nav-link .bi,
+body.sidebar-collapsed-responsive .sidebar .nav-link .bi { margin-right:0 !important; font-size:1.15rem; }
+/* Remove all inner padding & gaps in collapsed icon bar */
 body.sidebar-collapsed .sidebar nav.nav,
-body.sidebar-collapsed-responsive .sidebar nav.nav { padding-left: 0 !important; padding-right: 0 !important; }
+body.sidebar-collapsed-responsive .sidebar nav.nav { padding:0 !important; gap:0 !important; }
+
+/* Tighten section label spacing (already hidden but in case of transitions) */
+body.sidebar-collapsed .sidebar .section-label,
+body.sidebar-collapsed-responsive .sidebar .section-label { margin:0; padding:0; }
 /* shrink header brand text */
 body.sidebar-collapsed .sidebar .brand-text,
 body.sidebar-collapsed-responsive .sidebar .brand-text { display: none; }

@@ -14,10 +14,24 @@ class TicketController extends Controller
     use AuthorizesRequests;
 
     /**
+     * Defense-in-depth: block manageable staff roles (operator, approval_officer, finance_officer) from personal ticket resources.
+     * Primary enforcement handled by 'restrict_staff_personal' middleware on routes.
+     */
+    protected function denyIfStaffRole(): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user && $user->role && $user->role->isManageableStaff()) {
+            abort(403, 'Staff roles cannot access personal tickets.');
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
     {
+    $this->denyIfStaffRole();
         /** @var User $user */
         $user = Auth::user();
 
@@ -36,6 +50,7 @@ class TicketController extends Controller
      */
     public function show(Ticket $ticket)
     {
+    $this->denyIfStaffRole();
         $this->authorize('view', $ticket);
 
     $ticket->load(['event', 'booking', 'user', 'type']);
@@ -173,6 +188,7 @@ class TicketController extends Controller
      */
     public function qrCode(Ticket $ticket)
     {
+    $this->denyIfStaffRole();
         $this->authorize('view', $ticket);
 
         // Generate QR code URL that points to validation endpoint
@@ -186,6 +202,7 @@ class TicketController extends Controller
      */
     public function download(Ticket $ticket)
     {
+    $this->denyIfStaffRole();
         $this->authorize('view', $ticket);
 
         // Here you would integrate with a PDF library like DOMPDF or similar

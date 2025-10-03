@@ -76,7 +76,33 @@ document.addEventListener('DOMContentLoaded', () => {
 	});
 
 	// Apply saved states initially
-	applySavedSubmenuStates();	/* =============================
+	applySavedSubmenuStates();
+
+	/* Collapsed sidebar flyout enhancement: hide submenu when leaving flyout */
+	function isSidebarCollapsed() {
+		return document.body.classList.contains('sidebar-collapsed') || document.body.classList.contains('sidebar-collapsed-responsive');
+	}
+
+	// Hover intent management to prevent flicker when moving diagonally
+	let submenuHideTimers = new WeakMap();
+
+	document.querySelectorAll('.sidebar .has-submenu').forEach(parent => {
+		parent.addEventListener('mouseenter', () => {
+			if (!isSidebarCollapsed()) return;
+			const t = submenuHideTimers.get(parent);
+			if (t) { clearTimeout(t); submenuHideTimers.delete(parent); }
+		});
+		parent.addEventListener('mouseleave', () => {
+			if (!isSidebarCollapsed()) return;
+			// Set delay before allowing CSS to transition to hidden (by removing :hover state)
+			const timer = setTimeout(() => {
+				// No direct action needed; CSS handles fade-out once hover is gone
+				submenuHideTimers.delete(parent);
+			}, 160); // matches CSS hide delay (~120ms + buffer)
+			submenuHideTimers.set(parent, timer);
+		});
+	});
+	/* =============================
 	   Modern Toast Notifications
 	   ============================= */
 	if (!window.__notyfInstance) {
@@ -241,17 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
 	   Mobile Offcanvas Nav Autoclose
 	   ============================= */
 	const mobileSidebar = document.getElementById('mobileSidebar');
+	const pageLoader = document.getElementById('navPageLoader');
+	function showPageLoader() { if (pageLoader) pageLoader.classList.remove('d-none'); }
+	function hidePageLoader() { if (pageLoader) pageLoader.classList.add('d-none'); }
 	if (mobileSidebar && window.bootstrap) {
 		let navTapLocked = false;
-		const pageLoader = document.getElementById('navPageLoader');
-		function showPageLoader() {
-			if (!pageLoader) return;
-			pageLoader.classList.remove('d-none');
-		}
-		function hidePageLoader() {
-			if (!pageLoader) return;
-			pageLoader.classList.add('d-none');
-		}
 		window.addEventListener('pageshow', hidePageLoader);
 
 		// Apply submenu states when offcanvas is shown

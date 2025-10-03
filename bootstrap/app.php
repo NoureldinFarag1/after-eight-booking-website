@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'operator.redirect' => \App\Http\Middleware\OperatorRedirect::class,
+            // Disallow staff roles (operator, approval_officer, finance_officer) from personal bookings & tickets
+            'restrict_staff_personal' => \App\Http\Middleware\RestrictStaffPersonal::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

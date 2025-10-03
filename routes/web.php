@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Role;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
@@ -85,15 +86,17 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
     });
     });
 
-    // Booking routes
-    Route::get('/events/{event}/book', [BookingController::class, 'create'])->name('bookings.create');
-    Route::resource('bookings', BookingController::class)->except(['create']);
-    Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    // Booking & user ticket routes (blocked for staff roles via middleware alias)
+    Route::middleware('restrict_staff_personal')->group(function () {
+        Route::get('/events/{event}/book', [BookingController::class, 'create'])->name('bookings.create');
+        Route::resource('bookings', BookingController::class)->except(['create']);
+        Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
-    // Ticket routes
-    Route::resource('tickets', TicketController::class)->only(['index', 'show']);
-    Route::get('/tickets/{ticket}/qr-code', [TicketController::class, 'qrCode'])->name('tickets.qr-code');
-    Route::get('/tickets/{ticket}/download', [TicketController::class, 'download'])->name('tickets.download');
+        // Ticket routes
+        Route::resource('tickets', TicketController::class)->only(['index', 'show']);
+        Route::get('/tickets/{ticket}/qr-code', [TicketController::class, 'qrCode'])->name('tickets.qr-code');
+        Route::get('/tickets/{ticket}/download', [TicketController::class, 'download'])->name('tickets.download');
+    });
 
     // Operator-only ticket scanning
     Route::middleware('role:operator')->group(function () {
@@ -139,7 +142,7 @@ Route::middleware('auth')->group(function () {
 // Admin-side
 
     // Admin-side for event requests
-    Route::prefix('admin')->middleware(['auth'])->group(function() {
+    Route::prefix('admin')->middleware(['auth','role:admin'])->group(function() {
         Route::get('/event-requests', [EventRequestController::class, 'adminIndex'])->name('admin.event_requests.index');
         Route::post('/event-requests/{eventRequest}/approve', [EventRequestController::class, 'approve'])->name('admin.event_requests.approve');
         Route::post('/event-requests/{eventRequest}/decline', [EventRequestController::class, 'decline'])->name('admin.event_requests.decline');

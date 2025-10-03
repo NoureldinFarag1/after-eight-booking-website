@@ -109,6 +109,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if user is any staff role (manageable staff or admin).
+     */
+    public function isStaff(): bool
+    {
+        return $this->isAdmin() || ($this->role && $this->role->isManageableStaff());
+    }
+
+    /**
      * Check if user is regular user
      */
     public function isUser(): bool

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Enums\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
@@ -62,10 +63,9 @@ class AdminController extends Controller
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin updated.');
     }
-
     public function destroy(User $user)
     {
-        if (auth()->id() === $user->id) {
+        if (Auth::user()->id === $user->id) {
             return back()->with('error', 'You cannot delete yourself.');
         }
 

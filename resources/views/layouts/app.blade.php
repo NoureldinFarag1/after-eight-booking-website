@@ -49,12 +49,6 @@
 
         <nav class="nav flex-column p-2">
 
-    @auth
-        <div class="px-2 py-1">
-            <small class="text-muted">ROLE: {{ is_object(auth()->user()->role) ? auth()->user()->role->value : auth()->user()->role }}</small>
-        </div>
-    @endauth
-
             @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
                 <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                     <i class="bi bi-calendar-event me-2"></i>
@@ -71,11 +65,12 @@
                     </a>
                     <!-- Staff submenu -->
                     @php
-                        $isStaffSectionActive = request()->routeIs('admin.operators.*') || request()->routeIs('admin.admins.*');
+                        // Updated route matching to use admin.staff.* (was legacy admin.operators.*)
+                        $isStaffSectionActive = request()->routeIs('admin.staff.*') || request()->routeIs('admin.admins.*');
                         $roleFilter = request('role');
-                        $isOperatorsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'operator';
-                        $isApprovalsActive = request()->routeIs('admin.operators.*') && $roleFilter === 'approval_officer';
-                        $isFinanceActive = request()->routeIs('admin.operators.*') && $roleFilter === 'finance_officer';
+                        $isOperatorsActive = request()->routeIs('admin.staff.*') && $roleFilter === 'operator';
+                        $isApprovalsActive = request()->routeIs('admin.staff.*') && $roleFilter === 'approval_officer';
+                        $isFinanceActive = request()->routeIs('admin.staff.*') && $roleFilter === 'finance_officer';
                         $isAdminsActive = request()->routeIs('admin.admins.*');
                     @endphp
                     <div class="nav-item has-submenu {{ $isStaffSectionActive ? 'submenu-open' : '' }}">
@@ -154,6 +149,12 @@
                             <span class="badge bg-warning text-dark ms-2 {{ ($sharedPendingApprovals ?? 0) > 25 ? 'badge-pulse' : '' }}">{{ $sharedPendingApprovals }}</span>
                         @endif
                     </a>
+                    @elseif($authUser->isFinanceOfficer())
+                        <div class="mt-2 small text-uppercase text-muted px-2 section-label">Finance</div>
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span class="label-text">Insights</span>
+                        </a>
                 @else
                     <div class="mt-2 small text-uppercase text-muted px-2 section-label">Account</div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
@@ -285,11 +286,12 @@
                     </a>
                     <!-- Staff submenu (mobile) -->
                     @php
-                        $mobileIsStaffSectionActive = request()->routeIs('admin.operators.*') || request()->routeIs('admin.admins.*');
+                        // Mobile version active state logic (updated from admin.operators.* to admin.staff.*)
+                        $mobileIsStaffSectionActive = request()->routeIs('admin.staff.*') || request()->routeIs('admin.admins.*');
                         $mobileRoleFilter = request('role');
-                        $mobileOpsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'operator';
-                        $mobileApprovalsActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'approval_officer';
-                        $mobileFinanceActive = request()->routeIs('admin.operators.*') && $mobileRoleFilter === 'finance_officer';
+                        $mobileOpsActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'operator';
+                        $mobileApprovalsActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'approval_officer';
+                        $mobileFinanceActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'finance_officer';
                         $mobileAdminsActive = request()->routeIs('admin.admins.*');
                     @endphp
                     <div class="nav-item has-submenu {{ $mobileIsStaffSectionActive ? 'submenu-open' : '' }}">
@@ -364,6 +366,12 @@
                             <span class="badge bg-warning text-dark ms-2 {{ ($sharedPendingApprovals ?? 0) > 25 ? 'badge-pulse' : '' }}">{{ $sharedPendingApprovals }}</span>
                         @endif
                     </a>
+                    @elseif($authUser->isFinanceOfficer())
+                        <div class="mt-2 small text-uppercase text-muted px-2">Finance</div>
+                        <a class="nav-link d-flex align-items-center {{ request()->routeIs('finance.insights') ? 'active' : '' }}" href="{{ route('finance.insights') }}">
+                            <i class="bi bi-bar-chart-line me-2"></i>
+                            <span>Insights</span>
+                        </a>
                 @else
                     <div class="mt-2 small text-uppercase text-muted px-2">Account</div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">

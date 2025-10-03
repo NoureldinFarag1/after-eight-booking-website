@@ -20,10 +20,24 @@ class BookingController extends Controller
     use AuthorizesRequests;
 
     /**
+     * Defense-in-depth: block manageable staff roles (operator, approval_officer, finance_officer) from personal booking flows.
+     * Primary enforcement is in middleware 'restrict_staff_personal'.
+     */
+    protected function denyIfStaffRole(): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user && $user->role && $user->role->isManageableStaff()) {
+            abort(403, 'Staff roles cannot access personal bookings.');
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+    $this->denyIfStaffRole();
         /** @var User $user */
         $user = Auth::user();
 
@@ -80,6 +94,7 @@ class BookingController extends Controller
      */
     public function create(Event $event)
     {
+    $this->denyIfStaffRole();
         // Enforce business rule: admins cannot create bookings
         $this->authorize('create', Booking::class);
         if (!$event->isBookable()) {
@@ -98,6 +113,7 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+    $this->denyIfStaffRole();
         // Enforce business rule: admins cannot create bookings
         $this->authorize('create', Booking::class);
         $validated = $request->validate([
@@ -197,6 +213,7 @@ class BookingController extends Controller
      */
     public function show(Booking $booking)
     {
+    $this->denyIfStaffRole();
         $this->authorize('view', $booking);
 
         $booking->load(['event', 'tickets.type', 'user']);
@@ -209,6 +226,7 @@ class BookingController extends Controller
      */
     public function cancel(Booking $booking)
     {
+    $this->denyIfStaffRole();
         $this->authorize('cancel', $booking);
 
         if (!$booking->canBeCancelled()) {
@@ -234,6 +252,7 @@ class BookingController extends Controller
      */
     public function edit(Booking $booking)
     {
+    $this->denyIfStaffRole();
         $this->authorize('update', $booking);
 
         return view('bookings.edit', compact('booking'));
@@ -244,6 +263,7 @@ class BookingController extends Controller
      */
     public function update(Request $request, Booking $booking)
     {
+    $this->denyIfStaffRole();
         $this->authorize('update', $booking);
 
         $validated = $request->validate([
@@ -263,6 +283,7 @@ class BookingController extends Controller
      */
     public function destroy(Booking $booking)
     {
+        $this->denyIfStaffRole();
         $this->authorize('delete', $booking);
 
         $booking->delete();
