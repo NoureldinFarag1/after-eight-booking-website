@@ -160,7 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		const elements = document.querySelectorAll('.sidebar .nav-link, .sidebar .guest-actions .btn');
 		elements.forEach(el => {
 			const label = el.querySelector('.label-text');
-			if (!label) return;
+			const userInitials = el.querySelector('.user-initials-sidebar');
+			if (!label && !userInitials) return;
+
 			// Always dispose any existing tooltip to avoid duplicates
 			if (window.bootstrap && window.bootstrap.Tooltip) {
 				const existing = window.bootstrap.Tooltip.getInstance(el);
@@ -169,7 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (enable) {
 				el.setAttribute('data-bs-toggle', 'tooltip');
 				el.setAttribute('data-bs-placement', 'right');
-				el.setAttribute('title', label.textContent.trim());
+				// Use appropriate title text
+				if (userInitials) {
+					el.setAttribute('title', 'My Profile');
+				} else if (label) {
+					el.setAttribute('title', label.textContent.trim());
+				}
 				// Initialize tooltip
 				if (window.bootstrap && window.bootstrap.Tooltip) {
 					new window.bootstrap.Tooltip(el, { trigger: 'hover focus', delay: { show: 150, hide: 0 } });

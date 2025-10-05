@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketTypeController;
 use App\Http\Controllers\EventRequestController;
@@ -34,6 +35,12 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Profile completion routes (accessible to authenticated users with incomplete profiles)
+Route::middleware('auth')->group(function () {
+    Route::get('/profile/complete', [\App\Http\Controllers\User\ProfileController::class, 'showComplete'])->name('profile.complete');
+    Route::post('/profile/complete', [\App\Http\Controllers\User\ProfileController::class, 'complete'])->name('profile.complete.store');
+});
 
 // Public event routes
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
@@ -80,6 +87,13 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
     Route::delete('/admin/staff/{user}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
     Route::patch('/admin/staff/{id}/restore', [StaffController::class, 'restore'])->name('admin.staff.restore');
 
+        // Users management (Admin only) - regular users (non-staff)
+        Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+        Route::get('/admin/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
+        Route::patch('/admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+        Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        Route::patch('/admin/users/{id}/restore', [UserController::class, 'restore'])->name('admin.users.restore');
+
     // Redirect old operators URL to new staff URL for backward compatibility
     Route::get('/admin/operators', function() {
         return redirect()->route('admin.staff.index');
@@ -96,6 +110,15 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
         Route::resource('tickets', TicketController::class)->only(['index', 'show']);
         Route::get('/tickets/{ticket}/qr-code', [TicketController::class, 'qrCode'])->name('tickets.qr-code');
         Route::get('/tickets/{ticket}/download', [TicketController::class, 'download'])->name('tickets.download');
+
+        // User Profile & Settings (Regular users only)
+        Route::prefix('profile')->name('user.profile.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\User\ProfileController::class, 'index'])->name('index');
+            Route::get('/edit', [\App\Http\Controllers\User\ProfileController::class, 'edit'])->name('edit');
+            Route::put('/update', [\App\Http\Controllers\User\ProfileController::class, 'update'])->name('update');
+            Route::get('/password', [\App\Http\Controllers\User\ProfileController::class, 'editPassword'])->name('password.edit');
+            Route::put('/password', [\App\Http\Controllers\User\ProfileController::class, 'updatePassword'])->name('password.update');
+        });
     });
 
     // Operator-only ticket scanning
@@ -160,8 +183,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'update'])->name('admin.admins.update');
     Route::delete('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'destroy'])->name('admin.admins.destroy');
 Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
-        ->only(['index', 'create', 'store']);
+        ->only(['index', 'create', 'store', 'show']);
 });
+
+// Public invitation verification route (like ticket verification)
+Route::get('/invitations/verify/{invitation}/{code}', [\App\Http\Controllers\InvitationController::class, 'verify'])->name('invitations.verify');
 
 
 // Finance insights (finance officers only)

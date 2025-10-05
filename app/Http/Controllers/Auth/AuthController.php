@@ -74,10 +74,26 @@ class AuthController extends Controller
                     ->with('success', 'Welcome back, ' . $user->name . '!');
             }
 
-if ($user->role === Role::ADMIN) {
+            // Finance officer redirect (also block if inactive)
+            if ($user->role === Role::FINANCE_OFFICER) {
+                if (!$user->active) {
+                    Auth::logout();
+                    return back()->withErrors(['email' => 'Your finance officer account is inactive. Please contact an administrator.']);
+                }
+                return redirect()->route('finance.insights')
+                    ->with('success', 'Welcome back, ' . $user->name . '!');
+            }
+
+            if ($user->role === Role::ADMIN) {
                 // Admins go to dashboard
                 return redirect()->intended(route('admin.dashboard'))
                     ->with('success', 'Welcome back, ' . $user->name . '!');
+            }
+
+            // Regular users - also check if they are active
+            if (!$user->active) {
+                Auth::logout();
+                return back()->withErrors(['email' => 'Your account has been deactivated. Please contact support for assistance.']);
             }
 
             // Regular users go to events
@@ -106,7 +122,9 @@ if ($user->role === Role::ADMIN) {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20'],
+            'birthday' => ['required', 'date', 'before:' . now()->subYears(13)->format('Y-m-d')],
+            'gender' => ['required', 'in:male,female'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -114,8 +132,11 @@ if ($user->role === Role::ADMIN) {
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
+            'birthday' => $request->birthday,
+            'gender' => $request->gender,
             'password' => Hash::make($request->password),
             'role' => Role::USER, // Default role
+            'profile_completed' => true, // Registration form provides all required info
         ]);
 
         Auth::login($user);
@@ -200,6 +221,7 @@ if ($user->role === Role::ADMIN) {
                 'password' => Hash::make(str()->random(32)), // random placeholder; user may set password later
                 'role' => Role::USER,
                 'active' => true,
+                'profile_completed' => false, // Google OAuth users need to complete profile
                 'provider_name' => $providerName,
                 'provider_id' => $providerId,
                 'provider_token' => $token,
@@ -207,8 +229,9 @@ if ($user->role === Role::ADMIN) {
             ]);
         });
 
+        // Check if user is active before logging them in
         if (!$user->active) {
-            return redirect()->route('login')->withErrors(['email' => 'Your account is inactive.']);
+            return redirect()->route('login')->withErrors(['email' => 'Your account has been deactivated. Please contact support for assistance.']);
         }
 
         Auth::login($user, true);
@@ -216,22 +239,25 @@ if ($user->role === Role::ADMIN) {
 
         // Role-based redirect consistent with password login
         if ($user->role === Role::OPERATOR) {
-            if (!$user->active) {
-                Auth::logout();
-                return redirect()->route('login')->withErrors(['email' => 'Your operator account is inactive.']);
-            }
             return redirect()->route('tickets.scan')->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
-            // Approval officer redirect
-            if ($user->role === Role::APPROVAL_OFFICER) {
-                return redirect()->route('approval.index')
-                    ->with('success', 'Welcome back, ' . $user->name . '!');
-            }
+        // Approval officer redirect
+        if ($user->role === Role::APPROVAL_OFFICER) {
+            return redirect()->route('approval.index')
+                ->with('success', 'Welcome back, ' . $user->name . '!');
+        }
+
+        // Finance officer redirect
+        if ($user->role === Role::FINANCE_OFFICER) {
+            return redirect()->route('finance.insights')
+                ->with('success', 'Welcome back, ' . $user->name . '!');
+        }
 
         if ($user->role === Role::ADMIN) {
             return redirect()->route('admin.dashboard')->with('success', 'Welcome back, ' . $user->name . '!');
         }
+
         return redirect()->route('events.index')->with('success', 'Welcome back, ' . $user->name . '!');
     }
 }

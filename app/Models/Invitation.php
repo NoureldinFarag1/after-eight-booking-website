@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Invitation extends Model
 {
@@ -17,7 +18,25 @@ class Invitation extends Model
         'status',
         'event_id',
         'sender_id',
+        'token',
+        'qr_code_path',
+        'qr_code',
+        'qr_status',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($invitation) {
+            if (empty($invitation->token)) {
+                $invitation->token = Str::random(32);
+            }
+            if (empty($invitation->qr_code)) {
+                $invitation->qr_code = Str::random(40);
+            }
+        });
+    }
 
     public function creator()
     {

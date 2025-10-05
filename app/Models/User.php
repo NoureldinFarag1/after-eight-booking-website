@@ -27,7 +27,11 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
+        'age',
+        'gender',
+        'birthday',
         'active',
+        'profile_completed',
         'provider_id',
         'provider_name',
         'provider_token',
@@ -58,6 +62,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'active' => 'boolean',
+            'profile_completed' => 'boolean',
+            'birthday' => 'date',
             'provider_token' => 'encrypted',
             'provider_refresh_token' => 'encrypted',
         ];
@@ -125,6 +131,66 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user account is active
+     */
+    public function isActive(): bool
+    {
+        return $this->active === true;
+    }
+
+    /**
+     * Check if user account is inactive
+     */
+    public function isInactive(): bool
+    {
+        return $this->active === false;
+    }
+
+    /**
+     * Check if user has completed their profile
+     */
+    public function hasCompletedProfile(): bool
+    {
+        return $this->profile_completed === true;
+    }
+
+    /**
+     * Check if user needs to complete their profile
+     */
+    public function needsProfileCompletion(): bool
+    {
+        return !$this->profile_completed && !$this->isStaff();
+    }
+
+    /**
+     * Calculate age from birthday
+     */
+    public function getCalculatedAge(): ?int
+    {
+        if (!$this->birthday) {
+            return null;
+        }
+
+        return \Carbon\Carbon::parse($this->birthday)->diffInYears(now());
+    }
+
+    /**
+     * Get display age (calculated from birthday or stored age)
+     */
+    public function getDisplayAge(): ?int
+    {
+        // Prioritize calculated age from birthday
+        $calculatedAge = $this->getCalculatedAge();
+
+        if ($calculatedAge !== null) {
+            return $calculatedAge;
+        }
+
+        // Fallback to stored age field for legacy users
+        return $this->age;
+    }
+
+    /**
      * Get bookings for this user
      */
     public function bookings(): HasMany
@@ -146,6 +212,14 @@ class User extends Authenticatable
     public function scannedTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'scanned_by');
+    }
+
+    /**
+     * Get invitations received by this user
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(Invitation::class, 'email', 'email');
     }
 
     /**

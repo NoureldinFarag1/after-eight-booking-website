@@ -23,9 +23,37 @@
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
-                <label for="phone" class="form-label d-flex justify-content-between">Phone <span class="text-muted small">Optional</span></label>
-                <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+1 555 123 4567">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+20 123 456 7890" required>
                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="mb-3">
+                <label for="birthday" class="form-label">Birthday</label>
+                <input type="date" class="form-control @error('birthday') is-invalid @enderror" id="birthday" name="birthday" value="{{ old('birthday') }}" required max="{{ now()->subYears(13)->format('Y-m-d') }}">
+                <div class="form-text">You must be at least 13 years old to register.</div>
+                @error('birthday')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Gender</label>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input @error('gender') is-invalid @enderror" type="radio" name="gender" id="gender_male" value="male" {{ old('gender') == 'male' ? 'checked' : '' }} required>
+                            <label class="form-check-label" for="gender_male">
+                                <i class="bi bi-person me-1"></i>Male
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input @error('gender') is-invalid @enderror" type="radio" name="gender" id="gender_female" value="female" {{ old('gender') == 'female' ? 'checked' : '' }} required>
+                            <label class="form-check-label" for="gender_female">
+                                <i class="bi bi-person me-1"></i>Female
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                @error('gender')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>

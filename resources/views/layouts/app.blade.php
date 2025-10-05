@@ -76,7 +76,7 @@
                     <div class="nav-item has-submenu {{ $isStaffSectionActive ? 'submenu-open' : '' }}">
                         <a class="nav-link d-flex align-items-center justify-content-between submenu-toggle" href="#" data-submenu="staff" aria-expanded="{{ $isStaffSectionActive ? 'true' : 'false' }}">
                             <span class="d-flex align-items-center">
-                                <i class="bi bi-people me-2"></i>
+                                <i class="bi bi-person-square me-2"></i>
                                 <span class="label-text">Staff</span>
                             </span>
                             <i class="bi bi-chevron-down submenu-chevron"></i>
@@ -103,6 +103,12 @@
 
 
                     </div>
+
+                    <!-- Users management -->
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                        <i class="bi bi-people me-2"></i>
+                        <span class="label-text">Users</span>
+                    </a>
 
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
@@ -192,6 +198,10 @@
         <!-- Bottom actions -->
         <div class="mt-auto px-2 pb-3">
             @auth
+            <a class="nav-link d-flex align-items-center mb-2 {{ request()->routeIs('user.profile.*') ? 'active' : '' }}" href="{{ route('user.profile.index') }}">
+                <i class="bi bi-gear me-2"></i>
+                <span class="label-text">Settings</span>
+            </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger w-100 logout-btn">
@@ -222,8 +232,28 @@
                 </div>
                 @auth
                     <div class="d-flex align-items-center gap-3">
-                        <div class="small d-flex align-items-center">
-                            <i class="bi bi-person-circle me-1"></i>{{ auth()->user()->name }}
+                        <!-- User Profile Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-link text-light d-flex align-items-center text-decoration-none dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    style="border: none; background: none;">
+                                <div class="user-initials-avatar me-2">
+                                    {{ strtoupper(substr($authUser->name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $authUser->name)[1] ?? '', 0, 1)) }}
+                                </div>
+                                <span class="fw-semibold">{{ explode(' ', $authUser->name)[0] }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}" class="mb-0">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item d-flex align-items-center text-danger">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 @endauth
@@ -321,6 +351,13 @@
                             </a>
                         </div>
                     </div>
+
+                    <!-- Users management (mobile) -->
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                        <i class="bi bi-people me-2"></i>
+                        <span>Users</span>
+                    </a>
+
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
                         <i class="bi bi-ticket-perforated me-2"></i>
                         <span>Bookings</span>
@@ -409,6 +446,10 @@
         <div class="mt-auto w-100">
             @auth
             <div class="px-2 pb-3">
+                <a class="nav-link d-flex align-items-center mb-2 {{ request()->routeIs('user.profile.*') ? 'active' : '' }}" href="{{ route('user.profile.index') }}">
+                    <i class="bi bi-gear me-2"></i>
+                    <span>Settings</span>
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="btn btn-outline-danger w-100 logout-btn">

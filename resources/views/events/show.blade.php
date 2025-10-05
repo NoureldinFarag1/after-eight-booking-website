@@ -132,7 +132,8 @@
             </div>
         </div>
 
-        @if(Auth::user()->isFinanceOfficer())
+        @auth
+            @if(Auth::user()->isFinanceOfficer())
             <div class="card mb-4">
                 <div class="card-header">
                     <h4>Finance Officer Insights</h4>
@@ -152,6 +153,7 @@
                 </div>
             </div>
         @endif
+        @endauth
 
         @auth
             @if(auth()->user()->isAdmin())

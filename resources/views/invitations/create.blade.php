@@ -4,57 +4,120 @@
 
 @section('content')
 <div class="container">
-    <h1 class="mb-4">Send Invitation</h1>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <form action="{{ route('invitations.store') }}" method="POST">
-                @csrf
-
-                <!-- Event Select -->
-                <div class="mb-3">
-                    <label for="event_id" class="form-label">Event (optional)</label>
-                    <select name="event_id" id="event_id" class="form-select">
-                        <option value="">-- Select an Event (optional) --</option>
-                        @foreach($events as $event)
-                            <option value="{{ $event->id }}" {{ (old('event_id', $selectedEventId ?? '') == $event->id) ? 'selected' : '' }}>
-                                {{ $event->title }} - {{ $event->event_date->format('M j, Y') }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('event_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-
-                <!-- Name -->
-                <div class="mb-3">
-                    <label for="name" class="form-label">Recipient Name</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
-                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-
-                <!-- Email -->
-                <div class="mb-3">
-                    <label for="email" class="form-label">Recipient Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required>
-                    @error('email')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-
-                <!-- Message -->
-                <div class="mb-3">
-                    <label for="message" class="form-label">Message (optional)</label>
-                    <textarea class="form-control" id="message" name="message" rows="4">{{ old('message') }}</textarea>
-                    @error('message')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-
-                <!-- Submit -->
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-send me-1"></i>Send Invitation
-                </button>
-                <a href="{{ route('invitations.index') }}" class="btn btn-secondary ms-2">
-                    Cancel
-                </a>
-            </form>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Send Event Invitation</h1>
+        <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Invitations
+        </a>
     </div>
+
+    @if($events->isEmpty())
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>No events available!</strong> You need to create an event first before sending invitations.
+            <a href="{{ route('admin.events.create') }}" class="btn btn-sm btn-warning ms-2">
+                <i class="bi bi-plus-circle me-1"></i> Create Event
+            </a>
+        </div>
+    @else
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-envelope-plus me-2"></i>
+                    New Invitation Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('invitations.store') }}" method="POST">
+                    @csrf
+
+                    <!-- Event Select (Required) -->
+                    <div class="mb-3">
+                        <label for="event_id" class="form-label">
+                            <strong>Select Event <span class="text-danger">*</span></strong>
+                        </label>
+                        <select name="event_id" id="event_id" class="form-select" required>
+                            <option value="">-- Choose an Event --</option>
+                            @foreach($events as $event)
+                                <option value="{{ $event->id }}" {{ (old('event_id', $selectedEventId ?? '') == $event->id) ? 'selected' : '' }}>
+                                    {{ $event->title }} - {{ $event->event_date->format('M j, Y g:i A') }} at {{ $event->location }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('event_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        <div class="form-text">Select the event for which you're sending this invitation.</div>
+                    </div>
+
+                    <!-- Recipient Name -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <strong>Recipient Name <span class="text-danger">*</span></strong>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required
+                               placeholder="Enter recipient's full name">
+                        @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </div>
+
+                    <!-- Recipient Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <strong>Recipient Email <span class="text-danger">*</span></strong>
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required
+                               placeholder="Enter recipient's email address">
+                        @error('email')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        <div class="form-text">The invitation with QR code will be sent to this email address.</div>
+                    </div>
+
+                    <!-- Personal Message -->
+                    <div class="mb-4">
+                        <label for="message" class="form-label">
+                            <strong>Personal Message</strong> <small class="text-muted">(optional)</small>
+                        </label>
+                        <textarea class="form-control" id="message" name="message" rows="4"
+                                  placeholder="Add a personal message to include with the invitation...">{{ old('message') }}</textarea>
+                        @error('message')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        <div class="form-text">This message will be included in the invitation email along with the event details.</div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i> Send Invitation with QR Code
+                        </button>
+                        <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card mt-4 bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-info-circle me-2"></i>How it works:
+                </h6>
+                <ul class="mb-0">
+                    <li>Select an event and enter recipient details</li>
+                    <li>A unique QR code will be generated for this invitation</li>
+                    <li>The recipient will receive an email with event details and QR code attachment</li>
+                    <li>They can use the QR code for event entry verification</li>
+                </ul>
+            </div>
+        </div>
+    @endif
 </div>
+
+<script>
+// Show event details when event is selected
+document.getElementById('event_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+        // You can add logic here to show more event details if needed
+        console.log('Event selected:', selectedOption.text);
+    }
+});
+</script>
 @endsection
