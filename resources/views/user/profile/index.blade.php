@@ -359,7 +359,6 @@
                             <thead>
                                 <tr>
                                     <th>Event</th>
-                                    <th>Invited By</th>
                                     <th>Date Received</th>
                                     <th class="text-center">Status</th>
                                 </tr>
@@ -378,7 +377,6 @@
                                                 <div class="text-muted small">No longer available</div>
                                             @endif
                                         </td>
-                                        <td>{{ $invitation->name }}</td>
                                         <td>
                                             <div>{{ $invitation->created_at->format('M j, Y') }}</div>
                                             <div class="text-muted small">{{ $invitation->created_at->format('g:i A') }}</div>

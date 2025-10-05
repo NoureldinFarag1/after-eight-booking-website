@@ -37,8 +37,8 @@ class InvitationController extends Controller
      */
     public function create(Request $request)
     {
-        // load events for dropdown (admins only via routes middleware)
-        $events = Event::orderBy('title')->get();
+        // load published events for dropdown
+        $events = Event::where('status', 'published')->orderBy('title')->get();
         $selectedEventId = $request->query('event_id') ?? null;
 
         return view('invitations.create', compact('events', 'selectedEventId'));

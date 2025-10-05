@@ -36,7 +36,7 @@
                         <label for="event_id" class="form-label">
                             <strong>Select Event <span class="text-danger">*</span></strong>
                         </label>
-                        <select name="event_id" id="event_id" class="form-select" required>
+                        <select name="event_id" id="event_id" class="form-select" required {{ $selectedEventId ? 'disabled' : '' }}>
                             <option value="">-- Choose an Event --</option>
                             @foreach($events as $event)
                                 <option value="{{ $event->id }}" {{ (old('event_id', $selectedEventId ?? '') == $event->id) ? 'selected' : '' }}>
@@ -44,6 +44,9 @@
                                 </option>
                             @endforeach
                         </select>
+                        @if($selectedEventId)
+                            <input type="hidden" name="event_id" value="{{ $selectedEventId }}">
+                        @endif
                         @error('event_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         <div class="form-text">Select the event for which you're sending this invitation.</div>
                     </div>

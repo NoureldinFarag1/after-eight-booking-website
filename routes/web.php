@@ -175,13 +175,14 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
 
-    // Admins management (manage admin users)
     Route::get('/admin/admins', [\App\Http\Controllers\Admin\AdminController::class, 'index'])->name('admin.admins.index');
     Route::get('/admin/admins/create', [\App\Http\Controllers\Admin\AdminController::class, 'create'])->name('admin.admins.create');
     Route::post('/admin/admins', [\App\Http\Controllers\Admin\AdminController::class, 'store'])->name('admin.admins.store');
     Route::get('/admin/admins/{user}/edit', [\App\Http\Controllers\Admin\AdminController::class, 'edit'])->name('admin.admins.edit');
     Route::put('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'update'])->name('admin.admins.update');
     Route::delete('/admin/admins/{user}', [\App\Http\Controllers\Admin\AdminController::class, 'destroy'])->name('admin.admins.destroy');
+    Route::patch('/admin/admins/{id}/restore', [\App\Http\Controllers\Admin\AdminController::class, 'restore'])->name('admin.admins.restore');
+    Route::patch('/admin/admins/{user}/toggle', [\App\Http\Controllers\Admin\AdminController::class, 'toggle'])->name('admin.admins.toggle');
 Route::resource('invitations', \App\Http\Controllers\InvitationController::class)
         ->only(['index', 'create', 'store', 'show']);
 });
@@ -189,11 +190,6 @@ Route::resource('invitations', \App\Http\Controllers\InvitationController::class
 // Public invitation verification route (like ticket verification)
 Route::get('/invitations/verify/{invitation}/{code}', [\App\Http\Controllers\InvitationController::class, 'verify'])->name('invitations.verify');
 
-
-// Finance insights (finance officers only)
-Route::middleware(['auth','role:finance_officer'])->group(function () {
-    Route::get('/insights', [\App\Http\Controllers\Finance\InsightsController::class, 'index'])->name('finance.insights');
-});
 
 // Google OAuth
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
