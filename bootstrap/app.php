@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile.completed' => \App\Http\Middleware\EnsureProfileCompleted::class,
         ]);
 
+        // Apply CSP headers first to allow eval for Chart.js and Alpine.js
+        $middleware->web(prepend: [
+            \App\Http\Middleware\AddCspHeaders::class,
+        ]);
+
         // Apply the active user check and profile completion check to all web routes
         $middleware->web(append: [
             \App\Http\Middleware\CheckUserActive::class,

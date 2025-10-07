@@ -8,7 +8,7 @@
     <div>
         <div class="d-flex align-items-center gap-3 mb-2">
             <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Back to Users
+                <i class="bi bi-arrow-left me-1"></i>Users
             </a>
             <h1 class="h3 mb-0">User Details</h1>
         </div>
@@ -187,7 +187,7 @@
                                             <span class="badge bg-light text-dark">{{ $booking->quantity }}</span>
                                         </td>
                                         <td class="text-end fw-semibold">
-                                            {{ number_format($booking->total_amount, 2) }} EGP
+                                            {{ number_format((float)$booking->total_amount, 2) }} EGP
                                         </td>
                                         <td class="text-center">
                                             <span class="badge

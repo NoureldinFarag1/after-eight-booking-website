@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'My Requests')
+@section('title', 'Requests')
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h5 class="mb-0">My Event Requests</h5>
+        <h5 class="mb-0">Event Requests</h5>
     </div>
     <div class="card-body">
         @if($requests->isEmpty())
-            <p>You have not submitted any requests yet.</p>
+            <p class="text-muted mb-0">No requests yet.</p>
         @else
             <table class="table table-bordered align-middle">
                 <thead>

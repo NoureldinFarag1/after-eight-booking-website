@@ -181,7 +181,7 @@
 
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Event
+                            <i class="bi bi-arrow-left me-1"></i>Event
                         </a>
 
                         <button type="submit" class="btn btn-primary" id="submitBtn" disabled>

@@ -18,6 +18,7 @@ class Event extends Model
         'title',
         'description',
         'location',
+        'artists',
         'event_date',
         'event_time',
         'capacity',
@@ -164,5 +165,20 @@ class Event extends Model
     public function operators()
     {
         return $this->belongsToMany(User::class, 'event_operator', 'event_id', 'user_id');
+    }
+
+    /**
+     * Get artists as an array (splitting comma separated string)
+     */
+    public function getArtistsListAttribute(): array
+    {
+        if (!$this->artists) {
+            return [];
+        }
+        return collect(explode(',', $this->artists))
+            ->map(fn($a) => trim($a))
+            ->filter()
+            ->values()
+            ->all();
     }
 }

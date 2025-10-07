@@ -281,7 +281,7 @@
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ route('admin.users.show', $user) }}"
                                            class="btn btn-outline-primary btn-sm"
-                                           title="View Details">
+                                           title="View">
                                             <i class="bi bi-eye"></i>
                                         </a>
 

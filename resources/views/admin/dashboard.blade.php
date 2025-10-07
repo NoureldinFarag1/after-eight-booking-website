@@ -457,7 +457,7 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script>
     // Daily Scan Activity Chart
     const dailyScanData = @json($dailyScanActivity);

@@ -67,7 +67,7 @@
                             <label class="form-label">Booking Details</label>
                             <div class="form-control-plaintext">
                                 <div><strong>Quantity:</strong> {{ $booking->quantity }} tickets</div>
-                                <div><strong>Total Amount:</strong> EGP {{ number_format($booking->total_amount, 2) }}</div>
+                                <div><strong>Total Amount:</strong> EGP {{ number_format((float)$booking->total_amount, 2) }}</div>
                             </div>
                         </div>
                     </div>
@@ -143,7 +143,7 @@
 
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('bookings.show', $booking) }}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Booking
+                            <i class="bi bi-arrow-left me-1"></i>Booking
                         </a>
 
                         <div>

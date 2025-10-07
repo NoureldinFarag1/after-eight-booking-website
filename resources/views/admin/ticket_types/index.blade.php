@@ -8,7 +8,7 @@
         <h1 class="h4 mb-0">Ticket Types for: {{ $event->title }}</h1>
         <small class="text-muted">Event Date: {{ $event->event_date?->format('Y-m-d') }}</small>
     </div>
-    <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-outline-secondary">Back to Event</a>
+    <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-outline-secondary">Event</a>
   </div>
 
   @if(session('success'))
@@ -66,6 +66,21 @@
                               <div class="form-text">Remaining available: {{ $remaining }}</div>
                           </div>
                       </div>
+                      <div class="row">
+                          <div class="col-md-6 mb-3">
+                              <label class="form-label">Fee Type (optional)</label>
+                              <select name="fee_type" class="form-select" id="create_fee_type">
+                                  <option value="" {{ old('fee_type') === null ? 'selected' : '' }}>No fee</option>
+                                  <option value="percentage" {{ old('fee_type')==='percentage' ? 'selected' : '' }}>Percentage %</option>
+                                  <option value="fixed" {{ old('fee_type')==='fixed' ? 'selected' : '' }}>Fixed Amount</option>
+                              </select>
+                          </div>
+                          <div class="col-md-6 mb-3">
+                              <label class="form-label">Fee Amount</label>
+                              <input type="number" step="0.01" min="0" name="fee_amount" class="form-control" value="{{ old('fee_amount') }}" placeholder="e.g. 5 for 5% or 10 EGP" id="create_fee_amount">
+                              <div class="form-text">If percentage, value must be 0–100.</div>
+                          </div>
+                      </div>
                       <div class="form-check form-switch mb-3">
                           <input type="hidden" name="is_active" value="0">
                           <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}>
@@ -88,7 +103,9 @@
                       <thead>
                           <tr>
                               <th>Name</th>
-                              <th>Price</th>
+                              <th>Base Price</th>
+                              <th>Fee</th>
+                              <th>Total (Incl Fee)</th>
                               <th>Capacity</th>
                               <th>Status</th>
                               <th class="text-end">Actions</th>
@@ -101,7 +118,21 @@
                                       <div class="fw-semibold">{{ $type->name }}</div>
                                       <div class="text-muted small">{{ $type->description }}</div>
                                   </td>
-                                  <td>EGP {{ number_format($type->price, 2) }}</td>
+                                  @php
+                                      $base = (float)$type->price;
+                                      $feeCalc = $type->calculateFee();
+                                      $totalWithFee = $base + $feeCalc;
+                                  @endphp
+                                  <td>EGP {{ number_format($base, 2) }}</td>
+                                  <td>
+                                      @if($type->fee_type)
+                                          {{ $type->fee_type === 'percentage' ? $type->fee_amount.'%' : 'EGP '.number_format((float)$type->fee_amount,2) }}
+                                          <div class="text-muted small">= EGP {{ number_format($feeCalc,2) }}</div>
+                                      @else
+                                          <span class="text-muted">— (0)</span>
+                                      @endif
+                                  </td>
+                                  <td><strong>EGP {{ number_format($totalWithFee,2) }}</strong></td>
                                   <td>{{ $type->capacity ?? '—' }}</td>
                                   <td>
                                       <span class="badge {{ $type->is_active ? 'bg-success' : 'bg-secondary' }}">
@@ -133,15 +164,28 @@
                                                   <label class="form-label">Description</label>
                                                   <input type="text" name="description" class="form-control" value="{{ old('description', $type->description) }}">
                                               </div>
-                                              <div class="col-md-4">
+                                              <div class="col-md-3">
                                                   <label class="form-label">Price</label>
                                                   <input type="number" min="0" step="0.01" name="price" class="form-control" value="{{ old('price', $type->price) }}" required>
                                               </div>
-                                              <div class="col-md-4">
+                                              <div class="col-md-3">
                                                   <label class="form-label">Capacity</label>
                                                   <input type="number" min="0" name="capacity" class="form-control" value="{{ old('capacity', $type->capacity) }}">
                                               </div>
-                                              <div class="col-md-4 d-flex align-items-end">
+                                              <div class="col-md-3">
+                                                  <label class="form-label">Fee Type</label>
+                                                  <select name="fee_type" class="form-select">
+                                                      <option value="" {{ old('fee_type', $type->fee_type) === null ? 'selected' : '' }}>No fee</option>
+                                                      <option value="percentage" {{ old('fee_type', $type->fee_type)==='percentage' ? 'selected' : '' }}>Percentage %</option>
+                                                      <option value="fixed" {{ old('fee_type', $type->fee_type)==='fixed' ? 'selected' : '' }}>Fixed Amount</option>
+                                                  </select>
+                                              </div>
+                                              <div class="col-md-3">
+                                                  <label class="form-label">Fee Amount</label>
+                                                  <input type="number" step="0.01" min="0" name="fee_amount" class="form-control" value="{{ old('fee_amount', $type->fee_amount) }}" placeholder="0">
+                                                  <div class="form-text">% 0–100 if percentage</div>
+                                              </div>
+                                              <div class="col-md-12 d-flex align-items-end mt-2">
                                                   <div class="form-check form-switch">
                                                       <input type="hidden" name="is_active" value="0">
                                                       <input class="form-check-input" type="checkbox" id="is_active_{{ $type->id }}" name="is_active" value="1" {{ old('is_active', $type->is_active ? 1 : 0) ? 'checked' : '' }}>

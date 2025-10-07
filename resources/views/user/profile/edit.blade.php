@@ -8,7 +8,7 @@
     <div>
         <div class="d-flex align-items-center gap-3 mb-2">
             <a href="{{ route('user.profile.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Back to Profile
+                <i class="bi bi-arrow-left me-1"></i>Profile
             </a>
             <h1 class="h3 mb-0">Edit Profile</h1>
         </div>

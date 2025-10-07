@@ -74,7 +74,7 @@ class BookingsAndRequestsTest extends TestCase
         $response->assertStatus(200)
             ->assertSee('My Event Requests')
             ->assertSee('Attendees:')
-            ->assertSee('My Bookings');
+            ->assertSee('Bookings');
     }
 
     public function test_event_requests_pagination_separate_from_bookings(): void

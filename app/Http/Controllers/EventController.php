@@ -130,6 +130,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
+            'artists' => 'nullable|string|max:500',
             'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
             'capacity' => 'required|integer|min:1',
@@ -138,13 +139,13 @@ class EventController extends Controller
             'image' => 'nullable|image|max:2048',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
-            'fee_type' => 'nullable|in:fixed,percentage',
-            'fee_amount' => 'nullable|numeric|min:0',
             'operators' => 'nullable|array',
             'operators.*' => 'exists:users,id',
             'ticket_types' => 'nullable|array',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:255|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
+            'ticket_types.*.fee_type' => 'nullable|in:fixed,percentage',
+            'ticket_types.*.fee_amount' => 'nullable|numeric|min:0|max:1000',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
@@ -165,8 +166,8 @@ class EventController extends Controller
             'image_url' => $validated['image_url'] ?? null,
             'terms_conditions' => $validated['terms_conditions'],
             'finance_officer_id' => $validated['finance_officer_id'],
-            'fee_type' => $validated['fee_type'],
-            'fee_amount' => $validated['fee_amount'],
+            // Fees intentionally excluded at creation time; managed later with tickets.
+            'artists' => $validated['artists'] ?? null,
             'initial_capacity' => $validated['capacity'], // Store the original capacity
         ]);
 
@@ -182,6 +183,8 @@ class EventController extends Controller
                     'name' => $t['name'],
                     'description' => $t['description'] ?? null,
                     'price' => (float)($t['price'] ?? 0),
+                    'fee_type' => $t['fee_type'] ?? null,
+                    'fee_amount' => isset($t['fee_amount']) && $t['fee_amount'] !== '' ? (float)$t['fee_amount'] : null,
                     'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
                     'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
                     'created_at' => now(),
@@ -265,6 +268,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
+            'artists' => 'nullable|string|max:500',
             'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
             'capacity' => 'required|integer|min:1',
@@ -273,14 +277,14 @@ class EventController extends Controller
             'image' => 'nullable|image|max:2048',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
-            'fee_type' => 'nullable|in:fixed,percentage',
-            'fee_amount' => 'nullable|numeric|min:0',
             'operators' => 'nullable|array',
             'operators.*' => 'exists:users,id',
             'ticket_types' => 'nullable|array',
             'ticket_types.*.id' => 'nullable|integer|exists:ticket_types,id',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
+            'ticket_types.*.fee_type' => 'nullable|in:fixed,percentage',
+            'ticket_types.*.fee_amount' => 'nullable|numeric|min:0|max:1000',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
         ]);
@@ -304,8 +308,8 @@ class EventController extends Controller
             'status' => $validated['status'],
             'image_url' => $validated['image_url'] ?? $event->image_url,
             'terms_conditions' => $validated['terms_conditions'],
-            'fee_type' => $validated['fee_type'],
-            'fee_amount' => $validated['fee_amount'],
+            // Fees remain unchanged here; will be managed via ticket management UI
+            'artists' => $validated['artists'] ?? $event->artists,
             'finance_officer_id' => $request->finance_officer_id,
         ]);
 
@@ -333,6 +337,8 @@ class EventController extends Controller
                     'name' => $t['name'],
                     'description' => $t['description'] ?? null,
                     'price' => (float)($t['price'] ?? 0),
+                    'fee_type' => $t['fee_type'] ?? null,
+                    'fee_amount' => isset($t['fee_amount']) && $t['fee_amount'] !== '' ? (float)$t['fee_amount'] : null,
                     'capacity' => isset($t['capacity']) && $t['capacity'] !== '' ? (int)$t['capacity'] : null,
                     'is_active' => isset($t['is_active']) ? (int)$t['is_active'] : 1,
                     'created_at' => now(),

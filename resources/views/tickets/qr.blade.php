@@ -112,7 +112,7 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Back to Details
+                        <i class="bi bi-arrow-left me-1"></i>Ticket
                     </a>
 
                     @if($ticket->status->value === 'valid')

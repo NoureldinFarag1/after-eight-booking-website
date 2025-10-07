@@ -25,9 +25,9 @@
     @include('event_requests.partials.request_core', ['eventRequest' => $eventRequest, 'showJson' => auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN])
 
     <div class="d-flex gap-2">
-        <a href="{{ route('admin.event_requests.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to list</a>
+        <a href="{{ route('admin.event_requests.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Requests</a>
         @if(auth()->check() && auth()->id() === $eventRequest->user_id)
-            <a href="{{ route('event_requests.index') }}" class="btn btn-secondary">My Requests</a>
+            <a href="{{ route('event_requests.index') }}" class="btn btn-secondary">Requests</a>
         @endif
         @if(auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN && $eventRequest->status === 'pending')
             <form method="POST" action="{{ route('admin.event_requests.approve', $eventRequest->id) }}" class="d-inline">

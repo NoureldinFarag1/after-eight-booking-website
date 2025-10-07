@@ -99,7 +99,7 @@
         </div>
 
         <button type="submit" class="btn btn-warning w-100">
-            <i class="bi bi-send"></i> Submit Request
+            <i class="bi bi-send"></i> Request Access
         </button>
     </form>
 </div>

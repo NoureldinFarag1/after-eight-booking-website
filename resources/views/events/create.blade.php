@@ -116,10 +116,10 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Pricing</label>
-                            <div class="form-text">
-                                Pricing is configured via Ticket Types after creating the event. Leave price blank unless this is a simple single-price event.
-                            </div>
+                            <label class="form-label">Artists</label>
+                            <input type="text" name="artists" class="form-control @error('artists') is-invalid @enderror" value="{{ old('artists') }}" placeholder="Artist One, Artist Two">
+                            <div class="form-text">Enter one or more artists separated by commas.</div>
+                            @error('artists')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -156,20 +156,7 @@
                         @enderror
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fee_type" class="form-label">Fee Type</label>
-                            <select name="fee_type" id="fee_type" class="form-select">
-                                <option value="">No Fee</option>
-                                <option value="fixed" {{ old('fee_type') === 'fixed' ? 'selected' : '' }}>Fixed Amount</option>
-                                <option value="percentage" {{ old('fee_type') === 'percentage' ? 'selected' : '' }}>Percentage</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="fee_amount" class="form-label">Fee Amount</label>
-                            <input type="number" name="fee_amount" id="fee_amount" class="form-control" value="{{ old('fee_amount') }}" min="0" step="0.01">
-                        </div>
-                    </div>
+                    {{-- Fees removed from creation; managed later with ticket management --}}
 
                     <div class="mb-3">
                         <label class="form-label">Finance Officer</label>
@@ -195,7 +182,7 @@
 
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('events.index') }}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Events
+                            <i class="bi bi-arrow-left me-1"></i>Events
                         </a>
 
                         <div>
@@ -241,6 +228,18 @@
                     <div class="col-md-3">
                         <label class="form-label">Price</label>
                         <input type="number" name="ticket_types[${idx}][price]" class="form-control" min="0" step="0.01" required>
+                    </div>
+                    <div class=\"col-md-2\">
+                        <label class=\"form-label\">Fee Type</label>
+                        <select name=\"ticket_types[${idx}][fee_type]\" class=\"form-select\">
+                            <option value=\"\">None</option>
+                            <option value=\"fixed\">Fixed</option>
+                            <option value=\"percentage\">%</option>
+                        </select>
+                    </div>
+                    <div class=\"col-md-2\">
+                        <label class=\"form-label\">Fee</label>
+                        <input type=\"number\" name=\"ticket_types[${idx}][fee_amount]\" class=\"form-control\" min=\"0\" step=\"0.01\" placeholder=\"0\">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Capacity (optional)</label>

@@ -18,15 +18,6 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        /* Staff table layout stability */
-        .staff-table td, .staff-table th { vertical-align: middle; }
-        .staff-table .text-truncate { max-width: 180px; }
-        @media (max-width: 1200px) {
-            .staff-table td:nth-child(3),
-            .staff-table th:nth-child(3) { display:none; }
-        }
-    </style>
 </head>
 {{-- Allow child views to override body class (e.g. auth screens) --}}
 <body class="@yield('body_class','bg-light')">
@@ -48,23 +39,13 @@
         </div>
 
         <nav class="nav flex-column p-2">
-
-            @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
-                <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                    <i class="bi bi-calendar-event me-2"></i>
-                    <span class="label-text">Events</span>
-                </a>
-            @endif
-
             @auth
                 @if($authUser->isAdmin())
-                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Admin</div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                         <i class="bi bi-speedometer2 me-2"></i>
                         <span class="label-text">Dashboard</span>
                     </a>
-
-                    <div class="mt-3 small text-uppercase text-muted px-2 section-label">Event & Sales</div>
+                    <div class="nav-divider"></div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                         <i class="bi bi-calendar-event me-2"></i>
                         <span class="label-text">Events</span>
@@ -84,8 +65,7 @@
                             <span class="badge rounded-pill bg-danger ms-auto">{{ $pendingCount }}</span>
                         @endif
                     </a>
-
-                    <div class="mt-3 small text-uppercase text-muted px-2 section-label">People Management</div>
+                    <div class="nav-divider"></div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
                         <i class="bi bi-people me-2"></i>
                         <span class="label-text">Users</span>
@@ -131,7 +111,6 @@
 
                     </div>
                 @elseif($authUser->isOperator())
-                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Operator</div>
                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}">
                         <i class="bi bi-upc-scan me-2"></i>
                         <span class="label-text">Scan Tickets</span>
@@ -141,7 +120,6 @@
                         <span class="label-text">All Tickets</span>
                     </a>
                 @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
-                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">Approvals</div>
                     <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-check-circle me-2"></i>
@@ -152,21 +130,24 @@
                         @endif
                     </a>
                     @elseif($authUser->isFinanceOfficer())
-                        <div class="mt-2 small text-uppercase text-muted px-2 section-label">Finance</div>
-                        {{-- Insights link removed --}}
+                        {{-- Finance user (no specific links yet) --}}
                 @else
-                    <div class="mt-2 small text-uppercase text-muted px-2 section-label">My Account</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
-                        <i class="bi bi-ticket-perforated me-2"></i>
-                        <span class="label-text">My Bookings</span>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.index') ? 'active' : '' }}" href="{{ route('events.index') }}" title="Browse upcoming events">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        <span class="label-text">Upcoming Events</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
+                    <div class="nav-divider"></div>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" title="Your tickets & QR codes">
                         <i class="bi bi-qr-code me-2"></i>
-                        <span class="label-text">My Tickets</span>
+                        <span class="label-text">Tickets</span>
                     </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('event_requests.index') ? 'active' : '' }}" href="{{ route('event_requests.index') }}">
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}" title="Manage your bookings">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        <span class="label-text">Bookings</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('event_requests.index') ? 'active' : '' }}" href="{{ route('event_requests.index') }}" title="Access requests status">
                         <i class="bi bi-bell me-2"></i>
-                        <span class="label-text">My Requests</span>
+                        <span class="label-text">Requests</span>
                     </a>
                 @endif
 
@@ -205,52 +186,34 @@
     </aside>
 
     <!-- Main Area -->
-    <div class="content-wrapper content-with-sidebar flex-grow-1 d-flex flex-column" style="min-height: 100vh;">
-        <!-- Top bar -->
+    <div class="content-wrapper content-with-sidebar flex-grow-1 d-flex flex-column" style="min-height:100vh;">
         <header class="app-header">
             <div class="container-fluid d-flex justify-content-between align-items-center py-3">
                 <div class="d-flex align-items-center gap-2">
-                    <!-- Desktop sidebar collapse toggle -->
-                    <button class="btn-icon d-none d-md-inline-flex" id="sidebarToggleBtn" type="button" aria-label="Toggle sidebar">
-                        <i id="sidebarToggleIcon" class="bi bi-chevron-left"></i>
-                    </button>
-                    <!-- Mobile sidebar toggle -->
-                    <button class="btn-icon d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="Open menu">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <h1 class="h5 mb-0">@yield('title', 'Event Booking System')</h1>
+                    <h1 class="h5 mb-0">@yield('title','Event Booking System')</h1>
                 </div>
                 @auth
-                    <div class="d-flex align-items-center gap-3">
-                        <!-- User Profile Dropdown -->
-                        <div class="dropdown">
-                            <button class="btn btn-link text-light d-flex align-items-center text-decoration-none dropdown-toggle"
-                                    type="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                    style="border: none; background: none;">
-                                <div class="user-initials-avatar me-2">
-                                    {{ strtoupper(substr($authUser->name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $authUser->name)[1] ?? '', 0, 1)) }}
-                                </div>
-                                <span class="fw-semibold">{{ explode(' ', $authUser->name)[0] }}</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}" class="mb-0">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item d-flex align-items-center text-danger">
-                                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="dropdown">
+                        <button class="btn btn-link text-light d-flex align-items-center text-decoration-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border:none;background:none;">
+                            <div class="user-initials-avatar me-2">
+                                {{ strtoupper(substr($authUser->name,0,1)) }}{{ strtoupper(substr(explode(' ', $authUser->name)[1] ?? '',0,1)) }}
+                            </div>
+                            <span class="fw-semibold">{{ explode(' ', $authUser->name)[0] }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}" class="mb-0">@csrf
+                                    <button type="submit" class="dropdown-item d-flex align-items-center text-danger"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
+                                </form>
+                            </li>
+                        </ul>
                     </div>
+                </div>
                 @endauth
             </div>
         </header>
 
-        <!-- Flash Messages (handled by Notyf toasts) -->
         <script>
             window.__FLASH__ = {
                 @if(session('success')) success: @json(session('success')), @endif
@@ -260,12 +223,10 @@
             };
         </script>
 
-        <!-- Main Content -->
         <main class="container-fluid py-4">
             @yield('content')
         </main>
 
-        <!-- Footer -->
         <footer class="bg-dark text-light py-4 mt-auto">
             <div class="container-fluid d-flex justify-content-between">
                 <div>
@@ -277,174 +238,12 @@
                 </div>
             </div>
         </footer>
-    </div>
-</div>
-
-<!-- Offcanvas Sidebar (for small screens) -->
-<div class="offcanvas offcanvas-start bg-black text-light" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
-    <div class="offcanvas-header border-bottom p-0 position-relative mobile-sidebar-header">
-        <div class="mobile-sidebar-brand w-100">
-            <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight" class="mobile-brand-img">
-        </div>
-        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body p-0 d-flex flex-column">
-        <nav class="nav flex-column p-2">
-            @if(!$authUser || !$authUser->role || $authUser->role !== \App\Enums\Role::APPROVAL_OFFICER)
-                <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                    <i class="bi bi-calendar-event me-2"></i>
-                    <span>Events</span>
-                </a>
-            @endif
-
-            @auth
-                @if($authUser->isAdmin())
-                    <div class="mt-2 small text-uppercase text-muted px-2">Admin</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
-                        <i class="bi bi-speedometer2 me-2"></i>
-                        <span>Dashboard</span>
-                    </a>
-
-                    <div class="mt-3 small text-uppercase text-muted px-2">Event & Sales</div>
-                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('events.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        <span class="label-text">Events</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
-                        <i class="bi bi-ticket-perforated me-2"></i>
-                        <span class="label-text">Bookings</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
-                        <i class="bi bi-qr-code me-2"></i>
-                        <span class="label-text">Tickets</span>
-                    </a>
-                     <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}">
-                        <i class="bi bi-bell me-2 position-relative"></i>
-                        <span>Requests</span>
-                        @if($pendingCount > 0)
-                            <span class="badge rounded-pill bg-danger ms-auto">{{ $pendingCount }}</span>
-                        @endif
-                    </a>
-
-                    <div class="mt-3 small text-uppercase text-muted px-2">People Management</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
-                        <i class="bi bi-people me-2"></i>
-                        <span>Users</span>
-                    </a>
-                    <!-- Staff submenu (mobile) -->
-                    @php
-                        // Mobile version active state logic (updated from admin.operators.* to admin.staff.*)
-                        $mobileIsStaffSectionActive = request()->routeIs('admin.staff.*') || request()->routeIs('admin.admins.*');
-                        $mobileRoleFilter = request('role');
-                        $mobileOpsActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'operator';
-                        $mobileApprovalsActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'approval_officer';
-                        $mobileFinanceActive = request()->routeIs('admin.staff.*') && $mobileRoleFilter === 'finance_officer';
-                        $mobileAdminsActive = request()->routeIs('admin.admins.*');
-                    @endphp
-                    <div class="nav-item has-submenu {{ $mobileIsStaffSectionActive ? 'submenu-open' : '' }}">
-                        <a class="nav-link d-flex align-items-center justify-content-between submenu-toggle" href="#" data-submenu="mobile-staff" aria-expanded="{{ $mobileIsStaffSectionActive ? 'true' : 'false' }}">
-                            <span class="d-flex align-items-center">
-                                <i class="bi bi-person-square me-2"></i>
-                                <span>Staff</span>
-                            </span>
-                            <i class="bi bi-chevron-down submenu-chevron"></i>
-                        </a>
-                        <div class="submenu" data-submenu-content="mobile-staff">
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileAdminsActive ? 'active' : '' }}" href="{{ route('admin.admins.index') }}" @if($mobileAdminsActive) aria-current="page" @endif>
-                                <i class="bi bi-shield-lock me-2"></i>
-                                <span>Admins</span>
-                            </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileOpsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'operator']) }}" title="View & manage operators" @if($mobileOpsActive) aria-current="page" @endif>
-                                <i class="bi bi-person-gear me-2"></i>
-                                <span>Operators</span>
-                            </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileApprovalsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($mobileApprovalsActive) aria-current="page" @endif>
-                                <i class="bi bi-check2-circle me-2"></i>
-                                <span>Approval Officers</span>
-                            </a>
-                            <a class="nav-link submenu-link d-flex align-items-center {{ $mobileFinanceActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'finance_officer']) }}" title="View & manage finance officers" @if($mobileFinanceActive) aria-current="page" @endif>
-                                <i class="bi bi-cash-coin me-2"></i>
-                                <span>Finance Officers</span>
-                            </a>
-                        </div>
-                    </div>
-                @elseif($authUser->isOperator())
-                    <div class="mt-2 small text-uppercase text-muted px-2">Operator</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.scan') ? 'active' : '' }}" href="{{ route('tickets.scan') }}">
-                        <i class="bi bi-upc-scan me-2"></i>
-                        <span>Scan Tickets</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
-                        <i class="bi bi-qr-code me-2"></i>
-                        <span>All Tickets</span>
-                    </a>
-                @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
-                    <div class="mt-2 small text-uppercase text-muted px-2">Approvals</div>
-                    <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-check-circle me-2"></i>
-                            <span>Requests</span>
-                        </span>
-                        @if(($sharedPendingApprovals ?? 0) > 0)
-                            <span class="badge bg-warning text-dark ms-2 {{ ($sharedPendingApprovals ?? 0) > 25 ? 'badge-pulse' : '' }}">{{ $sharedPendingApprovals }}</span>
-                        @endif
-                    </a>
-                    @elseif($authUser->isFinanceOfficer())
-                        <div class="mt-2 small text-uppercase text-muted px-2">Finance</div>
-                        {{-- Insights link removed --}}
-                @else
-                    <div class="mt-2 small text-uppercase text-muted px-2">My Account</div>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
-                        <i class="bi bi-ticket-perforated me-2"></i>
-                        <span>My Bookings</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
-                        <i class="bi bi-qr-code me-2"></i>
-                        <span>My Tickets</span>
-                    </a>
-                    <a class="nav-link d-flex align-items-center {{ request()->routeIs('event_requests.index') ? 'active' : '' }}" href="{{ route('event_requests.index') }}">
-                        <i class="bi bi-bell me-2"></i>
-                        <span class="label-text">My Requests</span>
-                    </a>
-                @endif
-
-
-            @else
-                <div class="px-2 pt-2 guest-actions">
-                    <a class="btn btn-primary w-100 mb-2 d-inline-flex align-items-center" href="{{ route('login') }}">
-                        <i class="bi bi-box-arrow-in-right me-1"></i><span class="label-text">Login</span>
-                    </a>
-                    <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center" href="{{ route('register') }}">
-                        <i class="bi bi-person-plus me-1"></i><span class="label-text">Register</span>
-                    </a>
-                </div>
-            @endauth
-        </nav>
-
-        <div class="mt-auto w-100">
-            @auth
-            <div class="px-2 pb-3">
-                @if(!$authUser->isStaff())
-                <a class="nav-link d-flex align-items-center mb-2 {{ request()->routeIs('user.profile.*') ? 'active' : '' }}" href="{{ route('user.profile.index') }}">
-                    <i class="bi bi-person-circle me-2"></i>
-                    <span>Preferences</span>
-                </a>
-                @endif
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger w-100 logout-btn">
-                        <i class="bi bi-box-arrow-right me-1"></i><span class="label-text">Logout</span>
-                    </button>
-                </form>
-            </div>
-            @endauth
-
-        </div>
-    </div>
-</div>
+    </div><!-- /content-wrapper -->
+</div><!-- /d-flex -->
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.x.x/dist/cdn.min.js"></script>
 
 @stack('scripts')
 <div id="navPageLoader" class="nav-page-loader d-none" aria-hidden="true">

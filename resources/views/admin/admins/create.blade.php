@@ -8,7 +8,7 @@
             <div class="col-md-8">
                 <div class="ae-card">
                     <div class="ae-card-header">
-                        <h1 class="ae-card-title">Create New Admin</h1>
+                        <h1 class="ae-card-title">Create Admin</h1>
                         <h2 class="ae-card-subtitle">Fill in the details to add a new administrator.</h2>
                     </div>
                     <div class="ae-card-body">
@@ -28,25 +28,23 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="email" class="form-label">Email Address</label>
-                                        <input type="email" id="email" name="email"
-                                            class="form-control @error('email') is-invalid @enderror"
-                                            value="{{ old('email') }}" required>
-                                        @error('email')
+                                        <label for="phone" class="form-label">Phone Number</label>
+                                        <input type="tel" id="phone" name="phone"
+                                            class="form-control @error('phone') is-invalid @enderror"
+                                            value="{{ old('phone') }}">
+                                        @error('phone')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" id="phone" name="phone"
-                                    class="form-control @error('phone') is-invalid @enderror"
-                                    value="{{ old('phone') }}">
-                                @error('phone')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <div>
+                                    An email address will be automatically generated based on the user's name (e.g.,
+                                    'john-doe@aftereight.com').
+                                </div>
                             </div>
 
                             <div class="row">

@@ -6,7 +6,7 @@
 <div class="container">
     <h2 class="mb-3">Edit Your Event Request</h2>
     <div class="mb-3">
-        <a href="{{ route('event_requests.show', $eventRequest->id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Request</a>
+        <a href="{{ route('event_requests.show', $eventRequest->id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Request</a>
     </div>
 
     @if(session('warning'))

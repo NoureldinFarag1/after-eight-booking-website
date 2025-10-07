@@ -36,7 +36,7 @@
                 <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle me-1"></i>Reset Password</button>
             </div>
         </form>
-        <div class="auth-footer">Back to <a href="{{ route('login') }}">Login</a></div>
+        <div class="auth-footer"><a href="{{ route('login') }}">Login</a></div>
     </div>
 </div>
 @endsection

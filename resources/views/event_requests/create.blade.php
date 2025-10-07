@@ -3,7 +3,7 @@
 @section('content')
 <div class="container">
     <h2 class="mb-3">Submit Request for: {{ $event->title }}</h2>
-    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Back to Event</a>
+    <a href="{{ route('events.show', $event->id) }}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Event</a>
 
     <form method="POST" action="{{ route('event-requests.store', $event->id) }}" id="createRequestForm">
         @csrf

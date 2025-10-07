@@ -78,7 +78,7 @@
                             <td>
                                 <a href="{{ route('invitations.show', $invitation) }}"
                                    class="btn btn-sm btn-outline-primary"
-                                   title="View Details">
+                                   title="View">
                                     <i class="bi bi-eye"></i>
                                 </a>
                             </td>

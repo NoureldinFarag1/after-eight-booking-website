@@ -29,7 +29,20 @@ class TicketTypeController extends Controller
             'price' => 'required|numeric|min:0',
             'capacity' => 'nullable|integer|min:0',
             'is_active' => 'required|in:0,1',
+            'fee_type' => 'nullable|in:percentage,fixed',
+            'fee_amount' => 'nullable|numeric|min:0',
         ]);
+
+        // Normalize fee fields
+        if($request->input('fee_type') === null || $request->input('fee_type') === ''){
+            $validated['fee_type'] = null;
+            $validated['fee_amount'] = null; // no fee
+        }
+
+        // Percentage constraint 0-100
+        if(($validated['fee_type'] ?? null) === 'percentage' && ($validated['fee_amount'] ?? 0) > 100){
+            return back()->withErrors(['fee_amount' => 'Percentage fee must be between 0 and 100.'])->withInput();
+        }
 
         $validated['is_active'] = (int) $request->input('is_active', 1);
         // Ensure allocated capacities across types do not exceed event capacity
@@ -63,7 +76,17 @@ class TicketTypeController extends Controller
             'price' => 'required|numeric|min:0',
             'capacity' => 'nullable|integer|min:0',
             'is_active' => 'required|in:0,1',
+            'fee_type' => 'nullable|in:percentage,fixed',
+            'fee_amount' => 'nullable|numeric|min:0',
         ]);
+
+        if($request->input('fee_type') === null || $request->input('fee_type') === ''){
+            $validated['fee_type'] = null;
+            $validated['fee_amount'] = null;
+        }
+        if(($validated['fee_type'] ?? null) === 'percentage' && ($validated['fee_amount'] ?? 0) > 100){
+            return back()->withErrors(['fee_amount' => 'Percentage fee must be between 0 and 100.'])->withInput();
+        }
 
         $validated['is_active'] = (int) $request->input('is_active', 1);
         // Validate capacity allocation on update

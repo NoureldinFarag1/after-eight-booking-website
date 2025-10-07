@@ -30,7 +30,7 @@
                 <button class="btn btn-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Send Reset Link</button>
             </div>
         </form>
-        <div class="auth-footer">Return to <a href="{{ route('login') }}">Login</a></div>
+        <div class="auth-footer"><a href="{{ route('login') }}">Login</a></div>
     </div>
 </div>
 @endsection

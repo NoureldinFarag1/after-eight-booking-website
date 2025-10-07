@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ticket Details')
+@section('title', 'Ticket')
 
 @section('content')
 <div class="row justify-content-center">
@@ -9,7 +9,7 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="bi bi-qr-code me-2"></i>Ticket Details
+                        <i class="bi bi-qr-code me-2"></i>Ticket
                     </h4>
                     <span class="badge status-badge
                         @if($ticket->status->value === 'valid') bg-success
@@ -37,7 +37,15 @@
                             <p class="mb-1"><strong>Type:</strong> {{ $ticket->type->name }}</p>
                         @endif
                         @if(!is_null($ticket->price))
-                            <p class="mb-1"><strong>Price:</strong> EGP {{ number_format($ticket->price, 2) }}</p>
+                            @php
+                                $basePrice = $ticket->type?->price ?? $ticket->price;
+                                $feePart = $ticket->price - (float)$basePrice;
+                            @endphp
+                            <p class="mb-1"><strong>Price:</strong> EGP {{ number_format((float)$ticket->price, 2) }}
+                                @if($feePart > 0)
+                                    <br><small class="text-muted">Base: {{ number_format((float)$basePrice,2) }} + Fee: {{ number_format((float)$feePart,2) }}</small>
+                                @endif
+                            </p>
                         @endif
                         @if($ticket->seat_number)
                             <p><strong>Seat Number:</strong> {{ $ticket->seat_number }}</p>
@@ -133,7 +141,8 @@
                                         <i class="bi bi-ticket-detailed me-1"></i>
                                         Type: {{ $ticket->type->name }}
                                         @if(!is_null($ticket->price))
-                                            • EGP {{ number_format($ticket->price, 2) }}
+                                            @php $feeP = $ticket->price - (float)($ticket->type?->price ?? $ticket->price); @endphp
+                                            • EGP {{ number_format((float)$ticket->price, 2) }} @if($feeP>0)<span class="text-muted small">(Incl fee {{ number_format((float)$feeP,2) }})</span>@endif
                                         @endif
                                     </p>
                                 @endif
@@ -179,9 +188,10 @@
                                                 {{ $ticket->event->location }}
                                             </p>
                                             @if(!is_null($ticket->price))
+                                                @php $feeP2 = $ticket->price - (float)($ticket->type?->price ?? $ticket->price); @endphp
                                                 <p class="mb-1">
                                                     <i class="bi bi-cash-coin text-primary me-1"></i>
-                                                    EGP {{ number_format($ticket->price, 2) }}
+                                                    EGP {{ number_format((float)$ticket->price, 2) }} @if($feeP2>0)<span class="text-muted small">(Base {{ number_format((float)($ticket->type?->price ?? $ticket->price),2) }} + Fee {{ number_format((float)$feeP2,2) }})</span>@endif
                                                 </p>
                                             @endif
                                         </div>
@@ -200,7 +210,7 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between">
                     <a href="{{ route('tickets.index') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Back to Tickets
+                        <i class="bi bi-arrow-left me-1"></i>Tickets
                     </a>
 
                     <div>

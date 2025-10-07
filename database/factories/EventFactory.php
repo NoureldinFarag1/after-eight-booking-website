@@ -15,16 +15,16 @@ class EventFactory extends Factory
 
     public function definition(): array
     {
-        $start = $this->faker->dateTimeBetween('+1 days', '+10 days');
-        return [
+    $dt = $this->faker->dateTimeBetween('+1 days', '+30 days');
+    return [
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
             'location' => $this->faker->city(),
-            'start_time' => $start,
-            'end_time' => (clone $start)->modify('+2 hours'),
-            'status' => 'draft',
+            'artists' => collect([$this->faker->name(), $this->faker->name()])->join(', '),
+            'event_date' => $dt->format('Y-m-d'),
+            'event_time' => $dt->format('H:i:s'),
             'capacity' => rand(50,200),
-            'created_by' => User::factory(),
+            'status' => 'draft',
         ];
     }
 }

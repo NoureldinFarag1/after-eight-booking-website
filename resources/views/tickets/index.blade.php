@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Tickets')
+@section('title', 'Tickets')
 
 @section('content')
 <div class="row">
@@ -11,7 +11,7 @@
                 @if(auth()->user()->isAdmin())
                     All Tickets
                 @else
-                    My Tickets
+                    Tickets
                 @endif
             </h1>
 

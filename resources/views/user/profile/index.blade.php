@@ -232,7 +232,7 @@
                                             <span class="badge bg-light text-dark">{{ $booking->quantity }}</span>
                                         </td>
                                         <td class="text-end fw-semibold">
-                                            {{ number_format($booking->total_amount, 2) }} EGP
+                                            {{ number_format((float)$booking->total_amount, 2) }} EGP
                                         </td>
                                         <td class="text-center">
                                             <span class="badge

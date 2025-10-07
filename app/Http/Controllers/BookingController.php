@@ -169,7 +169,9 @@ class BookingController extends Controller
 
         $booking = DB::transaction(function () use ($validated, $event, $selectedType) {
             // With ticket-type-first model, a type must be selected when types exist
-            $unitPrice = $selectedType ? $selectedType->price : 0;
+            $unitBase = $selectedType ? (float)$selectedType->price : 0;
+            $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0;
+            $unitPrice = $unitBase + $unitFee; // final per-ticket price including fee
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
@@ -188,7 +190,7 @@ class BookingController extends Controller
                     'ticket_type_id' => $selectedType?->id,
                     'booking_id' => $booking->id,
                     'status' => TicketStatus::VALID,
-                    'price' => $unitPrice,
+                    'price' => $unitPrice, // stored final price (base + fee)
                 ]);
             }
 

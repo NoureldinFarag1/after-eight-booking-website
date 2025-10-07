@@ -1,3 +1,21 @@
+/* =============================================
+	Layout Inline Styles Migrated from app.blade.php
+	(Removed inline <style> block for maintainability)
+	============================================= */
+/* Staff table layout stability */
+.staff-table td, .staff-table th { vertical-align: middle; }
+.staff-table .text-truncate { max-width: 180px; }
+@media (max-width: 1200px) {
+	.staff-table td:nth-child(3),
+	.staff-table th:nth-child(3) { display:none; }
+}
+/* Navigation grouping & dividers */
+.nav-divider { height: 1px; background: var(--bs-border-color, #e5e7eb); margin: .65rem .5rem; opacity: .6; }
+.offcanvas .nav-divider { background: rgba(255,255,255,.15); }
+/* Rounded nav links (already had base rules, extending) */
+.sidebar .nav-link { border-radius: .5rem; }
+.sidebar .nav-link.active { font-weight: 600; }
+.sidebar .submenu .nav-link { border-radius: .4rem; }
 /* Base font stack */
 body {
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -132,7 +150,7 @@ body {
 .user-initials-avatar {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--ae-primary), #0d6efd);
+    background: linear-gradient(135deg, var(--ae-primary), #a40000);
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -796,4 +814,81 @@ body.auth-body .content-with-sidebar { margin-left: 0 !important; }
 
 /* Toggle password focus outline */
 .toggle-password:focus-visible { outline: 2px solid var(--ae-primary); outline-offset: 1px; }
+
+/* Event Show Page Refinements */
+.ae-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    overflow: hidden; /* Ensures child elements conform to border radius */
+}
+
+.ae-card-header {
+    padding: 1rem 1.25rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.ae-card-body {
+    padding: 1.25rem;
+}
+
+.event-details-grid .d-flex {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.event-details-grid .d-flex:hover {
+    background-color: #e9ecef;
+}
+
+.stat-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    height: 100%;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.ae-card .nav-tabs .nav-link {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    color: #6c757d;
+}
+
+.ae-card .nav-tabs .nav-link.active {
+    color: #000;
+    font-weight: 600;
+    background-color: #fff;
+    border-bottom-color: #fff;
+}
+
+.btn-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
 

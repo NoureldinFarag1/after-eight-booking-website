@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Send Event Invitation</h1>
         <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Invitations
+            <i class="bi bi-arrow-left me-1"></i> Invitations
         </a>
     </div>
 

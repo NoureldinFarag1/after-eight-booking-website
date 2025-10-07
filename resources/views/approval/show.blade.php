@@ -16,7 +16,7 @@
     @include('event_requests.partials.request_core', ['eventRequest' => $eventRequest, 'showJson' => !empty($eventRequest->payload)])
 
     <div class="d-flex gap-2">
-        <a href="{{ route('approval.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to list</a>
+        <a href="{{ route('approval.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Approvals</a>
         @if($eventRequest->status === 'pending')
             <form method="POST" action="{{ route('approval.approve', $eventRequest->id) }}" class="d-inline">
                 @csrf

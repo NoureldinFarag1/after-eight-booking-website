@@ -45,21 +45,35 @@ class AdminController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name' => ['required', 'string', 'max:255', 'not_regex:/^\s*$/'],
             'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        // Build unique email from name
+        $base = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $validated['name']));
+        $base = trim($base, '-');
+        if ($base === '') {
+            $base = 'admin';
+        }
+        $domain = 'aftereight.com';
+        $email = $base . '@' . $domain;
+
+        $counter = 1;
+        while (User::withTrashed()->where('email', $email)->exists()) {
+            $email = $base . '-' . $counter . '@' . $domain;
+            $counter++;
+        }
+
         $user = User::create([
             'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            'email' => $email,
+            'phone' => $validated['phone'] ?? null,
             'password' => Hash::make($validated['password']),
             'role' => Role::ADMIN,
         ]);
 
-        return redirect()->route('admin.admins.index')->with('success', 'Admin created successfully.');
+        return redirect()->route('admin.admins.index')->with('success', 'Admin account created for ' . $user->name . '.');
     }
 
     public function edit(User $user)

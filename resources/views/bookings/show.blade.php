@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Booking Details')
+@section('title', 'Booking')
 
 @section('content')
 <div class="row">
@@ -9,7 +9,7 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="bi bi-ticket-perforated me-2"></i>Booking Details
+                        <i class="bi bi-ticket-perforated me-2"></i>Booking
                     </h4>
                     <span class="badge status-badge
                         @if($booking->status->value === 'confirmed') bg-success
@@ -28,7 +28,23 @@
                         <p><strong>Booking Reference:</strong> {{ $booking->booking_reference }}</p>
                         <p><strong>Booking Date:</strong> {{ $booking->booking_date->format('l, F j, Y g:i A') }}</p>
                         <p><strong>Quantity:</strong> {{ $booking->quantity }} ticket{{ $booking->quantity > 1 ? 's' : '' }}</p>
-                        <p><strong>Total Amount:</strong> EGP {{ number_format($booking->total_amount, 2) }}</p>
+                        @php
+                            $firstType = $booking->tickets->first()?->type;
+                            $unitBase = $firstType?->price ?? ($booking->tickets->first()?->price ?? 0); // original base stored in type
+                            $unitFinal = $booking->tickets->first()?->price ?? 0; // stored final
+                            $unitFee = 0;
+                            if($firstType){
+                                $unitFee = $unitFinal - (float)$firstType->price;
+                            }
+                            $totalFee = $unitFee * $booking->quantity;
+                        @endphp
+                        <p><strong>Total Amount:</strong> EGP {{ number_format((float)$booking->total_amount, 2) }}</p>
+                        @if($unitFee > 0)
+                            <p class="small text-muted mb-1">
+                                Base: EGP {{ number_format((float)$unitBase,2) }} + Fee: EGP {{ number_format((float)$unitFee,2) }} per ticket
+                            </p>
+                            <p class="small text-muted mb-2">Total Fees: EGP {{ number_format((float)$totalFee,2) }}</p>
+                        @endif
 
                         @if($booking->notes)
                             <p><strong>Notes:</strong> {{ $booking->notes }}</p>
@@ -75,9 +91,15 @@
                                             @if($firstTicket)
                                                 <p>
                                                     <i class="bi bi-cash-coin me-1"></i>
-                                                    EGP {{ number_format($firstTicket->price, 2) }} per ticket
+                                                    EGP {{ number_format((float)$firstTicket->price, 2) }} per ticket
                                                     @if($firstTicket->type)
                                                         <span class="text-muted">— {{ $firstTicket->type->name }}</span>
+                                                        @php
+                                                            $feePer = $firstTicket->price - (float)$firstTicket->type->price;
+                                                        @endphp
+                                                        @if($feePer > 0)
+                                                            <br><small class="text-muted">Includes fee: EGP {{ number_format((float)$feePer,2) }}</small>
+                                                        @endif
                                                     @endif
                                                 </p>
                                             @endif
@@ -92,7 +114,7 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between">
                     <a href="{{ route('bookings.index') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Back to Bookings
+                        <i class="bi bi-arrow-left me-1"></i>Bookings
                     </a>
 
                     <div>
@@ -119,7 +141,7 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-qr-code me-2"></i>Your Tickets
+                    <i class="bi bi-qr-code me-2"></i>Tickets
                 </h5>
             </div>
             <div class="card-body">
@@ -161,7 +183,7 @@
 
                     <div class="mt-3">
                         <a href="{{ route('tickets.index') }}" class="btn btn-primary w-100">
-                            <i class="bi bi-collection me-1"></i>View All My Tickets
+                            <i class="bi bi-collection me-1"></i>View All Tickets
                         </a>
                     </div>
                 @else

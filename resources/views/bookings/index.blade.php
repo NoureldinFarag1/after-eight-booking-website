@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Bookings')
+@section('title', 'Bookings')
 
 @section('content')
 <div class="row">
@@ -11,7 +11,7 @@
                 @if(auth()->user()->isAdmin())
                     All Bookings
                 @else
-                    My Bookings
+                    Bookings
                 @endif
             </h1>
         </div>
@@ -139,7 +139,7 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Total</div>
-                                        <div class="fw-bold text-primary">EGP {{ number_format($booking->total_amount, 2) }}</div>
+                                        <div class="fw-bold text-primary">EGP {{ number_format((float)$booking->total_amount, 2) }}</div>
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Tickets</div>
@@ -161,7 +161,7 @@
                                     <div>
                                         <a href="{{ route('bookings.show', $booking) }}"
                                            class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-eye me-1"></i>View Details
+                                            <i class="bi bi-eye me-1"></i>View
                                         </a>
                                     </div>
 
@@ -197,9 +197,9 @@
                 <i class="bi bi-ticket-perforated display-1 text-muted"></i>
                 <h3 class="mt-3 text-muted">No Bookings or Requests Found</h3>
                 @if(auth()->user()->isAdmin())
-                    <p class="text-muted">No bookings or event requests yet.</p>
+                    <p class="text-muted">No bookings or requests yet.</p>
                 @else
-                    <p class="text-muted mb-3">You haven't created any bookings or submitted event requests.</p>
+                    <p class="text-muted mb-3">No bookings or requests yet.</p>
                     <a href="{{ route('events.index') }}" class="btn btn-primary">
                         <i class="bi bi-calendar-event me-1"></i>Browse Events
                     </a>
