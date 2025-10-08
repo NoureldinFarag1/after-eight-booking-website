@@ -1,61 +1,132 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<h1 align="center">After Eight Booking Website</h1>
+<p align="center"><em>Event & ticket management platform with per-ticket fee logic, QR validation, invitations, and multi-role access.</em></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## ✨ Overview
+After Eight Booking Website is a Laravel 12 application for managing events, bookings, ticket types (with configurable fees), invitations (QR based), and user access. It supports transparent pricing (base + fee), role-based dashboards, and operational tooling for approvals and scanning.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Key Features
+- Event management (capacity, date/time, multi-artist listing)
+- Per-ticket-type fees (percentage or fixed) with automatic total calculation
+- Fee-inclusive pricing stored immutably on tickets for audit consistency
+- Booking flow with fee breakdown and confirmation email
+- QR code generation for tickets & invitations
+- Invitation system tied strictly to events (no generic invites)
+- Approval/request workflow for event requests
+- Roles: Admin, Staff/Operators, Users (with access guards & policies)
+- User profile completion & demographic fields (age, gender, birthday)
+- Secure password reset & email notifications (Resend integration)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🧮 Fee Model
+Each `TicketType` optionally defines:
+- `fee_type`: `percentage | fixed | null`
+- `fee_amount`: numeric (0–100 if percentage; >=0 if fixed)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+When tickets are created during booking:
+1. Base price = `ticket_types.price`
+2. Fee = `calculateFee()` (percentage * base / 100 or fixed value)
+3. Stored ticket price = base + fee (NOT recomputed later)
 
-## Learning Laravel
+All breakdowns (booking details, ticket views, admin lists) display:
+`Total = Base + Fee` even when fee = 0 (for consistency & reporting).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🗃 Data Integrity & Backfill
+- Migration `add_fees_to_ticket_types_table` introduced fee fields.
+- Backfill migration normalizes `fee_amount` null → `0` for explicit zero-fee semantics.
+- Tickets retain historical price even if future fee rules change.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🧑‍💻 Tech Stack
+- PHP 8.2 + Laravel 12
+- Blade templates + Vite + Tailwind CSS (4.x)
+- MySQL (primary) / SQLite (tests)
+- Resend (mail), Simple QrCode package
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🔐 Roles & Access
+| Role | Capabilities |
+|------|--------------|
+| Admin | Manage events, users, ticket types, approvals, bookings |
+| Staff / Operator | QR scanning & operational tasks |
+| User | Browse events, book tickets, manage their profile |
 
-## Laravel Sponsors
+Policies & middleware enforce isolation (e.g., `RoleMiddleware`, profile completion checks, staff restrictions).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 📧 Notifications
+- Booking confirmation (fee-inclusive total)
+- Invitation sent (with QR code)
+- Password reset
+- Payment / approval notifications
 
-### Premium Partners
+## 🧱 Project Structure (Highlights)
+```
+app/
+	Models/ (Event, Booking, Ticket, TicketType, Invitation, User)
+	Http/Controllers/ (Admin controllers, Booking, Event, Ticket, Invitation)
+	Enums/ (BookingStatus, EventStatus, TicketStatus, Role)
+resources/views/ (events, tickets, bookings, invitations, admin panels)
+database/migrations/ (... incremental schema evolution + fee backfill)
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🛠 Local Development Setup
+```bash
+git clone <repo-url>
+cd after-eight-booking-website
+cp .env.example .env   # or provide environment values
+composer install
+npm install
+php artisan key:generate
+php artisan migrate --seed
+npm run dev             # or: npm run build
+php artisan serve       # visit http://localhost:8000 or configured APP_URL
+```
 
-## Contributing
+### Test Suite
+```bash
+php artisan test
+```
+Uses in-memory SQLite (configured in `phpunit.xml`).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🧪 Fee Calculation Example
+| Base | Fee Type | Fee Amount | Computed Fee | Stored Ticket Price |
+|------|----------|------------|--------------|---------------------|
+| 100  | percentage | 5        | 5.00         | 105.00              |
+| 250  | fixed       | 20       | 20.00        | 270.00              |
+| 80   | (none)      | 0        | 0.00         | 80.00               |
 
-## Code of Conduct
+## 🔄 Common Commands
+```bash
+php artisan migrate         # Run migrations
+php artisan migrate:rollback
+php artisan tinker          # Experiment
+php artisan queue:work      # (if queue driver switched from sync)
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🧩 Design Principles
+- Immutable ticket pricing for historical accuracy
+- Explicit zero values instead of NULL for financial fields
+- UI transparency (always show Base + Fee even when zero)
+- Progressive enhancement: per-type fees replacing deprecated event-level fees
 
-## Security Vulnerabilities
+## 🛡 Security / Validation Notes
+- Percentage fee constrained 0–100
+- Capacity validation prevents over-allocation & lowering below sold count
+- Profile completion middleware gates certain flows
+- CSRF + Laravel defaults + CSP headers middleware
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 📄 License
+This project is derived from Laravel (MIT). Custom application code is MIT unless specified otherwise.
 
-## License
+## 🤝 Contributing
+1. Create a feature branch
+2. Add or adjust tests for changed behavior
+3. Ensure: lint (pint), tests pass, no debug code
+4. Open PR with clear summary & screenshots for UI changes
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🗺 Future Ideas
+- Reporting dashboard (revenue = base vs fee split)
+- Refund / cancellation financial adjustments
+- Dynamic per-event fee policies
+- API endpoints for mobile scanning clients
+
+---
+For deeper architectural details see `SYSTEM_DOCUMENTATION.md` and invitation specifics in `README_INVITATIONS.txt`.
