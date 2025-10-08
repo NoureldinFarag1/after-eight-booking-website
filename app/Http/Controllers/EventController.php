@@ -130,6 +130,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
+            'google_maps_url' => 'required|url|max:1024',
             'artists' => 'nullable|string|max:500',
             'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
@@ -154,10 +155,14 @@ class EventController extends Controller
             $validated['image_url'] = $request->file('image')->store('event_images', 'public');
         }
 
+        $coords = Event::parseCoordinatesFromUrl($validated['google_maps_url'] ?? null);
         $event = Event::create([
             'title' => $validated['title'],
             'description' => $validated['description'],
             'location' => $validated['location'],
+            'google_maps_url' => $validated['google_maps_url'] ?? null,
+            'latitude' => $coords['lat'] ?? null,
+            'longitude' => $coords['lng'] ?? null,
             'event_date' => $validated['event_date'],
             'event_time' => $validated['event_time'],
             'capacity' => $validated['capacity'],
@@ -268,6 +273,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
+            'google_maps_url' => 'required|url|max:1024',
             'artists' => 'nullable|string|max:500',
             'event_date' => 'required|date',
             'event_time' => 'required|date_format:H:i',
@@ -297,10 +303,16 @@ class EventController extends Controller
             $validated['image_url'] = $request->file('image')->store('event_images', 'public');
         }
 
+        $coords = array_key_exists('google_maps_url',$validated)
+            ? Event::parseCoordinatesFromUrl($validated['google_maps_url'])
+            : null;
         $event->update([
             'title' => $validated['title'],
             'description' => $validated['description'],
             'location' => $validated['location'],
+            'google_maps_url' => $validated['google_maps_url'] ?? $event->google_maps_url,
+            'latitude' => $coords['lat'] ?? (array_key_exists('google_maps_url',$validated) ? null : $event->latitude),
+            'longitude' => $coords['lng'] ?? (array_key_exists('google_maps_url',$validated) ? null : $event->longitude),
             'event_date' => $validated['event_date'],
             'event_time' => $validated['event_time'],
             'capacity' => $validated['capacity'],

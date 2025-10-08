@@ -18,6 +18,9 @@ class Event extends Model
         'title',
         'description',
         'location',
+    'google_maps_url',
+    'latitude',
+    'longitude',
         'artists',
         'event_date',
         'event_time',
@@ -36,7 +39,9 @@ class Event extends Model
         'event_date' => 'date',
         'event_time' => 'datetime',
         'status' => EventStatus::class,
-        'fee_amount' => 'float',
+    'fee_amount' => 'float',
+    'latitude' => 'float',
+    'longitude' => 'float',
     ];
 
     public function calculateFee(float $total): float
@@ -165,6 +170,51 @@ class Event extends Model
     public function operators()
     {
         return $this->belongsToMany(User::class, 'event_operator', 'event_id', 'user_id');
+    }
+
+    /**
+     * Attempt to parse latitude/longitude from the stored google_maps_url (if present)
+     * Supports patterns like:
+     *  - .../@LAT,LNG,
+     *  - ...?q=LAT,LNG
+     *  - .../LAT,LNG (fallback)
+     */
+    public function getCoordinatesAttribute(): ?array
+    {
+        if(!is_null($this->latitude) && !is_null($this->longitude)){
+            return ['lat'=>(float)$this->latitude,'lng'=>(float)$this->longitude];
+        }
+        return static::parseCoordinatesFromUrl($this->google_maps_url);
+    }
+
+    public static function parseCoordinatesFromUrl(?string $url): ?array
+    {
+        if(!$url) return null;
+        $patterns = [
+            '/@(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/',
+            '/[?&]q=(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/',
+            '/\/(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)(?:\/|$)/'
+        ];
+        foreach($patterns as $p){
+            if(preg_match($p,$url,$m)){
+                $lat=(float)$m[1]; $lng=(float)$m[2];
+                if($lat<=90 && $lat>=-90 && $lng<=180 && $lng>=-180){
+                    return ['lat'=>$lat,'lng'=>$lng];
+                }
+            }
+        }
+        return null;
+    }
+
+    public function scopeNear($query, float $lat, float $lng, float $radiusKm = 10)
+    {
+        $haversine = "(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))";
+        return $query->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('*')
+            ->selectRaw("{$haversine} as distance", [$lat,$lng,$lat])
+            ->having('distance','<=',$radiusKm)
+            ->orderBy('distance');
     }
 
     /**

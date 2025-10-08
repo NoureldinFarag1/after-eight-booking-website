@@ -75,6 +75,15 @@
                             <div>
                                 <div class="fw-bold">Location</div>
                                 <div class="text-muted">{{ $event->location }}</div>
+                                @if(!empty($event->google_maps_url))
+                                    <div class="mt-1">
+                                        <a href="{{ $event->google_maps_url }}" target="_blank" rel="noopener" class="small">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in Google Maps
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="mt-1 text-muted small">Map link unavailable</div>
+                                @endif
                             </div>
                         </div>
                         @if($event->artists)
@@ -109,6 +118,22 @@
                         <h4>Description</h4>
                         <p class="text-muted">{{ $event->description }}</p>
                     </div>
+
+                    @php $coords = $event->coordinates; @endphp
+                    @if($coords)
+                        <div class="mb-4">
+                            <h5>Map Preview</h5>
+                            <div class="ratio ratio-16x9 border rounded overflow-hidden">
+                                <iframe
+                                    src="https://www.google.com/maps?q={{ $coords['lat'] }},{{ $coords['lng'] }}&z=15&output=embed"
+                                    style="border:0;"
+                                    allowfullscreen
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                            <div class="form-text">Approximate location based on provided coordinates.</div>
+                        </div>
+                    @endif
 
                     @if ($event->terms_conditions)
                         <div class="mb-4">

@@ -71,6 +71,25 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="google_maps_url" class="form-label">Google Maps Link *</label>
+               <input type="url"
+                               class="form-control @error('google_maps_url') is-invalid @enderror"
+                               id="google_maps_url"
+                               name="google_maps_url"
+                               placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/..."
+                   value="{{ old('google_maps_url') }}" required>
+                        @error('google_maps_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div id="map-preview-toggle" class="mt-2 d-none">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="show-map-btn">Show Map Preview</button>
+                        </div>
+                        <div id="map-preview-wrapper" class="mt-2 d-none">
+                            <div class="ratio ratio-16x9 border rounded">
+                                <iframe id="map-preview-iframe" src="" style="border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="event_date" class="form-label">Event Date *</label>
@@ -203,6 +222,32 @@
         const typeSelect = document.getElementById('type');
         const container = document.getElementById('ticket-types-container');
         const addBtn = document.getElementById('add-ticket-type');
+        const mapInput = document.getElementById('google_maps_url');
+        const toggleWrap = document.getElementById('map-preview-toggle');
+        const showBtn = document.getElementById('show-map-btn');
+        const previewWrap = document.getElementById('map-preview-wrapper');
+        const iframe = document.getElementById('map-preview-iframe');
+        function extractCoords(url){
+            if(!url) return null;
+            const patterns = [/@(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/, /[?&]q=(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/, /\/(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)(?:\/|$)/];
+            for(const p of patterns){
+                const m=url.match(p); if(m){const lat=parseFloat(m[1]); const lng=parseFloat(m[2]); if(Math.abs(lat)<=90 && Math.abs(lng)<=180) return {lat,lng};}
+            }
+            return null;
+        }
+        function evaluate(){
+            const coords = extractCoords(mapInput.value.trim());
+            if(coords){
+                toggleWrap.classList.remove('d-none');
+                iframe.dataset.src = `https://www.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`;
+            } else {
+                toggleWrap.classList.add('d-none');
+                previewWrap.classList.add('d-none');
+                iframe.removeAttribute('src');
+            }
+        }
+        if(mapInput){ mapInput.addEventListener('input', evaluate); mapInput.addEventListener('change', evaluate); evaluate(); }
+        if(showBtn){ showBtn.addEventListener('click', ()=>{ if(!iframe.getAttribute('src') && iframe.dataset.src){ iframe.src=iframe.dataset.src; } previewWrap.classList.toggle('d-none'); showBtn.textContent = previewWrap.classList.contains('d-none') ? 'Show Map Preview' : 'Hide Map Preview'; }); }
 
         function toggleTypes() {
             const isBooking = typeSelect.value === 'booking';
