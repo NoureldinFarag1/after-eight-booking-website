@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             $table->string('token')->unique()->nullable()->after('status');
             $table->string('qr_code_path')->nullable()->after('token');
@@ -22,6 +25,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             $table->dropColumn(['token', 'qr_code_path']);
         });

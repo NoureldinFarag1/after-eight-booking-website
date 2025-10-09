@@ -19,7 +19,11 @@ return new class extends Migration
             ->update(['gender' => null]);
 
         // Now update the enum to only include male and female
-        DB::statement("ALTER TABLE users MODIFY COLUMN gender ENUM('male', 'female') NULL");
+        $driver = config('database.default');
+        $connection = config("database.connections.$driver.driver");
+        if (in_array($connection, ['mysql', 'mariadb'], true)) {
+            DB::statement("ALTER TABLE users MODIFY COLUMN gender ENUM('male', 'female') NULL");
+        }
     }
 
     /**
@@ -28,6 +32,10 @@ return new class extends Migration
     public function down(): void
     {
         // Restore the enum to include 'other' option
-        DB::statement("ALTER TABLE users MODIFY COLUMN gender ENUM('male', 'female', 'other') NULL");
+        $driver = config('database.default');
+        $connection = config("database.connections.$driver.driver");
+        if (in_array($connection, ['mysql', 'mariadb'], true)) {
+            DB::statement("ALTER TABLE users MODIFY COLUMN gender ENUM('male', 'female', 'other') NULL");
+        }
     }
 };

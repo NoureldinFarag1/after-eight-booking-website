@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Enums\EventRequestStatus;
 use App\Notifications\RequestApprovedForPaymentNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
 
 class EventRequestController extends Controller
 {
@@ -357,14 +358,93 @@ class EventRequestController extends Controller
             return back()->with('error', 'This request is not pending and cannot be approved.');
         }
 
-        $eventRequest->update([
-            'status' => EventRequestStatus::AWAITING_PAYMENT->value,
-            'approved_at' => now(),
-            'expires_at' => now()->addHours(24),
-            'admin_id' => $user->id,
-        ]);
+        try {
+            $connName = config('database.default');
+            $connectionDriver = config("database.connections.$connName.driver");
+            $logic = function() use ($eventRequest, $user) {
+                // Lock the event row to prevent race conditions (only on DBs that support it)
+                /** @var Event $event */
+                $connNameInner = config('database.default');
+                $driverInner = config("database.connections.$connNameInner.driver");
+                $relation = $eventRequest->event();
+                if (in_array($driverInner, ['mysql','mariadb','pgsql','sqlsrv'], true)) {
+                    $relation->lockForUpdate();
+                }
+                $event = $relation->first();
+                if (!$event) {
+                    abort(404, 'Event not found');
+                }
+                // Compute current availability considering booked tickets and active holds
+                $booked = $event->bookings()->sum('quantity');
+                $held = 0;
+                if (Schema::hasColumn('event_requests','status') && Schema::hasColumn('event_requests','attendee_count')) {
+                    $held = $event->requests()
+                        ->where('status', EventRequestStatus::AWAITING_PAYMENT->value)
+                        ->when(Schema::hasColumn('event_requests','expires_at'), function($q){
+                            $q->where(function($sub){
+                                $sub->whereNull('expires_at')->orWhere('expires_at','>', now());
+                            });
+                        })
+                        ->sum('attendee_count');
+                }
+                $available = max(0, $event->capacity - $booked - $held);
+                // Determine requested seats from attendee_count when present, otherwise infer from guests array
+                if (Schema::hasColumn('event_requests','attendee_count')) {
+                    $requestedSeats = (int) $eventRequest->attendee_count;
+                } elseif (Schema::hasColumn('event_requests','guests')) {
+                    $guests = is_array($eventRequest->guests) ? $eventRequest->guests : [];
+                    $requestedSeats = 1 + count(array_filter($guests, function($g){
+                        return is_array($g) && isset($g['name']) && trim((string)$g['name']) !== '';
+                    }));
+                } else {
+                    $requestedSeats = 1; // minimal fallback
+                }
+                if ($requestedSeats <= 0) {
+                    throw new \RuntimeException('Invalid attendee count.');
+                }
+                if ($requestedSeats > $available) {
+                    Log::warning('Approval blocked due to capacity', [
+                        'event_id' => $event->id,
+                        'available' => $available,
+                        'requested' => $requestedSeats,
+                    ]);
+                    throw new \RuntimeException('Not enough available seats to approve this request. Available: ' . $available);
+                }
 
-        // Notify the user their request was approved and they can now pay
+                // Persist status change and optional timestamps/admin
+                $eventRequest->status = EventRequestStatus::AWAITING_PAYMENT->value;
+                if (Schema::hasColumn('event_requests','approved_at')) {
+                    $eventRequest->approved_at = now();
+                }
+                if (Schema::hasColumn('event_requests','expires_at')) {
+                    $eventRequest->expires_at = now()->addHours(48);
+                }
+                if (Schema::hasColumn('event_requests','admin_id')) {
+                    $eventRequest->admin_id = $user->id;
+                }
+                $eventRequest->save();
+                Log::info('EventRequest approved for payment', [
+                    'event_request_id' => $eventRequest->id,
+                    'status' => $eventRequest->status,
+                ]);
+            };
+
+            if (in_array($connectionDriver, ['mysql','mariadb','pgsql','sqlsrv'], true)) {
+                DB::transaction($logic);
+            } else {
+                // SQLite or others: run without wrapping to ensure visibility across connections in tests
+                $logic();
+            }
+            $eventRequest->refresh();
+    } catch (\Throwable $e) {
+            Log::error('Approve failed', [
+                'event_request_id' => $eventRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', $e->getMessage());
+        }
+
+    // Notify the user their request was approved and they can now pay
         Notification::send($eventRequest->user, new RequestApprovedForPaymentNotification($eventRequest));
 
         return back()->with('success', 'Request approved and user has been notified to complete payment.');

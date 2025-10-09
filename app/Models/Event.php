@@ -100,14 +100,21 @@ class Event extends Model
     public function getAvailableSeatsAttribute(): int
     {
         $booked = $this->bookings()->sum('quantity');
-        // Sum approved event request attendees (attendee_count) if column exists
-        $approvedRequestAttendees = 0;
-    if (Schema::hasTable('event_requests') && Schema::hasColumn('event_requests','attendee_count')) {
-            $approvedRequestAttendees = (int) $this->requests()
-                ->where('status', 'approved')
+        // Treat non-expired AWAITING_PAYMENT requests as temporary holds on capacity
+        $held = 0;
+        if (Schema::hasTable('event_requests')
+            && Schema::hasColumn('event_requests','attendee_count')
+            && Schema::hasColumn('event_requests','status')) {
+            $held = (int) $this->requests()
+                ->where('status', \App\Enums\EventRequestStatus::AWAITING_PAYMENT->value)
+                ->when(Schema::hasColumn('event_requests','expires_at'), function($q){
+                    $q->where(function($sub){
+                        $sub->whereNull('expires_at')->orWhere('expires_at','>', now());
+                    });
+                })
                 ->sum('attendee_count');
         }
-        return max(0, $this->capacity - $booked - $approvedRequestAttendees);
+        return max(0, $this->capacity - $booked - $held);
     }
 
     /**

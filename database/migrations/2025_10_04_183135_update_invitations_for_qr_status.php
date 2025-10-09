@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             // Add QR code field like tickets
             $table->string('qr_code')->unique()->nullable()->after('token');
@@ -25,6 +28,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             $table->dropColumn(['qr_code', 'qr_status']);
         });

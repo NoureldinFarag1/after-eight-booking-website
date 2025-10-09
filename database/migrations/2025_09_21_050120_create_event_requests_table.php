@@ -16,7 +16,13 @@ return new class extends Migration {
             $table->string('field2');
             $table->string('field3');
             $table->string('field4');
-            $table->enum('status', ['pending', 'approved', 'declined'])->default('pending');
+            $driver = config('database.default');
+            $connection = config("database.connections.$driver.driver");
+            if (in_array($connection, ['mysql','mariadb'], true)) {
+                $table->enum('status', ['pending', 'approved', 'declined'])->default('pending');
+            } else {
+                $table->string('status', 32)->default('pending');
+            }
             $table->timestamps();
         });
         }

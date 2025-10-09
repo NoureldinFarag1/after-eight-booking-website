@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             // Only add sender_id if it doesn't exist
             if (!Schema::hasColumn('invitations', 'sender_id')) {
@@ -21,6 +24,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (!Schema::hasTable('invitations')) {
+            return;
+        }
         Schema::table('invitations', function (Blueprint $table) {
             if (Schema::hasColumn('invitations', 'sender_id')) {
                 $table->dropForeign(['sender_id']);
