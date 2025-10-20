@@ -9,7 +9,7 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="bi bi-qr-code me-2"></i>Ticket
+                        <i data-lucide="qr-code" class="me-2"></i>Ticket
                     </h4>
                     <span class="badge status-badge
                         @if($ticket->status->value === 'valid') bg-success
@@ -63,7 +63,7 @@
 
                         @if($ticket->scanned_at)
                             <div class="alert alert-info">
-                                <h6><i class="bi bi-check-circle me-1"></i>Ticket Used</h6>
+                                <h6><i data-lucide="check-circle" class="me-1"></i>Ticket Used</h6>
                                 <p class="mb-1"><strong>Scanned:</strong> {{ $ticket->scanned_at->format('l, F j, Y g:i A') }}</p>
                                 @if($ticket->scannedBy)
                                     <p class="mb-0"><strong>Scanned by:</strong> {{ $ticket->scannedBy->name }}</p>
@@ -71,12 +71,12 @@
                             </div>
                         @elseif($ticket->isExpired())
                             <div class="alert alert-warning">
-                                <h6><i class="bi bi-exclamation-triangle me-1"></i>Ticket Expired</h6>
+                                <h6><i data-lucide="triangle-alert" class="me-1"></i>Ticket Expired</h6>
                                 <p class="mb-0">This event has already taken place.</p>
                             </div>
                         @elseif($ticket->status->value === 'cancelled')
                             <div class="alert alert-danger">
-                                <h6><i class="bi bi-x-circle me-1"></i>Ticket Cancelled</h6>
+                                <h6><i data-lucide="x-circle" class="me-1"></i>Ticket Cancelled</h6>
                                 <p class="mb-0">This ticket is no longer valid for entry.</p>
                             </div>
                         @endif
@@ -101,7 +101,7 @@
                                         <p class="mb-2 text-muted">QR Code (fallback):</p>
                                         <p class="font-monospace small">{{ $ticket->qr_code }}</p>
                                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ $ticket->qr_code }}')">
-                                            <i class="bi bi-clipboard"></i> Copy Code
+                                            <i data-lucide="clipboard"></i> Copy Code
                                         </button>
                                     </div>
                                 </div>
@@ -110,7 +110,7 @@
                                 </p>
                             @else
                                 <div class="bg-light rounded p-4">
-                                    <i class="bi bi-qr-code display-4 text-muted"></i>
+                                    <i data-lucide="qr-code" class="display-4 text-muted"></i>
                                     <p class="mt-2 text-muted mb-0">
                                         QR code not available<br>
                                         (Ticket status: {{ ucfirst($ticket->status->value) }})
@@ -125,20 +125,20 @@
                                 <h6 class="card-title">Event Quick Info</h6>
                                 <p class="mb-1"><strong>{{ $ticket->event->title }}</strong></p>
                                 <p class="mb-1">
-                                    <i class="bi bi-calendar me-1"></i>
+                                    <i data-lucide="calendar" class="me-1"></i>
                                     {{ $ticket->event->event_date->format('l, F j, Y') }}
                                 </p>
                                 <p class="mb-1">
-                                    <i class="bi bi-clock me-1"></i>
+                                    <i data-lucide="clock" class="me-1"></i>
                                     {{ $ticket->event->event_time->format('g:i A') }}
                                 </p>
                                 <p class="mb-0">
-                                    <i class="bi bi-geo-alt me-1"></i>
+                                    <i data-lucide="map-pin" class="me-1"></i>
                                     {{ $ticket->event->location }}
                                 </p>
                                 @if($ticket->type)
                                     <p class="mb-0 mt-1">
-                                        <i class="bi bi-ticket-detailed me-1"></i>
+                                        <i data-lucide="ticket" class="me-1"></i>
                                         Type: {{ $ticket->type->name }}
                                         @if(!is_null($ticket->price))
                                             @php $feeP = $ticket->price - (float)($ticket->type?->price ?? $ticket->price); @endphp
@@ -174,23 +174,23 @@
                                     <div class="row">
                                         <div class="col-sm-6">
                                             <p class="mb-1">
-                                                <i class="bi bi-calendar text-primary me-1"></i>
+                                                <i data-lucide="calendar" class="text-primary me-1"></i>
                                                 {{ $ticket->event->event_date->format('l, F j, Y') }}
                                             </p>
                                             <p class="mb-1">
-                                                <i class="bi bi-clock text-primary me-1"></i>
+                                                <i data-lucide="clock" class="text-primary me-1"></i>
                                                 {{ $ticket->event->event_time->format('g:i A') }}
                                             </p>
                                         </div>
                                         <div class="col-sm-6">
                                             <p class="mb-1">
-                                                <i class="bi bi-geo-alt text-primary me-1"></i>
+                                                <i data-lucide="map-pin" class="text-primary me-1"></i>
                                                 {{ $ticket->event->location }}
                                             </p>
                                             @if(!is_null($ticket->price))
                                                 @php $feeP2 = $ticket->price - (float)($ticket->type?->price ?? $ticket->price); @endphp
                                                 <p class="mb-1">
-                                                    <i class="bi bi-cash-coin text-primary me-1"></i>
+                                                    <i data-lucide="banknote" class="text-primary me-1"></i>
                                                     EGP {{ number_format((float)$ticket->price, 2) }} @if($feeP2>0)<span class="text-muted small">(Base {{ number_format((float)($ticket->type?->price ?? $ticket->price),2) }} + Fee {{ number_format((float)$feeP2,2) }})</span>@endif
                                                 </p>
                                             @endif
@@ -210,23 +210,23 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between">
                     <a href="{{ route('tickets.index') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Tickets
+                        <i data-lucide="arrow-left" class="me-1"></i>Tickets
                     </a>
 
                     <div>
                         @if($ticket->status->value === 'valid')
                             <a href="{{ route('tickets.download', $ticket) }}" class="btn btn-outline-secondary me-2">
-                                <i class="bi bi-download me-1"></i>Download
+                                <i data-lucide="download" class="me-1"></i>Download
                             </a>
                             <button type="button" class="btn btn-primary" onclick="printTicket()">
-                                <i class="bi bi-printer me-1"></i>Print
+                                <i data-lucide="printer" class="me-1"></i>Print
                             </button>
                         @endif
 
                         @if(auth()->user()->isAdmin())
                             <div class="btn-group ms-2">
                                 <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                                    <i class="bi bi-gear me-1"></i>Admin Actions
+                                    <i data-lucide="settings" class="me-1"></i>Admin Actions
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><h6 class="dropdown-header">Change Status</h6></li>

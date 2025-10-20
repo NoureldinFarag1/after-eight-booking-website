@@ -8,7 +8,7 @@
     <div>
         <div class="d-flex align-items-center gap-3 mb-2">
             <a href="{{ route('user.profile.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Profile
+                <i data-lucide="arrow-left" class="me-1"></i>Profile
             </a>
             <h1 class="h3 mb-0">Change Password</h1>
         </div>
@@ -21,20 +21,20 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-shield-lock me-2"></i>Password Security
+                    <i data-lucide="shield" class="me-2"></i>Password Security
                 </h5>
             </div>
             <div class="card-body">
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
+                        <i data-lucide="check-circle" class="me-2"></i>{{ session('success') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
 
                 <!-- Security Info -->
                 <div class="alert alert-info mb-4">
-                    <i class="bi bi-info-circle me-2"></i>
+                    <i data-lucide="info" class="me-2"></i>
                     <strong>Password Requirements:</strong>
                     <ul class="mb-0 mt-2">
                         <li>At least 8 characters long</li>
@@ -58,10 +58,8 @@
                                    id="current_password"
                                    name="current_password"
                                    required>
-                            <button class="btn btn-outline-secondary"
-                                    type="button"
-                                    onclick="togglePassword('current_password')">
-                                <i class="bi bi-eye" id="current_password_icon"></i>
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#current_password" aria-label="Show password">
+                                <i data-lucide="eye"></i>
                             </button>
                             @error('current_password')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -80,10 +78,8 @@
                                    id="password"
                                    name="password"
                                    required>
-                            <button class="btn btn-outline-secondary"
-                                    type="button"
-                                    onclick="togglePassword('password')">
-                                <i class="bi bi-eye" id="password_icon"></i>
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#password" aria-label="Show password">
+                                <i data-lucide="eye"></i>
                             </button>
                             @error('password')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -102,10 +98,8 @@
                                    id="password_confirmation"
                                    name="password_confirmation"
                                    required>
-                            <button class="btn btn-outline-secondary"
-                                    type="button"
-                                    onclick="togglePassword('password_confirmation')">
-                                <i class="bi bi-eye" id="password_confirmation_icon"></i>
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#password_confirmation" aria-label="Show password">
+                                <i data-lucide="eye"></i>
                             </button>
                             @error('password_confirmation')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -115,10 +109,10 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-shield-check me-1"></i>Update Password
+                            <i data-lucide="shield-check" class="me-1"></i>Update Password
                         </button>
                         <a href="{{ route('user.profile.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i>Cancel
+                            <i data-lucide="x" class="me-1"></i>Cancel
                         </a>
                     </div>
                 </form>
@@ -129,14 +123,14 @@
         <div class="card mt-4">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="bi bi-lightbulb me-2"></i>Security Tips
+                    <i data-lucide="lightbulb" class="me-2"></i>Security Tips
                 </h6>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12">
                         <div class="d-flex align-items-start">
-                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            <i data-lucide="check-circle" class="text-success me-2 mt-1"></i>
                             <div>
                                 <strong>Use a strong password:</strong> Combine letters, numbers, and symbols for better security.
                             </div>
@@ -144,7 +138,7 @@
                     </div>
                     <div class="col-12">
                         <div class="d-flex align-items-start">
-                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            <i data-lucide="check-circle" class="text-success me-2 mt-1"></i>
                             <div>
                                 <strong>Keep it unique:</strong> Don't reuse passwords from other accounts.
                             </div>
@@ -152,7 +146,7 @@
                     </div>
                     <div class="col-12">
                         <div class="d-flex align-items-start">
-                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            <i data-lucide="check-circle" class="text-success me-2 mt-1"></i>
                             <div>
                                 <strong>Update regularly:</strong> Change your password every few months for maximum security.
                             </div>
@@ -168,19 +162,6 @@
 
 @push('scripts')
 <script>
-function togglePassword(fieldId) {
-    const field = document.getElementById(fieldId);
-    const icon = document.getElementById(fieldId + '_icon');
-
-    if (field.type === 'password') {
-        field.type = 'text';
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-    } else {
-        field.type = 'password';
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
-    }
-}
+// No inline JS needed; global toggle-password handler in app.js handles it
 </script>
 @endpush

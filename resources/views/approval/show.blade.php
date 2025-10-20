@@ -16,15 +16,15 @@
     @include('event_requests.partials.request_core', ['eventRequest' => $eventRequest, 'showJson' => !empty($eventRequest->payload)])
 
     <div class="d-flex gap-2">
-        <a href="{{ route('approval.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Approvals</a>
+    <a href="{{ route('approval.index') }}" class="btn btn-outline-secondary"><i data-lucide="arrow-left"></i> Approvals</a>
         @if($eventRequest->status === 'pending')
             <form method="POST" action="{{ route('approval.approve', $eventRequest->id) }}" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> Approve</button>
+                <button type="submit" class="btn btn-success"><i data-lucide="check"></i> Approve</button>
             </form>
             <form method="POST" action="{{ route('approval.reject', $eventRequest->id) }}" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-danger"><i class="bi bi-x"></i> Reject</button>
+                <button type="submit" class="btn btn-danger"><i data-lucide="x"></i> Reject</button>
             </form>
         @endif
     </div>

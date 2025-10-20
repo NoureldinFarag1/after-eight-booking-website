@@ -5,7 +5,7 @@
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-title">
-            <i class="bi bi-shield-lock text-primary" style="font-size:1.4rem;"></i>
+            <i data-lucide="shield" class="text-primary" style="font-size:1.4rem;"></i>
             New Password
         </div>
         <div class="auth-subtitle">Choose a strong password for your account.</div>
@@ -21,7 +21,7 @@
                 <label for="password" class="form-label">Password</label>
                 <div class="input-group password-toggle-group">
                     <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="••••••••" required>
-                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i data-lucide="eye"></i></button>
                 </div>
                 @error('password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             </div>
@@ -29,11 +29,11 @@
                 <label for="password_confirmation" class="form-label">Confirm Password</label>
                 <div class="input-group password-toggle-group">
                     <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="••••••••" required>
-                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password_confirmation" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password_confirmation" aria-label="Show password"><i data-lucide="eye"></i></button>
                 </div>
             </div>
             <div class="auth-actions d-grid mb-2">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle me-1"></i>Reset Password</button>
+                <button class="btn btn-primary" type="submit"><i data-lucide="check-circle" class="me-1"></i>Reset Password</button>
             </div>
         </form>
         <div class="auth-footer"><a href="{{ route('login') }}">Login</a></div>

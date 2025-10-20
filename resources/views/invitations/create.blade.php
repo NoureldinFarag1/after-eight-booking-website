@@ -7,23 +7,23 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Send Event Invitation</h1>
         <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Invitations
+            <i data-lucide="arrow-left" class="me-1"></i> Invitations
         </a>
     </div>
 
     @if($events->isEmpty())
         <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
+            <i data-lucide="alert-triangle" class="me-2"></i>
             <strong>No events available!</strong> You need to create an event first before sending invitations.
             <a href="{{ route('admin.events.create') }}" class="btn btn-sm btn-warning ms-2">
-                <i class="bi bi-plus-circle me-1"></i> Create Event
+                <i data-lucide="plus-circle" class="me-1"></i> Create Event
             </a>
         </div>
     @else
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-envelope-plus me-2"></i>
+                    <i data-lucide="mail-plus" class="me-2"></i>
                     New Invitation Details
                 </h5>
             </div>
@@ -86,10 +86,10 @@
                     <!-- Submit Buttons -->
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send me-1"></i> Send Invitation with QR Code
+                            <i data-lucide="send" class="me-1"></i> Send Invitation with QR Code
                         </button>
                         <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle me-1"></i> Cancel
+                            <i data-lucide="x-circle" class="me-1"></i> Cancel
                         </a>
                     </div>
                 </form>
@@ -100,7 +100,7 @@
         <div class="card mt-4 bg-light">
             <div class="card-body">
                 <h6 class="card-title">
-                    <i class="bi bi-info-circle me-2"></i>How it works:
+                    <i data-lucide="info" class="me-2"></i>How it works:
                 </h6>
                 <ul class="mb-0">
                     <li>Select an event and enter recipient details</li>

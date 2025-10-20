@@ -10,7 +10,7 @@
                 <div class="card-body text-center py-5">
                     @if($response === 'accepted')
                         <div class="mb-4">
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                            <i data-lucide="circle-check" class="text-success" style="width:4rem;height:4rem;"></i>
                         </div>
                         <h2 class="text-success mb-3">Invitation Accepted!</h2>
                         <p class="text-muted mb-4">
@@ -18,7 +18,7 @@
                         </p>
                     @else
                         <div class="mb-4">
-                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                            <i data-lucide="circle-x" class="text-danger" style="width:4rem;height:4rem;"></i>
                         </div>
                         <h2 class="text-danger mb-3">Invitation Declined</h2>
                         <p class="text-muted mb-4">
@@ -42,7 +42,7 @@
                     @if($response === 'accepted' && $invitation->event)
                         <div class="mt-4">
                             <p class="text-muted small">
-                                <i class="bi bi-info-circle me-1"></i>
+                                <i data-lucide="info" class="me-1"></i>
                                 You may receive additional details about the event via email.
                             </p>
                         </div>

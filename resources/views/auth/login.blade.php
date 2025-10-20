@@ -5,7 +5,7 @@
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-title">
-            <i class="bi bi-box-arrow-in-right text-primary" style="font-size:1.4rem;"></i>
+            <i data-lucide="log-in" class="text-primary" style="font-size:1.4rem;"></i>
             Login
         </div>
         <div class="auth-subtitle">Access your account to manage bookings and tickets.</div>
@@ -19,11 +19,11 @@
             </div>
             <div class="mb-3 position-relative">
                 <label for="password" class="form-label d-flex justify-content-between align-items-center">Password
-                    <a href="{{ route('password.request') }}" class="small text-decoration-none text-primary" style="font-weight:500;">Forgot?</a>
+                    <a href="{{ route('password.request') }}" class="small text-decoration-none" style="font-weight:600; color: var(--ae-primary);">Forgot?</a>
                 </label>
                 <div class="input-group password-toggle-group">
                     <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="••••••••" required>
-                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i data-lucide="eye"></i></button>
                 </div>
                 @error('password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             </div>
@@ -33,7 +33,7 @@
             </div>
             <div class="auth-actions d-grid mb-2">
                 <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+                    <i data-lucide="log-in" class="me-1"></i>Sign In
                 </button>
             </div>
         </form>
@@ -41,7 +41,7 @@
         <div class="auth-divider"><span>Or continue with</span></div>
         <div class="d-grid mb-2">
             <a href="{{ route('auth.google.redirect') }}" class="btn btn-outline-primary social-btn">
-                <i class="bi bi-google me-1"></i> Google
+                <i data-lucide="mail" class="me-1"></i> Google
             </a>
         </div>
 

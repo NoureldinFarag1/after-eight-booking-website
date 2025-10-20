@@ -8,7 +8,7 @@
         <div class="card text-center">
             <div class="card-header">
                 <h4 class="mb-0">
-                    <i class="bi bi-qr-code me-2"></i>Entry QR Code
+                    <i data-lucide="qr-code" class="me-2"></i>Entry QR Code
                 </h4>
                 <small class="text-muted">{{ $ticket->event->title }}</small>
             </div>
@@ -47,32 +47,32 @@
 
                         @if($ticket->seat_number)
                             <div class="alert alert-info">
-                                <i class="bi bi-geo-alt me-1"></i>
+                                <i data-lucide="map-pin" class="me-1"></i>
                                 <strong>Seat Number:</strong> {{ $ticket->seat_number }}
                             </div>
                         @endif
 
                         <div class="mt-4">
                             <span class="badge bg-success fs-6 px-3 py-2">
-                                <i class="bi bi-check-circle me-1"></i>Valid for Entry
+                                <i data-lucide="check-circle" class="me-1"></i>Valid for Entry
                             </span>
                         </div>
                     </div>
 
                     <!-- Instructions -->
                     <div class="mt-4 p-3 bg-light rounded">
-                        <h6><i class="bi bi-info-circle me-1"></i>Instructions</h6>
+                        <h6><i data-lucide="info" class="me-1"></i>Instructions</h6>
                         <ul class="list-unstyled text-start mb-0">
-                            <li><i class="bi bi-arrow-right me-2 text-primary"></i>Show this QR code at the event entrance</li>
-                            <li><i class="bi bi-arrow-right me-2 text-primary"></i>Keep your screen brightness up</li>
-                            <li><i class="bi bi-arrow-right me-2 text-primary"></i>Arrive 15 minutes before event time</li>
-                            <li><i class="bi bi-arrow-right me-2 text-primary"></i>Have your ID ready if required</li>
+                            <li><i data-lucide="arrow-right" class="me-2 text-primary"></i>Show this QR code at the event entrance</li>
+                            <li><i data-lucide="arrow-right" class="me-2 text-primary"></i>Keep your screen brightness up</li>
+                            <li><i data-lucide="arrow-right" class="me-2 text-primary"></i>Arrive 15 minutes before event time</li>
+                            <li><i data-lucide="arrow-right" class="me-2 text-primary"></i>Have your ID ready if required</li>
                         </ul>
                     </div>
                 @else
                     <!-- Invalid Ticket Status -->
                     <div class="text-center py-5">
-                        <i class="bi bi-exclamation-triangle display-1 text-warning mb-3"></i>
+                        <i data-lucide="triangle-alert" class="display-1 text-warning mb-3"></i>
                         <h4>QR Code Not Available</h4>
                         <p class="text-muted mb-4">
                             This ticket is not valid for entry.
@@ -91,18 +91,18 @@
 
                         @if($ticket->status->value === 'used')
                             <div class="alert alert-info">
-                                <h6><i class="bi bi-check-circle me-1"></i>Already Used</h6>
+                                <h6><i data-lucide="check-circle" class="me-1"></i>Already Used</h6>
                                 <p class="mb-1">This ticket was scanned on:</p>
                                 <p class="mb-0"><strong>{{ $ticket->scanned_at?->format('l, F j, Y g:i A') }}</strong></p>
                             </div>
                         @elseif($ticket->status->value === 'cancelled')
                             <div class="alert alert-danger">
-                                <h6><i class="bi bi-x-circle me-1"></i>Ticket Cancelled</h6>
+                                <h6><i data-lucide="x-circle" class="me-1"></i>Ticket Cancelled</h6>
                                 <p class="mb-0">This ticket has been cancelled and is no longer valid.</p>
                             </div>
                         @elseif($ticket->status->value === 'expired')
                             <div class="alert alert-warning">
-                                <h6><i class="bi bi-calendar-x me-1"></i>Event Passed</h6>
+                                <h6><i data-lucide="calendar-x" class="me-1"></i>Event Passed</h6>
                                 <p class="mb-0">This event has already taken place.</p>
                             </div>
                         @endif
@@ -112,16 +112,16 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Ticket
+                        <i data-lucide="arrow-left" class="me-1"></i>Ticket
                     </a>
 
                     @if($ticket->status->value === 'valid')
                         <div>
                             <button type="button" class="btn btn-outline-primary me-2" onclick="shareTicket()">
-                                <i class="bi bi-share me-1"></i>Share
+                                <i data-lucide="share-2" class="me-1"></i>Share
                             </button>
                             <button type="button" class="btn btn-primary" onclick="downloadQR()">
-                                <i class="bi bi-download me-1"></i>Save QR
+                                <i data-lucide="download" class="me-1"></i>Save QR
                             </button>
                         </div>
                     @endif
@@ -145,11 +145,11 @@
                     @endif
                         <h6 class="mb-1">{{ $ticket->event->title }}</h6>
                         <p class="text-muted mb-1">
-                            <i class="bi bi-calendar me-1"></i>
+                            <i data-lucide="calendar" class="me-1"></i>
                             {{ $ticket->event->event_date->format('l, F j, Y') }} at {{ $ticket->event->event_time->format('g:i A') }}
                         </p>
                         <p class="text-muted mb-0">
-                            <i class="bi bi-geo-alt me-1"></i>
+                            <i data-lucide="map-pin" class="me-1"></i>
                             {{ $ticket->event->location }}
                         </p>
                     </div>

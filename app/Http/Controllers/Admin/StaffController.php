@@ -65,6 +65,36 @@ class StaffController extends Controller
         return view('admin.staff.create');
     }
 
+    /** Show a specific staff member (operator/admin/etc.) */
+    public function show(User $user)
+    {
+        if (!$user->role->isManageableStaff()) {
+            abort(404);
+        }
+
+        // Gather simple activity details for operators
+        $recentScans = collect();
+        $todayScans = 0;
+        $thisWeekScans = 0;
+        if ($user->role->value === Role::OPERATOR->value) {
+            $recentScans = $user->scannedTickets()
+                ->select('id', 'event_id', 'scanned_at')
+                ->with('event:id,title')
+                ->latest('scanned_at')
+                ->limit(25)
+                ->get();
+            $todayScans = $user->scannedTickets()->whereDate('scanned_at', today())->count();
+            $thisWeekScans = $user->scannedTickets()->whereBetween('scanned_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        }
+
+        return view('admin.staff.show', [
+            'staff' => $user,
+            'recentScans' => $recentScans,
+            'todayScans' => $todayScans,
+            'thisWeekScans' => $thisWeekScans,
+        ]);
+    }
+
     /**
      * Store a new staff member.
      */

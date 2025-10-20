@@ -79,6 +79,7 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
 
         // Staff management (Admin only) - includes operators, approval officers, and finance officers
     Route::get('/admin/staff', [StaffController::class, 'index'])->name('admin.staff.index');
+    Route::get('/admin/staff/{user}', [StaffController::class, 'show'])->name('admin.staff.show');
     Route::get('/admin/staff/create', [StaffController::class, 'create'])->name('admin.staff.create');
     Route::post('/admin/staff', [StaffController::class, 'store'])->name('admin.staff.store');
     Route::patch('/admin/staff/{user}/toggle', [StaffController::class, 'toggle'])->name('admin.staff.toggle');

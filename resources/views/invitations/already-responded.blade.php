@@ -9,7 +9,7 @@
             <div class="card shadow-sm">
                 <div class="card-body text-center py-5">
                     <div class="mb-4">
-                        <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
+                        <i data-lucide="triangle-alert" class="text-warning" style="width:4rem;height:4rem;"></i>
                     </div>
                     <h2 class="text-warning mb-3">Already Responded</h2>
                     <p class="text-muted mb-4">
@@ -31,7 +31,7 @@
 
                     <div class="mt-4">
                         <p class="text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>
+                            <i data-lucide="info" class="me-1"></i>
                             If you need to change your response, please contact the event organizer.
                         </p>
                     </div>

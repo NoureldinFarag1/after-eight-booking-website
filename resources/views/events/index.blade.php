@@ -14,12 +14,12 @@
     <div class="col-12">
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
             <h1 class="h3 mb-0 d-flex align-items-center">
-                <i class="bi bi-calendar-event me-2"></i>Upcoming Events
+                <i data-lucide="calendar" class="me-2"></i>Upcoming Events
             </h1>
             <div class="d-flex gap-2">
                 <!-- Mobile: Filters button -->
                 <button class="btn btn-outline-secondary d-inline-flex d-md-none align-items-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#eventFiltersOffcanvas" aria-controls="eventFiltersOffcanvas">
-                    <i class="bi bi-funnel me-1"></i>
+                    <i data-lucide="filter" class="me-1"></i>
                     Filters
                     @if($activeFilterCount>0)
                         <span class="badge bg-primary ms-2">{{ $activeFilterCount }}</span>
@@ -28,7 +28,7 @@
                 @auth
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('admin.events.create') }}" class="btn btn-primary d-none d-md-inline-flex">
-                            <i class="bi bi-plus-circle me-1"></i>Create Event
+                            <i data-lucide="plus-circle" class="me-1"></i>Create Event
                         </a>
                     @endif
                 @endauth
@@ -91,8 +91,8 @@
                         </select>
                     </div>
                     <div class="col-md-2 d-flex gap-2">
-                        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search me-1"></i>Filter</button>
-                        <a href="{{ route('events.index') }}" class="btn btn-outline-secondary" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        <button class="btn btn-primary w-100" type="submit"><i data-lucide="search" class="me-1"></i>Filter</button>
+                        <a href="{{ route('events.index') }}" class="btn btn-outline-secondary" title="Reset"><i data-lucide="rotate-ccw"></i></a>
                     </div>
                 </div>
             </div>
@@ -101,7 +101,7 @@
         <!-- Mobile Offcanvas Filters -->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="eventFiltersOffcanvas" aria-labelledby="eventFiltersOffcanvasLabel">
             <div class="offcanvas-header border-bottom">
-                <h5 class="offcanvas-title" id="eventFiltersOffcanvasLabel"><i class="bi bi-funnel me-1"></i>Filters</h5>
+                <h5 class="offcanvas-title" id="eventFiltersOffcanvasLabel"><i data-lucide="filter" class="me-1"></i>Filters</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
@@ -177,7 +177,7 @@
             <div class="row">
                 @foreach($events as $event)
                     <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card h-100 event-card">
+                        <div class="card h-100 event-card position-relative">
                             @if($event->image_url)
                                 <img src="{{ Storage::url($event->image_url) }}"
                                      class="card-img-top"
@@ -191,6 +191,8 @@
                             @endif
 
                             <div class="card-body d-flex flex-column">
+                                <!-- Make whole card clickable -->
+                                <a href="{{ route('events.show', $event) }}" class="stretched-link" aria-label="View {{ $event->title }}"></a>
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title">{{ $event->title }}</h5>
                                     <span class="badge status-badge
@@ -244,19 +246,11 @@
                                                 <span class="text-muted">Pricing will be announced</span>
                                             @endif
                                         </div>
-                                        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center justify-content-end action-buttons" style="min-width: 180px;">
-                                            <a href="{{ route('events.show', $event) }}"
-                                               class="btn btn-outline-primary btn-sm @if($event->isSoldOut() && !auth()->user()?->isAdmin()) disabled @endif"
-                                               @if($event->isSoldOut() && !auth()->user()?->isAdmin())
-                                                   tabindex="-1" aria-disabled="true"
-                                               @endif
-                                            >
-                                                View
-                                            </a>
+                                        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center justify-content-end action-buttons position-relative z-1" style="min-width: 180px;">
 
                                             @auth
                                                 @if(auth()->user()->isAdmin())
-                                                    <a href="{{ route('admin.events.edit', $event) }}"
+                                                                     <a href="{{ route('admin.events.edit', $event) }}"
                                                        class="btn btn-outline-secondary btn-sm" title="Edit Event">
                                                         <i class="bi bi-pencil me-1"></i><span class="d-none d-xl-inline">Edit</span>
                                                     </a>

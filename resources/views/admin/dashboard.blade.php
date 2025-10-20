@@ -5,23 +5,59 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <h1 class="h3 mb-4">
-            <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+        <h1 class="h3 mb-4 text-deep-red d-flex align-items-center">
+            <i data-lucide="layout-dashboard" class="me-2"></i>
+            Admin Dashboard
         </h1>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
+                                <i data-lucide="plus-circle" class="me-1"></i>Create Event
+                            </a>
+                            <a href="{{ route('events.index') }}" class="btn btn-outline-primary">
+                                <i data-lucide="list" class="me-1"></i>View All Events
+                            </a>
+                            <a href="{{ route('bookings.index') }}" class="btn btn-outline-secondary">
+                                <i data-lucide="ticket" class="me-1"></i>View All Bookings
+                            </a>
+                            <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary">
+                                <i data-lucide="qr-code" class="me-1"></i>View All Tickets
+                            </a>
+                            {{-- Send Invitation Button (redirects to Create Invitation page) --}}
+                            @if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
+                                <a href="{{ route('invitations.store') }}" class="btn btn-success">
+                                    <i data-lucide="mail" class="me-1"></i>Send Invitation
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-primary text-white">
+                <div class="card border-0 shadow-red h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title">Total Events</h6>
-                                <h2 class="mb-0">{{ $totalEvents }}</h2>
-                                <small>{{ $upcomingEvents }} upcoming</small>
+                                <h6 class="card-title text-muted mb-2">Total Events</h6>
+                                <div class="metric-value text-primary mb-1">{{ $totalEvents }}</div>
+                                <div class="metric-subtext">{{ $upcomingEvents }} upcoming</div>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-calendar-event" style="font-size: 2rem;"></i>
+                                <div class="bg-gradient-red-light rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i data-lucide="calendar" class="icon-xl text-white"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -29,16 +65,18 @@
             </div>
 
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-success text-white">
+                <div class="card border-0 shadow-red h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title">Total Bookings</h6>
-                                <h2 class="mb-0">{{ $totalBookings }}</h2>
-                                <small>{{ $totalTickets }} tickets</small>
+                                <h6 class="card-title text-muted mb-2">Total Bookings</h6>
+                                <div class="metric-value text-primary mb-1">{{ $totalBookings }}</div>
+                                <div class="metric-subtext">{{ $totalTickets }} tickets</div>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-ticket-perforated" style="font-size: 2rem;"></i>
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i data-lucide="ticket" class="icon-xl text-primary"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -46,16 +84,18 @@
             </div>
 
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-info text-white">
+                <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title">Scanned Tickets</h6>
-                                <h2 class="mb-0">{{ $scannedTickets }}</h2>
-                                <small>{{ $totalTickets > 0 ? round(($scannedTickets / $totalTickets) * 100, 1) : 0 }}% scan rate</small>
+                                <h6 class="card-title text-muted mb-2">Scanned Tickets</h6>
+                                <div class="metric-value mb-1">{{ $scannedTickets }}</div>
+                                <div class="metric-subtext">{{ $totalTickets > 0 ? round(($scannedTickets / $totalTickets) * 100, 1) : 0 }}% scan rate</div>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-qr-code-scan" style="font-size: 2rem;"></i>
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i data-lucide="qr-code" class="icon-xl text-primary"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -63,16 +103,18 @@
             </div>
 
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-warning text-dark">
+                <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title">Total Revenue</h6>
-                                <h2 class="mb-0">EGP {{ number_format($totalRevenue, 0) }}</h2>
-                                <small>{{ $activeOperators }}/{{ $totalOperators }} operators active</small>
+                                <h6 class="card-title text-muted mb-2">Total Revenue</h6>
+                                <div class="metric-value mb-1">EGP {{ number_format($totalRevenue, 0) }}</div>
+                                <div class="metric-subtext">{{ $activeOperators }}/{{ $totalOperators }} operators active</div>
                             </div>
                             <div class="align-self-center">
-                                <i class="bi bi-cash-coin" style="font-size: 2rem;"></i>
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i data-lucide="wallet" class="icon-xl text-primary"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -83,9 +125,9 @@
         <!-- Daily Scan Activity Chart -->
         <div class="row mb-4">
             <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Daily Scan Activity (Last 7 Days)</h5>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-dark">Daily Scan Activity (Last 7 Days)</h5>
                     </div>
                     <div class="card-body">
                         <canvas id="dailyScanChart" width="400" height="150"></canvas>
@@ -93,29 +135,29 @@
                 </div>
             </div>
             <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Quick Stats</h5>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-dark">Quick Stats</h5>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
                             <div class="col-6 border-end">
-                                <h4 class="text-primary">{{ $publishedEvents }}</h4>
+                                <h4 class="text-dark mb-1">{{ $publishedEvents }}</h4>
                                 <small class="text-muted">Published Events</small>
                             </div>
                             <div class="col-6">
-                                <h4 class="text-success">{{ $validTickets }}</h4>
+                                <h4 class="text-dark mb-1">{{ $validTickets }}</h4>
                                 <small class="text-muted">Valid Tickets</small>
                             </div>
                         </div>
-                        <hr>
+                        <hr class="my-3">
                         <div class="row text-center">
                             <div class="col-6 border-end">
-                                <h4 class="text-info">{{ $pastEvents }}</h4>
+                                <h4 class="text-dark mb-1">{{ $pastEvents }}</h4>
                                 <small class="text-muted">Past Events</small>
                             </div>
                             <div class="col-6">
-                                <h4 class="text-warning">{{ $totalOperators }}</h4>
+                                <h4 class="text-dark mb-1">{{ $totalOperators }}</h4>
                                 <small class="text-muted">Total Operators</small>
                             </div>
                         </div>
@@ -127,15 +169,15 @@
         <!-- Operator Performance -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Operator Performance</h5>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">Operator Performance</h5>
                         <span class="badge bg-primary">{{ $totalOperators }} Total Operators</span>
                     </div>
                     <div class="card-body">
                         @if($operatorStats->count() > 0)
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover event-performance-table">
                                     <thead>
                                         <tr>
                                             <th>Operator</th>
@@ -149,8 +191,9 @@
                                     </thead>
                                     <tbody>
                                         @foreach($operatorStats as $operator)
-                                            <tr>
-                                                <td>
+                                            <tr class="position-relative">
+                                                <td class="position-relative">
+                                                    <a href="{{ route('admin.staff.show', $operator['id']) }}" class="stretched-link" aria-label="View {{ $operator['name'] }}"></a>
                                                     <div>
                                                         <strong>{{ $operator['name'] }}</strong>
                                                         <br><small class="text-muted">{{ $operator['email'] }}</small>
@@ -160,12 +203,12 @@
                                                     <span class="badge bg-primary fs-6">{{ $operator['total_scans'] }}</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge {{ $operator['today_scans'] > 0 ? 'bg-success' : 'bg-light text-dark' }}">
+                                                    <span class="badge {{ $operator['today_scans'] > 0 ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-light text-dark border' }}">
                                                         {{ $operator['today_scans'] }}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge {{ $operator['week_scans'] > 0 ? 'bg-info' : 'bg-light text-dark' }}">
+                                                    <span class="badge {{ $operator['week_scans'] > 0 ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-light text-dark border' }}">
                                                         {{ $operator['week_scans'] }}
                                                     </span>
                                                 </td>
@@ -203,7 +246,7 @@
                             </div>
                         @else
                             <div class="text-center py-4">
-                                <i class="bi bi-person-x display-4 text-muted"></i>
+                                <i data-lucide="user-x" class="display-4 text-muted"></i>
                                 <p class="mt-2 text-muted">No operators found.</p>
                             </div>
                         @endif
@@ -215,9 +258,9 @@
         <!-- Event Performance -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Event Performance</h5>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">Event Performance</h5>
                         <a href="{{ route('events.index') }}" class="btn btn-sm btn-outline-primary">
                             View All Events
                         </a>
@@ -225,7 +268,7 @@
                     <div class="card-body">
                         @if($eventPerformance->count() > 0)
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover event-performance-table">
                                     <thead>
                                         <tr>
                                             <th>Event</th>
@@ -247,13 +290,13 @@
                                                 <td>{{ $event['date'] }}</td>
                                                 <td>{{ $event['capacity'] }}</td>
                                                 <td>
-                                                    <span class="badge bg-primary">{{ $event['tickets_sold'] }}</span>
+                                                    <span class="badge metric-badge metric-badge--primary">{{ $event['tickets_sold'] }}</span>
                                                     <small class="text-muted">
                                                         ({{ $event['capacity'] > 0 ? round(($event['tickets_sold'] / $event['capacity']) * 100, 1) : 0 }}%)
                                                     </small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-success">{{ $event['tickets_scanned'] }}</span>
+                                                    <span class="badge metric-badge metric-badge--dark">{{ $event['tickets_scanned'] }}</span>
                                                 </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
@@ -270,16 +313,21 @@
                                                 <td>
                                                     @php
                                                         $soldRate = $event['capacity'] > 0 ? ($event['tickets_sold'] / $event['capacity']) * 100 : 0;
+                                                        $performanceLabel = 'Poor';
+                                                        $performanceClass = 'performance-badge performance-badge--poor';
+
+                                                        if ($soldRate >= 90) {
+                                                            $performanceLabel = 'Excellent';
+                                                            $performanceClass = 'performance-badge performance-badge--excellent';
+                                                        } elseif ($soldRate >= 70) {
+                                                            $performanceLabel = 'Good';
+                                                            $performanceClass = 'performance-badge performance-badge--good';
+                                                        } elseif ($soldRate >= 50) {
+                                                            $performanceLabel = 'Average';
+                                                            $performanceClass = 'performance-badge performance-badge--average';
+                                                        }
                                                     @endphp
-                                                    @if($soldRate >= 90)
-                                                        <span class="badge bg-success">Excellent</span>
-                                                    @elseif($soldRate >= 70)
-                                                        <span class="badge bg-primary">Good</span>
-                                                    @elseif($soldRate >= 50)
-                                                        <span class="badge bg-warning">Average</span>
-                                                    @else
-                                                        <span class="badge bg-danger">Poor</span>
-                                                    @endif
+                                                    <span class="badge {{ $performanceClass }}">{{ $performanceLabel }}</span>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -288,7 +336,7 @@
                             </div>
                         @else
                             <div class="text-center py-4">
-                                <i class="bi bi-graph-down display-4 text-muted"></i>
+                                <i data-lucide="trending-down" class="display-4 text-muted"></i>
                                 <p class="mt-2 text-muted">No event performance data available.</p>
                             </div>
                         @endif
@@ -297,47 +345,12 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle me-1"></i>Create Event
-                            </a>
-                            <a href="{{ route('events.index') }}" class="btn btn-outline-primary">
-                                <i class="bi bi-list me-1"></i>View All Events
-                            </a>
-                            <a href="{{ route('bookings.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-ticket-perforated me-1"></i>View All Bookings
-                            </a>
-                            <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-qr-code me-1"></i>View All Tickets
-                            </a>
-                            <a href="{{ route('tickets.scan') }}" class="btn btn-outline-success">
-                                <i class="bi bi-upc-scan me-1"></i>Scan Tickets
-                            {{-- Send Invitation Button (redirects to Create Invitation page) --}}
-                            @if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
-                                <a href="{{ route('invitations.store') }}" class="btn btn-success">
-                                    <i class="bi bi-envelope-open me-1"></i>Send Invitation
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Recent Events -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Recent Events</h5>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">Recent Events</h5>
                         <a href="{{ route('events.index') }}" class="btn btn-sm btn-outline-primary">
                             View All
                         </a>
@@ -345,7 +358,7 @@
                     <div class="card-body">
                         @if($recentEvents->count() > 0)
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover recent-events-table">
                                     <thead>
                                         <tr>
                                             <th>Event</th>
@@ -366,11 +379,10 @@
                                                         @if($event->image_url)
                                                             <img src="{{ Storage::url($event->image_url) }}"
                                                                  alt="{{ $event->title }}"
-                                                                 class="rounded me-2"
-                                                                 style="width: 40px; height: 40px; object-fit: cover;">
+                                                                 class="thumb me-2"
+                                                                 >
                                                         @else
-                                                            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center"
-                                                                 style="width: 40px; height: 40px;">
+                                                            <div class="bg-light thumb-placeholder me-2 d-flex align-items-center justify-content-center">
                                                                 <i class="bi bi-image text-muted"></i>
                                                             </div>
                                                         @endif
@@ -415,12 +427,18 @@
                                                     <small class="text-muted">{{ $event->scanned_tickets_count }}/{{ $event->tickets_count }}</small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge status-badge
-                                                        @if($event->status->value === 'published') bg-success
-                                                        @elseif($event->status->value === 'draft') bg-secondary
-                                                        @elseif($event->status->value === 'cancelled') bg-danger
-                                                        @else bg-warning @endif">
-                                                        {{ ucfirst($event->status->value) }}
+                                                    @php
+                                                        $status = $event->status->value;
+                                                        $pillClass = match($status) {
+                                                            'published' => 'status-pill status-pill--published',
+                                                            'draft' => 'status-pill status-pill--draft',
+                                                            'cancelled' => 'status-pill status-pill--cancelled',
+                                                            default => 'status-pill status-pill--pending'
+                                                        };
+                                                    @endphp
+                                                    <span class="{{ $pillClass }}">
+                                                        <span class="status-dot" aria-hidden="true"></span>
+                                                        {{ ucfirst($status) }}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -462,16 +480,27 @@
     // Daily Scan Activity Chart
     const dailyScanData = @json($dailyScanActivity);
     const ctx = document.getElementById('dailyScanChart').getContext('2d');
+    const mqScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    const getChartColors = () => {
+        const dark = mqScheme.matches;
+        return {
+            borderColor: 'rgb(37,99,235)', // blue-600
+            backgroundColor: 'rgba(37,99,235, 0.15)', // area fill
+            grid: dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+            ticks: dark ? 'rgba(255,255,255,0.75)' : 'rgba(17,24,39,0.75)',
+        };
+    };
+    const baseColors = getChartColors();
 
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dailyScanData.map(d => d.date),
             datasets: [{
                 label: 'Tickets Scanned',
                 data: dailyScanData.map(d => d.scans),
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderColor: baseColors.borderColor,
+                backgroundColor: baseColors.backgroundColor,
                 fill: true,
                 tension: 0.4
             }]
@@ -483,7 +512,19 @@
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: baseColors.ticks
+                    },
+                    grid: {
+                        color: baseColors.grid
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: baseColors.ticks
+                    },
+                    grid: {
+                        color: baseColors.grid
                     }
                 }
             },
@@ -494,6 +535,27 @@
             }
         }
     });
+
+    // React to color scheme changes
+    if (mqScheme.addEventListener) {
+        mqScheme.addEventListener('change', () => {
+            const c = getChartColors();
+            chart.options.scales.x.ticks.color = c.ticks;
+            chart.options.scales.y.ticks.color = c.ticks;
+            chart.options.scales.x.grid.color = c.grid;
+            chart.options.scales.y.grid.color = c.grid;
+            chart.update();
+        });
+    } else if (mqScheme.addListener) {
+        mqScheme.addListener(() => {
+            const c = getChartColors();
+            chart.options.scales.x.ticks.color = c.ticks;
+            chart.options.scales.y.ticks.color = c.ticks;
+            chart.options.scales.x.grid.color = c.grid;
+            chart.options.scales.y.grid.color = c.grid;
+            chart.update();
+        });
+    }
 </script>
 @endpush
 @endsection

@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Invitations</h1>
         <a href="{{ route('invitations.create') }}" class="btn btn-warning">
-            <i class="bi bi-envelope-plus me-1"></i> New Invitation
+            <i data-lucide="mail-plus" class="me-1"></i> New Invitation
         </a>
     </div>
 
@@ -47,7 +47,7 @@
                                     </div>
                                 @else
                                     <div class="text-danger">
-                                        <small><i class="bi bi-exclamation-triangle me-1"></i>No event associated</small>
+                                        <small><i data-lucide="alert-triangle" class="me-1"></i>No event associated</small>
                                     </div>
                                 @endif
                             </td>
@@ -69,9 +69,9 @@
                             </td>
                             <td>
                                 @if($invitation->qr_code_path)
-                                    <i class="bi bi-check-circle text-success" title="QR Code Generated"></i>
+                                    <i data-lucide="check-circle" class="text-success"></i>
                                 @else
-                                    <i class="bi bi-x-circle text-muted" title="No QR Code"></i>
+                                    <i data-lucide="x-circle" class="text-muted"></i>
                                 @endif
                             </td>
                             <td>{{ $invitation->created_at->format('Y-m-d H:i') }}</td>
@@ -79,7 +79,7 @@
                                 <a href="{{ route('invitations.show', $invitation) }}"
                                    class="btn btn-sm btn-outline-primary"
                                    title="View">
-                                    <i class="bi bi-eye"></i>
+                                    <i data-lucide="eye"></i>
                                 </a>
                             </td>
                         </tr>

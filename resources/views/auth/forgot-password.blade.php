@@ -5,18 +5,18 @@
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-title">
-            <i class="bi bi-unlock text-primary" style="font-size:1.4rem;"></i>
+            <i data-lucide="unlock" class="text-primary" style="font-size:1.4rem;"></i>
             Reset Password
         </div>
         <div class="auth-subtitle">Enter your account email and we'll send you a secure reset link.</div>
         @if(session('success'))
             <div class="alert alert-success py-2 mb-3 small">
-                <i class="bi bi-check-circle me-1"></i>{{ session('success') }}
+                <i data-lucide="check-circle" class="me-1"></i>{{ session('success') }}
             </div>
         @endif
         @if(session('status'))
             <div class="alert alert-info py-2 mb-3 small">
-                <i class="bi bi-info-circle me-1"></i>{{ session('status') }}
+                <i data-lucide="info" class="me-1"></i>{{ session('status') }}
             </div>
         @endif
         <form method="POST" action="{{ route('password.email') }}" class="auth-form" novalidate>
@@ -27,7 +27,7 @@
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="auth-actions d-grid mb-2">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Send Reset Link</button>
+                <button class="btn btn-primary" type="submit"><i data-lucide="refresh-cw" class="me-1"></i>Send Reset Link</button>
             </div>
         </form>
         <div class="auth-footer"><a href="{{ route('login') }}">Login</a></div>

@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Invitation Details</h1>
         <a href="{{ route('invitations.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Invitations
+            <i data-lucide="arrow-left" class="me-1"></i> Invitations
         </a>
     </div>
 
@@ -122,7 +122,7 @@
                             <a href="{{ route('invitations.verify', ['invitation' => $invitation->id, 'code' => $invitation->qr_code]) }}"
                                class="btn btn-primary btn-sm"
                                target="_blank">
-                                <i class="bi bi-qr-code me-1"></i> Test Verification URL
+                                <i data-lucide="qr-code" class="me-1"></i> Test Verification URL
                             </a>
                         </div>
                         <small class="text-muted mt-2 d-block">
@@ -133,7 +133,7 @@
             @else
                 <div class="card">
                     <div class="card-body text-center">
-                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        <i data-lucide="triangle-alert" class="text-warning" style="width:2rem;height:2rem;"></i>
                         <p class="mt-2 mb-0">No QR code generated for this invitation.</p>
                     </div>
                 </div>

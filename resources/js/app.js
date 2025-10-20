@@ -1,9 +1,107 @@
 import './bootstrap';
 import { Notyf } from 'notyf';
+import { createIcons, icons } from 'lucide';
 import 'notyf/notyf.min.css';
+
+// Call once as early as possible to render any icons already in DOM
+try { createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
 
 // Collapsible sidebar toggle and persistence
 document.addEventListener('DOMContentLoaded', () => {
+	/* =============================
+	   Lucide Icons: auto-replace
+	   ============================= */
+	// Temporary shim: convert common Bootstrap Icons <i class="bi bi-*"></i> to Lucide attributes for inline icons
+	function replaceBootstrapIcons(scope = document) {
+		const map = {
+			'arrow-left': 'arrow-left',
+			'arrow-right': 'arrow-right',
+			'box-arrow-in-right': 'log-in',
+			'box-arrow-up-right': 'external-link',
+			'person-plus': 'user-plus',
+			'person': 'user',
+			'person-fill': 'user',
+			'person-gear': 'user-cog',
+			'people': 'users',
+			'shield-lock': 'shield',
+			'shield-check': 'shield-check',
+			'check-circle': 'check-circle',
+			'check2': 'check',
+			'check-lg': 'check',
+			'x-circle': 'x-circle',
+			'x-lg': 'x',
+			'x': 'x',
+			'pencil': 'pencil',
+			'gear': 'settings',
+			'gear-fill': 'settings',
+			'calendar': 'calendar',
+			'calendar-event': 'calendar',
+			'calendar-x': 'calendar-x',
+			'plus-circle': 'plus-circle',
+			'plus': 'plus',
+			'funnel': 'filter',
+			'search': 'search',
+			'arrow-counterclockwise': 'rotate-ccw',
+			'image': 'image',
+			'eye': 'eye',
+			'eye-slash': 'eye-off',
+			'graph-down': 'trending-down',
+			'graph-up': 'trending-up',
+			'geo-alt': 'map-pin',
+			'clock': 'clock',
+			'exclamation-triangle': 'triangle-alert',
+			'info-circle': 'info',
+			'trash': 'trash-2',
+			'upload': 'upload',
+			'download': 'download',
+			'share': 'share-2',
+			'qr-code': 'qr-code',
+			'qr-code-scan': 'scan',
+			'ticket-perforated': 'ticket',
+			'ticket-detailed': 'ticket',
+			'cash-coin': 'banknote',
+			'cash-stack': 'banknote',
+			'music-note-list': 'music',
+			'journal-text': 'book-open',
+			'envelope-open': 'mail',
+			'envelope': 'mail',
+			'envelope-paper': 'mail',
+			'envelope-plus': 'mail-plus',
+			'cart-plus': 'shopping-cart',
+			'lightbulb': 'lightbulb',
+		};
+		const candidates = scope.querySelectorAll('i.bi');
+		candidates.forEach(el => {
+			if (el.hasAttribute('data-lucide')) return; // already converted
+			// Limit to inline/button/nav icons to avoid affecting large hero icons
+			const isInline = el.classList.contains('me-1') || el.classList.contains('me-2') || el.closest('.btn') || el.closest('.nav-link') || el.closest('.badge');
+			if (!isInline) return;
+			const biClass = Array.from(el.classList).find(c => c.startsWith('bi-'));
+			if (!biClass) return;
+			const name = biClass.replace('bi-', '');
+			const lucideName = map[name] || name;
+			el.setAttribute('data-lucide', lucideName);
+			el.classList.remove('bi');
+			el.classList.remove(biClass);
+		});
+	}
+
+	try { replaceBootstrapIcons(); createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
+	/* =============================
+	   Color Scheme hint for UA controls
+	   ============================= */
+	try {
+		const mq = window.matchMedia('(prefers-color-scheme: dark)');
+		const applyScheme = () => {
+			document.documentElement.style.colorScheme = mq.matches ? 'dark' : 'light';
+		};
+		applyScheme();
+		if (mq.addEventListener) {
+			mq.addEventListener('change', applyScheme);
+		} else if (mq.addListener) {
+			mq.addListener(applyScheme);
+		}
+	} catch {}
 	/* =============================
 	   Sidebar Submenu Functionality
 	   ============================= */
@@ -91,31 +189,46 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (!isSidebarCollapsed()) return;
 			const t = submenuHideTimers.get(parent);
 			if (t) { clearTimeout(t); submenuHideTimers.delete(parent); }
+			const toggle = parent.querySelector('.submenu-toggle');
+			if (toggle) toggle.setAttribute('aria-expanded', 'true');
 		});
 		parent.addEventListener('mouseleave', () => {
 			if (!isSidebarCollapsed()) return;
 			// Set delay before allowing CSS to transition to hidden (by removing :hover state)
 			const timer = setTimeout(() => {
-				// No direct action needed; CSS handles fade-out once hover is gone
+				const toggle = parent.querySelector('.submenu-toggle');
+				if (toggle) toggle.setAttribute('aria-expanded', 'false');
 				submenuHideTimers.delete(parent);
 			}, 160); // matches CSS hide delay (~120ms + buffer)
 			submenuHideTimers.set(parent, timer);
 		});
 	});
 	/* =============================
-	   Modern Toast Notifications
+	   Modern Toast Notifications (Monochromatic Theme)
 	   ============================= */
 	if (!window.__notyfInstance) {
 		window.__notyfInstance = new Notyf({
 			position: { x: 'right', y: window.innerWidth < 768 ? 'bottom' : 'top' },
 			duration: 4200,
 			dismissible: true,
-			// We keep backgrounds transparent-ish and handle gradient in CSS via modifier classes
+			// Monochromatic red/black/white theme for toasts
 			types: [
-				{ type: 'success', background: 'rgba(25,135,84,0.85)', icon: { className: 'bi bi-check-circle', tagName: 'i' } },
-				{ type: 'error', background: 'rgba(220,53,69,0.85)', icon: { className: 'bi bi-exclamation-octagon', tagName: 'i' } },
-				{ type: 'warning', background: 'rgba(255,193,7,0.90)', icon: { className: 'bi bi-exclamation-triangle text-dark', tagName: 'i' } },
-				{ type: 'info', background: 'rgba(13,202,240,0.90)', icon: { className: 'bi bi-info-circle text-dark', tagName: 'i' } }
+				{
+					type: 'success',
+					background: 'linear-gradient(135deg, #7f1d1d, #450a0a)'
+				},
+				{
+					type: 'error',
+					background: 'linear-gradient(135deg, #262626, #0a0a0a)'
+				},
+				{
+					type: 'warning',
+					background: 'linear-gradient(135deg, #a3a3a3, #525252)'
+				},
+				{
+					type: 'info',
+					background: 'linear-gradient(135deg, #b91c1c, #7f1d1d)'
+				}
 			]
 		});
 	}
@@ -251,10 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (!input) return;
 			const isPassword = input.getAttribute('type') === 'password';
 			input.setAttribute('type', isPassword ? 'text' : 'password');
-			const iconEl = toggle.querySelector('i');
+			// Re-select icon each time to support both <i data-lucide> and rendered <svg data-lucide>
+			const iconEl = toggle.querySelector('svg[data-lucide]') || toggle.querySelector('i[data-lucide]') || toggle.querySelector('i');
 			if (iconEl) {
-				iconEl.classList.toggle('bi-eye', !isPassword);
-				iconEl.classList.toggle('bi-eye-slash', isPassword);
+				const next = isPassword ? 'eye-off' : 'eye';
+				iconEl.setAttribute('data-lucide', next);
+				try { createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
 			}
 			toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
 		});
@@ -275,13 +390,41 @@ document.addEventListener('DOMContentLoaded', () => {
 	   ============================= */
 	const mobileSidebar = document.getElementById('mobileSidebar');
 	const pageLoader = document.getElementById('navPageLoader');
+	let mobileSidebarHydrated = false;
 	function showPageLoader() { if (pageLoader) pageLoader.classList.remove('d-none'); }
 	function hidePageLoader() { if (pageLoader) pageLoader.classList.add('d-none'); }
 	if (mobileSidebar && window.bootstrap) {
 		let navTapLocked = false;
 		window.addEventListener('pageshow', hidePageLoader);
 
-		// Apply submenu states when offcanvas is shown
+		// On first open, clone the desktop sidebar nav and bottom actions into the mobile offcanvas
+		mobileSidebar.addEventListener('show.bs.offcanvas', () => {
+			if (mobileSidebarHydrated) return;
+			try {
+				const mount = mobileSidebar.querySelector('#mobileSidebarMount');
+				const desktopAside = document.querySelector('aside.sidebar.sidebar-fixed');
+				if (mount && desktopAside) {
+					// Clone nav
+					const desktopNav = desktopAside.querySelector('nav.nav');
+					const bottom = desktopAside.querySelector('.mt-auto');
+					if (desktopNav) {
+						const navClone = desktopNav.cloneNode(true);
+						mount.appendChild(navClone);
+					}
+					if (bottom) {
+						const bottomClone = bottom.cloneNode(true);
+						mount.appendChild(bottomClone);
+					}
+					// Re-bind any delegated events or tooltip behavior for the cloned content
+					applySavedSubmenuStates();
+					applyTooltips(isSidebarCollapsed());
+					try { replaceBootstrapIcons(mount); createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
+					mobileSidebarHydrated = true;
+				}
+			} catch {}
+		});
+
+		// Apply submenu states when offcanvas is fully shown
 		mobileSidebar.addEventListener('shown.bs.offcanvas', () => {
 			applySavedSubmenuStates();
 		});
@@ -355,11 +498,17 @@ document.addEventListener('DOMContentLoaded', () => {
 				btn.classList.remove('btn-success','btn-outline-warning');
 				if (data.status === 'draft') {
 					btn.classList.add('btn-success');
-					if (labelSpan) labelSpan.innerHTML = '<i class="bi bi-upload me-1"></i>Publish';
+					if (labelSpan) {
+						labelSpan.innerHTML = '<i data-lucide="upload" class="me-1"></i>Publish';
+						try { createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
+					}
 					btn.setAttribute('aria-label','Publish event');
 				} else if (data.status === 'published') {
 					btn.classList.add('btn-outline-warning');
-					if (labelSpan) labelSpan.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>Revert';
+					if (labelSpan) {
+						labelSpan.innerHTML = '<i data-lucide="undo-2" class="me-1"></i>Revert';
+						try { createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
+					}
 					btn.setAttribute('aria-label','Revert event to draft');
 				}
 				btn.removeAttribute('data-loading');
