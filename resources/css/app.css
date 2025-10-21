@@ -786,9 +786,10 @@ body.bg-animated-red-black::before,
 	background-size: 300% 100%;
 	background-position: 0% 50%;
 	filter: blur(150px);
-	opacity: 0.5; /* keep content readable */
+	opacity: 0.45; /* keep content readable */
 	pointer-events: none;
-	z-index: 0;
+	/* Ensure the animated overlay stays behind all content so cards/typography are not affected */
+	z-index: -1;
 	will-change: background-position;
 	animation: aeRedBlackPanX 24s ease-in-out infinite alternate;
 }
@@ -2019,6 +2020,18 @@ body.auth-body .content-with-sidebar { margin-left: 0 !important; }
 .ae-card .nav-tabs .nav-link { border-top-left-radius: 0; border-top-right-radius: 0; color: var(--ae-text-2); }
 .ae-card .nav-tabs .nav-link.active { color: var(--ae-text-1); font-weight: 600; background-color: var(--ae-surface-1); border-bottom-color: var(--ae-surface-1); }
 .btn-icon { width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+/* Show page: hero and sections */
+.ae-hero { border-radius: 1rem; overflow: hidden; border: 1px solid var(--ae-border); box-shadow: var(--ae-color-shadow-card); background: #0b0b0b; aspect-ratio: 21/9; }
+.ae-hero img { display:block; width:100%; height:100%; object-fit:cover; object-position:center; }
+.ae-section-title { font-weight: 800; letter-spacing: -0.01em; margin: 1.25rem 0 .75rem; }
+.ticket-card { background: var(--ae-surface-1); border: 1px solid var(--ae-border); }
+.ticket-card:hover { background: var(--ae-surface-1); box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+.text-white-75 { color: rgba(255,255,255,0.75) !important; }
+
+@media (max-width: 992px){
+	.ae-hero { aspect-ratio: 16/9; }
+}
 
 /* =============================================
 	 Late dark-mode fixes to ensure strong contrast

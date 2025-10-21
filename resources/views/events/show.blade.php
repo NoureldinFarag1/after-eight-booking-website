@@ -8,562 +8,177 @@
         $isAdmin = auth()->check() && auth()->user()->isAdmin();
         $isFinanceOfficer = auth()->check() && auth()->user()->isFinanceOfficer();
     @endphp
-    <div class="row">
-        {{-- Main Content --}}
-        <div class="col-lg-8">
-            <div class="ae-card">
-                @if ($event->image_url)
-                    <img src="{{ Storage::url($event->image_url) }}" class="card-img-top" alt="{{ $event->title }}"
-                        style="height: 400px; object-fit: cover;">
-                @endif
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+            {{-- HERO --}}
+            <div class="mb-4">
+                <div class="ae-hero position-relative">
+                    @if ($event->image_url)
+                        <img src="{{ Storage::url($event->image_url) }}" alt="{{ $event->title }}" class="w-100 h-100">
+                    @endif
+                </div>
+            </div>
 
-                <div class="ae-card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h1 class="card-title h2 mb-1">{{ $event->title }}</h1>
-                            <span
-                                class="badge status-badge @if ($event->status->value === 'published') bg-success @elseif($event->status->value === 'draft') bg-secondary @elseif($event->status->value === 'cancelled') bg-danger @else bg-warning @endif">
-                                {{ ucfirst($event->status->value) }}
-                            </span>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-2">
-                        @if($event->layout_image_url)
-                            <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#layoutModal">
-                                <i class="bi bi-aspect-ratio me-1"></i> Venue Layout
+            {{-- Header + Actions --}}
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1 class="h3 mb-1">{{ $event->title }}</h1>
+                    <div class="text-white-50 small">Organized by After Eight</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    @if($event->layout_image_url)
+                        <button type="button" class="btn btn-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#layoutModal">
+                            <i class="bi bi-aspect-ratio me-1"></i> Venue Layout
+                        </button>
+                    @endif
+                    @if ($isAdmin)
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="manageEventDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear-fill me-1"></i> Manage
                             </button>
-                        @endif
-                        @if ($isAdmin)
-                            <div class="dropdown">
-                                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="manageEventDropdown"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-gear-fill me-1"></i> Manage Event
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manageEventDropdown">
-                                    <li><a class="dropdown-item"
-                                            href="{{ route('invitations.create', ['event_id' => $event->id]) }}">
-                                            <i class="bi bi-envelope-open me-2"></i>Send Invitation</a></li>
-                                    <li><a class="dropdown-item" href="{{ route('admin.events.edit', $event) }}">
-                                            <i class="bi bi-pencil me-2"></i>Edit Event</a></li>
-                                    <li><a class="dropdown-item"
-                                            href="{{ route('admin.events.ticket-types.index', $event) }}">
-                                            <i class="bi bi-ticket-detailed me-2"></i>Manage Tickets</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li><button type="button" class="dropdown-item text-danger"
-                                            onclick="confirmDelete('{{ $event->id }}')">
-                                            <i class="bi bi-trash me-2"></i>Delete Event</button></li>
-                                </ul>
-                            </div>
-                        @endif
-                        </div>
-                    </div>
-
-
-                    {{-- Event Details Grid --}}
-                    <div class="row g-3 mb-4 event-details-grid">
-                        <div class="col-md-6 d-flex align-items-center">
-                            <i class="bi bi-calendar-event text-primary me-3 fs-4"></i>
-                            <div>
-                                <div class="fw-bold">Date</div>
-                                <div class="text-muted">{{ $event->event_date->format('l, F j, Y') }}</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center">
-                            <i class="bi bi-clock text-primary me-3 fs-4"></i>
-                            <div>
-                                <div class="fw-bold">Time</div>
-                                <div class="text-muted">{{ $event->event_time->format('g:i A') }}</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-center">
-                            <i class="bi bi-geo-alt text-primary me-3 fs-4"></i>
-                            <div>
-                                <div class="fw-bold">Location</div>
-                                <div class="text-muted">{{ $event->location }}</div>
-                                @if(!empty($event->google_maps_url))
-                                    <div class="mt-1">
-                                        <a href="{{ $event->google_maps_url }}" target="_blank" rel="noopener" class="small">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in Google Maps
-                                        </a>
-                                    </div>
-                                @else
-                                    <div class="mt-1 text-muted small">Map link unavailable</div>
-                                @endif
-                            </div>
-                        </div>
-                        @php $attachedArtists = $event->getRelationValue('artists') ?? collect(); @endphp
-                        @if($attachedArtists->count())
-                        <div class="col-12">
-                            <div class="fw-bold mb-2">Lineup</div>
-                            <div class="d-flex flex-wrap gap-3">
-                                @foreach($attachedArtists as $artist)
-                                    <div class="text-center" style="width: 120px;">
-                                        <div class="rounded-circle overflow-hidden mx-auto mb-2" style="width:80px;height:80px;background:#111;border:1px solid rgba(255,255,255,0.12);">
-                                            @if($artist->photo_url)
-                                                <img src="{{ Storage::url($artist->photo_url) }}" alt="{{ $artist->name }}" class="w-100 h-100" style="object-fit:cover;">
-                                            @else
-                                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">N/A</div>
-                                            @endif
-                                        </div>
-                                        <div class="small text-white-50">{{ $artist->name }}</div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endif
-                        <div class="col-md-6 d-flex align-items-center">
-                            <i class="bi bi-cash-coin text-primary me-3 fs-4"></i>
-                            <div>
-                                <div class="fw-bold">Pricing</div>
-                                <div class="text-muted">
-                                    @if ($types->count() > 0)
-                                        From EGP {{ number_format($types->min('price'), 2) }}
-                                    @else
-                                        To be announced
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h4>Description</h4>
-                        <p class="text-muted">{{ $event->description }}</p>
-                    </div>
-
-                    @php $coords = $event->coordinates; @endphp
-                    @if($coords)
-                        <div class="mb-4">
-                            <h5>Map Preview</h5>
-                            <div class="ratio ratio-16x9 border rounded overflow-hidden">
-                                <iframe
-                                    src="https://www.google.com/maps?q={{ $coords['lat'] }},{{ $coords['lng'] }}&z=15&output=embed"
-                                    style="border:0;"
-                                    allowfullscreen
-                                    loading="lazy"
-                                    referrerpolicy="no-referrer-when-downgrade"></iframe>
-                            </div>
-                            <div class="form-text">Approximate location based on provided coordinates.</div>
-                        </div>
-                    @endif
-
-                    @if ($event->terms_conditions)
-                        <div class="mb-4">
-                            <h5>Terms & Conditions</h5>
-                            <p class="small text-muted">{{ $event->terms_conditions }}</p>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manageEventDropdown">
+                                <li><a class="dropdown-item" href="{{ route('invitations.create', ['event_id' => $event->id]) }}"><i class="bi bi-envelope-open me-2"></i>Send Invitation</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.events.edit', $event) }}"><i class="bi bi-pencil me-2"></i>Edit Event</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.events.ticket-types.index', $event) }}"><i class="bi bi-ticket-detailed me-2"></i>Manage Tickets</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button type="button" class="dropdown-item text-danger" onclick="confirmDelete('{{ $event->id }}')"><i class="bi bi-trash me-2"></i>Delete Event</button></li>
+                            </ul>
                         </div>
                     @endif
                 </div>
             </div>
 
+            {{-- Quick Facts --}}
+            <div class="ae-card p-3 mb-4">
+                <div class="row g-0">
+                    <div class="col-md-4 p-3 border-end">
+                        <div class="small text-white-50">From</div>
+                        <div class="fw-semibold">
+                            {{ $event->event_date->format('D M j') }} @ {{ $event->event_time->format('g:i A') }}
+                        </div>
+                    </div>
+                    <div class="col-md-5 p-3 border-end">
+                        <div class="small text-white-50">Location</div>
+                        <div class="fw-semibold">{{ $event->location }}</div>
+                    </div>
+                    <div class="col-md-3 p-3">
+                        <div class="small text-white-50">Status</div>
+                        <span class="badge status-badge @if ($event->status->value === 'published') bg-success @elseif($event->status->value === 'draft') bg-secondary @elseif($event->status->value === 'cancelled') bg-danger @else bg-warning @endif">
+                            {{ ucfirst($event->status->value) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- About --}}
+            <h3 class="ae-section-title">About Event</h3>
+            <div class="ae-card p-4 mb-4">
+                <p class="mb-0 text-white-75">{{ $event->description }}</p>
+                @if ($event->terms_conditions)
+                    <hr class="my-4">
+                    <div>
+                        <div class="fw-semibold mb-2">House Rules</div>
+                        <div class="small text-white-50">{!! nl2br(e($event->terms_conditions)) !!}</div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- Tickets --}}
+            @if($event->type === 'booking')
+                <h3 class="ae-section-title">Tickets</h3>
+                @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
+                @if($activeTypes->count())
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        @foreach($activeTypes as $tt)
+                            <div class="ticket-card d-flex align-items-center p-3 rounded-3">
+                                <div class="flex-fill pe-3">
+                                    <div class="fw-semibold">{{ $tt->name }}</div>
+                                    @if(!empty($tt->description))
+                                        <div class="small text-white-50">{{ $tt->description }}</div>
+                                    @endif
+                                </div>
+                                <div class="text-end" style="min-width: 180px;">
+                                    <div class="h5 mb-2">EGP {{ number_format((float)($tt->price ?? 0), 2) }}</div>
+                                    @php
+                                        $isPast = $event->event_date < now()->toDateString();
+                                        $disabledLabel = null;
+                                        if(!$event->isBookable()){
+                                            if($isPast){
+                                                $disabledLabel = 'Event Ended';
+                                            } elseif($event->isSoldOut()){
+                                                $disabledLabel = 'Sold Out';
+                                            } elseif($event->status->value !== 'published'){
+                                                $disabledLabel = 'Not Available';
+                                            } else {
+                                                $disabledLabel = 'Unavailable';
+                                            }
+                                        }
+                                    @endphp
+                                    @if($event->isBookable())
+                                        <a href="{{ route('bookings.create', $event) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
+                                    @else
+                                        <button class="btn btn-outline-secondary btn-sm rounded-pill" disabled>{{ $disabledLabel }}</button>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="ae-card p-4 mb-4 text-white-50">Pricing will be announced.</div>
+                @endif
+            @endif
+
+            {{-- Lineup --}}
+            @php $attachedArtists = $event->getRelationValue('artists') ?? collect(); @endphp
+            @if($attachedArtists->count())
+                <h3 class="ae-section-title">Lineup</h3>
+                <div class="d-flex flex-wrap gap-4 mb-4">
+                    @foreach($attachedArtists as $artist)
+                        <div class="text-center" style="width:124px;">
+                            <div class="rounded-circle overflow-hidden mx-auto mb-2" style="width:96px;height:96px;background:#111;border:1px solid rgba(255,255,255,0.12);">
+                                @if($artist->photo_url)
+                                    <img src="{{ Storage::url($artist->photo_url) }}" alt="{{ $artist->name }}" class="w-100 h-100" style="object-fit:cover;">
+                                @endif
+                            </div>
+                            <div class="small text-white-75 text-uppercase fw-semibold">{{ $artist->name }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Map --}}
+            @php $coords = $event->coordinates; @endphp
+            @if($coords)
+                <h3 class="ae-section-title">Location on Map</h3>
+                <div class="ratio ratio-16x9 ae-card overflow-hidden mb-5">
+                    <iframe src="https://www.google.com/maps?q={{ $coords['lat'] }},{{ $coords['lng'] }}&z=15&output=embed" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            @else
+                <h3 class="ae-section-title">Location</h3>
+                <div class="ae-card p-4 mb-5 text-white-50">
+                    Location details are coming soon. Check back later or contact support for directions.
+                </div>
+            @endif
+
+            {{-- Venue Layout Modal --}}
             @if($event->layout_image_url)
-            <!-- Venue Layout Modal -->
-            <div class="modal fade" id="layoutModal" tabindex="-1" aria-labelledby="layoutModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-xl modal-dialog-centered">
-                    <div class="modal-content bg-dark">
-                        <div class="modal-header border-0">
-                            <h5 class="modal-title" id="layoutModalLabel">Venue Layout</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <img src="{{ Storage::url($event->layout_image_url) }}" alt="Venue layout" class="img-fluid rounded">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            @if ($isAdmin || $isFinanceOfficer)
-                <div class="ae-card mt-4">
-                    <div class="ae-card-header">
-                        <ul class="nav nav-tabs card-header-tabs" id="adminTab" role="tablist">
-                            @if ($isFinanceOfficer || $isAdmin)
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="insights-tab" data-bs-toggle="tab"
-                                        data-bs-target="#insights" type="button" role="tab" aria-controls="insights"
-                                        aria-selected="true"><i class="bi bi-bar-chart-line me-1"></i>Insights</button>
-                                </li>
-                            @endif
-                            @if ($isAdmin)
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="bookings-tab" data-bs-toggle="tab"
-                                        data-bs-target="#bookings" type="button" role="tab" aria-controls="bookings"
-                                        aria-selected="false"><i class="bi bi-journal-text me-1"></i>Bookings</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="requests-tab" data-bs-toggle="tab"
-                                        data-bs-target="#requests" type="button" role="tab" aria-controls="requests"
-                                        aria-selected="false"><i class="bi bi-envelope-paper me-1"></i>Requests</button>
-                                </li>
-                            @endif
-                        </ul>
-                    </div>
-                    <div class="ae-card-body">
-                        <div class="tab-content" id="adminTabContent">
-                            {{-- Insights Tab --}}
-                            <div class="tab-pane fade show active" id="insights" role="tabpanel"
-                                aria-labelledby="insights-tab">
-                                @if (isset($insights) && !empty($insights))
-                                    <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <div class="stat-card">
-                                                <div class="stat-icon text-success"><i class="bi bi-cash-stack"></i></div>
-                                                <div class="stat-value">EGP {{ number_format($insights['revenue'], 2) }}
-                                                </div>
-                                                <div class="stat-label">Total Revenue</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="stat-card">
-                                                <div class="stat-icon text-info"><i class="bi bi-ticket-perforated"></i>
-                                                </div>
-                                                <div class="stat-value">{{ $insights['tickets_sold'] }}</div>
-                                                <div class="stat-label">Tickets Sold</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="stat-card">
-                                                <div class="stat-icon text-primary"><i class="bi bi-envelope-open"></i>
-                                                </div>
-                                                <div class="stat-value">{{ $insights['invitations_total'] }}</div>
-                                                <div class="stat-label">Invitations Sent</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @if ($isAdmin && $insights['invitations_by_admin']->count() > 0)
-                                        <h5 class="mt-4">Invitations by Admin</h5>
-                                        <ul class="list-group">
-                                            @foreach ($insights['invitations_by_admin'] as $inv)
-                                                <li
-                                                    class="list-group-item d-flex justify-content-between align-items-center">
-                                                    {{ $inv['admin'] }}
-                                                    <span
-                                                        class="badge bg-primary rounded-pill">{{ $inv['count'] }}</span>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-                                @else
-                                    <p class="text-muted mb-0">No insights available for this event yet.</p>
-                                @endif
+                <div class="modal fade" id="layoutModal" tabindex="-1" aria-labelledby="layoutModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                        <div class="modal-content bg-black text-white">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title" id="layoutModalLabel">Venue Layout</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-
-                            @if ($isAdmin)
-                                {{-- Bookings Tab --}}
-                                <div class="tab-pane fade" id="bookings" role="tabpanel"
-                                    aria-labelledby="bookings-tab">
-                                    @if ($event->bookings->count() > 0)
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Reference</th>
-                                                        <th>Customer</th>
-                                                        <th>Qty</th>
-                                                        <th>Amount</th>
-                                                        <th>Status</th>
-                                                        <th>Date</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($event->bookings->take(10) as $booking)
-                                                        <tr>
-                                                            <td><a href="{{ route('bookings.show', $booking) }}"
-                                                                    class="text-decoration-none fw-bold">{{ $booking->booking_reference }}</a>
-                                                            </td>
-                                                            <td>{{ $booking->user->name }}</td>
-                                                            <td>{{ $booking->quantity }}</td>
-                                                            <td>EGP {{ number_format((float)$booking->total_amount, 2) }}</td>
-                                                            <td>
-                                                                <span
-                                                                    class="badge @if ($booking->status->value === 'confirmed') bg-success @elseif($booking->status->value === 'pending') bg-warning @elseif($booking->status->value === 'cancelled') bg-danger @else bg-secondary @endif">
-                                                                    {{ ucfirst($booking->status->value) }}
-                                                                </span>
-                                                            </td>
-                                                            <td class="text-nowrap">
-                                                                {{ $booking->booking_date->format('M j, Y') }}</td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    @else
-                                        <p class="text-muted mb-0">No bookings have been made for this event yet.</p>
-                                    @endif
-                                </div>
-
-                                {{-- Requests Tab --}}
-                                <div class="tab-pane fade" id="requests" role="tabpanel"
-                                    aria-labelledby="requests-tab">
-                                    @php
-                                        $recentRequests = \App\Models\EventRequest::where('event_id', $event->id)
-                                            ->latest()
-                                            ->limit(10)
-                                            ->get();
-                                    @endphp
-                                    @if ($recentRequests->count() > 0)
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Requester</th>
-                                                        <th>Status</th>
-                                                        <th>Date</th>
-                                                        <th class="text-end">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($recentRequests as $r)
-                                                        <tr>
-                                                            <td>{{ $r->user->name ?? 'N/A' }}</td>
-                                                            <td>
-                                                                <span
-                                                                    class="badge @if ($r->status === 'approved') bg-success @elseif($r->status === 'pending') bg-warning @elseif($r->status === 'declined') bg-danger @else bg-secondary @endif">
-                                                                    {{ ucfirst($r->status) }}
-                                                                </span>
-                                                            </td>
-                                                            <td class="text-nowrap">
-                                                                {{ $r->created_at->format('M j, Y') }}</td>
-                                                            <td class="text-end text-nowrap">
-                                                                <a href="{{ route('event_requests.show', $r->id) }}"
-                                                                    class="btn btn-sm btn-icon btn-outline-primary"><i
-                                                                        class="bi bi-eye"></i></a>
-                                                            </td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    @else
-                                        <p class="text-muted mb-0">No requests yet.
-                                        </p>
-                                    @endif
-                                </div>
-                            @endif
+                            <div class="modal-body p-0">
+                                <img src="{{ Storage::url($event->layout_image_url) }}" alt="Venue layout for {{ $event->title }}" class="w-100 h-auto d-block" style="max-height:80vh; object-fit:contain;" />
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             @endif
-        </div>
-
-        {{-- Sidebar / Action Column --}}
-        <div class="col-lg-4">
-            <div class="ae-card sticky-top" style="top: 20px;">
-                <div class="ae-card-header">
-                    <h5 class="mb-0">
-                        @if ($event->isBookable())
-                            Book This Event
-                        @else
-                            Booking Status
-                        @endif
-                    </h5>
-                </div>
-                <div class="ae-card-body">
-                    @if ($event->isBookable())
-                        @auth
-                            @if ($isAdmin)
-                                @php
-                                    $reservedSeats = $event->capacity - $event->available_seats;
-                                    $showInitial = !is_null($event->initial_capacity) && $event->initial_capacity != $event->capacity;
-                                @endphp
-                                <div class="text-center">
-                                    <div class="display-4">{{ $event->available_seats }}</div>
-                                    <div class="text-muted">Seats Available</div>
-                                </div>
-                                <hr>
-                                <ul class="list-unstyled">
-                                    <li class="d-flex justify-content-between">
-                                        <span class="text-muted">Initial Capacity</span>
-                                        <strong>{{ $event->initial_capacity ?? $event->capacity }}</strong>
-                                    </li>
-                                    <li class="d-flex justify-content-between">
-                                        <span class="text-muted">Current Capacity</span>
-                                        <strong>{{ $event->capacity }}</strong>
-                                    </li>
-                                    <li class="d-flex justify-content-between">
-                                        <span class="text-muted">Reserved Seats</span>
-                                        <strong>{{ $reservedSeats }}</strong>
-                                    </li>
-                                </ul>
-                                <div class="alert alert-info mt-3 text-center small">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Administrators cannot create bookings.
-                                </div>
-                            @elseif($isFinanceOfficer)
-                                <div class="alert alert-warning text-center">
-                                    <i class="bi bi-shield-lock me-1"></i>
-                                    Finance Officers cannot create bookings or requests.
-                                </div>
-                            @else
-                                @if ($event->type === 'booking')
-                                    {{-- Existing booking form with ticket types --}}
-                                    <form action="{{ route('bookings.store') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="event_id" value="{{ $event->id }}">
-
-                                        @if ($types->count() > 0)
-                                            <div class="mb-3">
-                                                <label for="ticket_type_id" class="form-label">Ticket Type</label>
-                                                <select class="form-select" id="ticket_type_id" name="ticket_type_id"
-                                                    required>
-                                                    <option value="">Select type</option>
-                                                    @foreach ($types as $t)
-                                                        <option value="{{ $t->id }}" data-price="{{ $t->price }}" data-total="{{ $t->total_with_fee }}">
-                                                            {{ $t->name }} — EGP {{ number_format($t->total_with_fee, 2) }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        @else
-                                            <div class="alert alert-light mb-3">
-                                                Ticket types will be available soon.
-                                            </div>
-                                        @endif
-
-                                        @php
-                                            $maxTickets = min(10, $event->getAvailableSeatsAttribute());
-                                        @endphp
-                                        <div class="mb-3">
-                                            <label for="quantity" class="form-label">Number of Tickets</label>
-                                            @if ($maxTickets < 1)
-                                                <div class="alert alert-warning mb-0 small">
-                                                    No seats available for booking.
-                                                </div>
-                                            @else
-                                                <select class="form-select" id="quantity" name="quantity" required>
-                                                    @for ($i = 1; $i <= $maxTickets; $i++)
-                                                        <option value="{{ $i }}">{{ $i }}
-                                                            ticket{{ $i > 1 ? 's' : '' }}</option>
-                                                    @endfor
-                                                </select>
-                                            @endif
-                                        </div>
-
-                                        <div class="mb-3 pt-2 border-top">
-                                            <div class="d-flex justify-content-between small">
-                                                <span class="text-muted">Price per ticket:</span>
-                                                <span class="fw-bold" id="unit-price">...</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between fs-5">
-                                                <span>Total:</span>
-                                                <span class="fw-bold text-primary" id="total-price">EGP 0.00</span>
-                                            </div>
-                                        </div>
-
-                                        <button type="submit" class="btn btn-primary w-100"
-                                            @if ($maxTickets < 1 || $types->count() === 0) disabled @endif>
-                                            <i class="bi bi-cart-plus me-1"></i>Book Now
-                                        </button>
-
-                                        <script>
-                                            (function() {
-                                                const quantityEl = document.getElementById('quantity');
-                                                const typeEl = document.getElementById('ticket_type_id');
-                                                const totalEl = document.getElementById('total-price');
-                                                const unitPriceEl = document.getElementById('unit-price');
-                                                const hasTypes = !!typeEl;
-
-                                                function getSelectedTypePrice(includeFee = true) {
-                                                    if (!hasTypes) return 0;
-                                                    const selected = typeEl.selectedOptions[0];
-                                                    if(!selected) return 0;
-                                                    const attr = includeFee ? 'total' : 'price';
-                                                    const key = includeFee ? 'dataset.total' : 'dataset.price';
-                                                    const value = includeFee ? selected.dataset.total : selected.dataset.price;
-                                                    return value !== undefined ? parseFloat(value) : 0;
-                                                }
-
-                                                function currentUnitPrice() { return getSelectedTypePrice(true); }
-
-                                                function update() {
-                                                    const unitPrice = currentUnitPrice();
-                                                    const qty = parseInt(quantityEl.value || '0', 10);
-                                                    if (unitPriceEl) unitPriceEl.textContent = unitPrice > 0 ? 'EGP ' + unitPrice.toFixed(2) : '{{ $types->count() > 0 ? 'Select a ticket type' : 'Pricing will be announced' }}';
-                                                    totalEl.textContent = unitPrice > 0 && qty > 0 ? 'EGP ' + (qty * unitPrice).toFixed(2) : 'EGP 0.00';
-                                                }
-
-                                                if (hasTypes) {
-                                                    typeEl.addEventListener('change', update);
-                                                }
-                                                if (quantityEl) {
-                                                    quantityEl.addEventListener('change', update);
-                                                    quantityEl.addEventListener('input', update);
-                                                }
-                                                update();
-                                            })();
-                                        </script>
-                                    </form>
-                                @elseif($event->type === 'request')
-                                    @php
-                                        $existingRequest = \App\Models\EventRequest::where('event_id', $event->id)
-                                            ->where('user_id', auth()->id())
-                                            ->latest()
-                                            ->first();
-                                    @endphp
-                                    @if ($existingRequest)
-                                        <div class="alert alert-light">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <strong>Your Request Status:</strong>
-                                                    <span
-                                                        class="badge @if ($existingRequest->status === 'approved') bg-success @elseif($existingRequest->status === 'pending') bg-warning text-dark @elseif($existingRequest->status === 'declined') bg-danger @else bg-secondary @endif">
-                                                        {{ ucfirst($existingRequest->status) }}
-                                                    </span>
-                                                    <div class="small text-muted mt-1">Submitted
-                                                        {{ $existingRequest->created_at->diffForHumans() }}</div>
-                                                </div>
-                                                <div class="ms-3 d-flex flex-column gap-2">
-                                                    <a href="{{ route('event_requests.show', $existingRequest->id) }}"
-                                                        class="btn btn-sm btn-outline-secondary"><i
-                                                            class="bi bi-eye"></i></a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <a href="{{ route('event-requests.create', $event) }}"
-                                            class="btn btn-warning w-100">
-                                            <i class="bi bi-envelope-plus me-1"></i> Request Access
-                                        </a>
-                                    @endif
-                                @endif
-                            @endif
-                        @else
-                            <div class="text-center">
-                                <p class="text-muted">Log in or register to book this event.</p>
-                                <a href="{{ route('login') }}" class="btn btn-primary">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                                </a>
-                                <a href="{{ route('register') }}" class="btn btn-outline-secondary mt-2">
-                                    <i class="bi bi-person-plus me-1"></i>Register
-                                </a>
-                            </div>
-                        @endauth
-                    @elseif($event->isSoldOut())
-                        <div class="alert alert-danger text-center">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            <strong>Sold Out</strong><br>
-                            This event has no remaining seats.
-                        </div>
-                    @else
-                        <div class="alert alert-warning text-center">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            <strong>Not Available</strong><br>
-                            This event is not currently available for booking.
-                        </div>
-                    @endif
-
-                    <div class="border-top pt-3 mt-3">
-                        <small class="text-muted d-flex align-items-center">
-                            <i class="bi bi-shield-check me-2 text-success"></i>
-                            Tickets are delivered electronically with secure QR codes for entry.
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     @if ($isAdmin)
         <!-- Delete Confirmation Modal -->

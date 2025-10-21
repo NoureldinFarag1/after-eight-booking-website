@@ -98,9 +98,10 @@
 
                     <div class="mb-3">
                         <label class="form-label">Assign Existing Artists</label>
+                        @php $selectedArtistIds = ($event->getRelationValue('artists') ?? collect())->pluck('id')->all(); @endphp
                         <select name="artist_ids[]" class="form-select" multiple>
                             @foreach($artists as $artist)
-                                <option value="{{ $artist->id }}" {{ in_array($artist->id, $event->artists->pluck('id')->toArray()) ? 'selected' : '' }}>{{ $artist->name }}</option>
+                                <option value="{{ $artist->id }}" {{ in_array($artist->id, $selectedArtistIds, true) ? 'selected' : '' }}>{{ $artist->name }}</option>
                             @endforeach
                         </select>
                         <div class="form-text">Hold Cmd/Ctrl to select multiple artists.</div>
