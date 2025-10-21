@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\Role;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ArtistController as AdminArtistController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Admin\TicketTypeController;
 use App\Http\Controllers\EventRequestController;
@@ -13,13 +15,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite; // still used indirectly if needed
 
-Route::get('/', function () {
-    $user = Auth::user();
-    if ($user && $user->role === \App\Enums\Role::ADMIN) {
-        return redirect()->route('admin.dashboard');
-    }
-    return redirect()->route('events.index');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -68,6 +64,17 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
             'destroy' => 'admin.events.destroy',
         ]);
         Route::patch('/admin/events/{event}/toggle-publish', [EventController::class, 'togglePublish'])->name('admin.events.toggle-publish');
+
+        // Artists management (Admin only)
+        Route::resource('admin/artists', AdminArtistController::class)->names([
+            'index' => 'admin.artists.index',
+            'create' => 'admin.artists.create',
+            'store' => 'admin.artists.store',
+            'edit' => 'admin.artists.edit',
+            'update' => 'admin.artists.update',
+            'destroy' => 'admin.artists.destroy',
+            'show' => 'admin.artists.show',
+        ])->except(['show']);
 
         // Ticket Types per Event
         Route::prefix('admin/events/{event}')->group(function () {

@@ -27,6 +27,12 @@
                             </span>
                         </div>
 
+                        <div class="d-flex align-items-center gap-2">
+                        @if($event->layout_image_url)
+                            <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#layoutModal">
+                                <i class="bi bi-aspect-ratio me-1"></i> Venue Layout
+                            </button>
+                        @endif
                         @if ($isAdmin)
                             <div class="dropdown">
                                 <button class="btn btn-outline-primary dropdown-toggle" type="button" id="manageEventDropdown"
@@ -51,6 +57,7 @@
                                 </ul>
                             </div>
                         @endif
+                        </div>
                     </div>
 
 
@@ -86,16 +93,23 @@
                                 @endif
                             </div>
                         </div>
-                        @if($event->artists)
-                        <div class="col-md-6 d-flex align-items-center">
-                            <i class="bi bi-music-note-list text-primary me-3 fs-4"></i>
-                            <div>
-                                <div class="fw-bold">Artists</div>
-                                <div class="text-muted">
-                                    @foreach($event->artists_list as $artist)
-                                        <span class="badge bg-light text-dark border me-1 mb-1">{{ $artist }}</span>
-                                    @endforeach
-                                </div>
+                        @php $attachedArtists = $event->getRelationValue('artists') ?? collect(); @endphp
+                        @if($attachedArtists->count())
+                        <div class="col-12">
+                            <div class="fw-bold mb-2">Lineup</div>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach($attachedArtists as $artist)
+                                    <div class="text-center" style="width: 120px;">
+                                        <div class="rounded-circle overflow-hidden mx-auto mb-2" style="width:80px;height:80px;background:#111;border:1px solid rgba(255,255,255,0.12);">
+                                            @if($artist->photo_url)
+                                                <img src="{{ Storage::url($artist->photo_url) }}" alt="{{ $artist->name }}" class="w-100 h-100" style="object-fit:cover;">
+                                            @else
+                                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">N/A</div>
+                                            @endif
+                                        </div>
+                                        <div class="small text-white-50">{{ $artist->name }}</div>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                         @endif
@@ -143,6 +157,23 @@
                     @endif
                 </div>
             </div>
+
+            @if($event->layout_image_url)
+            <!-- Venue Layout Modal -->
+            <div class="modal fade" id="layoutModal" tabindex="-1" aria-labelledby="layoutModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title" id="layoutModalLabel">Venue Layout</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <img src="{{ Storage::url($event->layout_image_url) }}" alt="Venue layout" class="img-fluid rounded">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             @if ($isAdmin || $isFinanceOfficer)
                 <div class="ae-card mt-4">

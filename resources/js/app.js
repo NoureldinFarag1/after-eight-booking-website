@@ -87,20 +87,37 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	try { replaceBootstrapIcons(); createIcons({ icons, attrs: { class: 'icon', 'aria-hidden': 'true' } }); } catch {}
+
+	/* =============================
+	   Homepage: horizontal scrollers
+	   ============================= */
+	(function initHomeScrollers(){
+		const btns = document.querySelectorAll('.scroller-btn');
+		btns.forEach(btn => {
+			btn.addEventListener('click', () => {
+				const targetSel = btn.getAttribute('data-scroll-target');
+				const scroller = targetSel ? document.querySelector(targetSel) : null;
+				if (!scroller) return;
+				const dir = btn.classList.contains('prev') ? -1 : 1;
+				const amount = Math.min(480, scroller.clientWidth * 0.9);
+				scroller.scrollBy({ left: dir * amount, behavior: 'smooth' });
+			});
+		});
+		// drag-to-scroll (optional)
+		document.querySelectorAll('.events-scroller').forEach(scroller => {
+			let isDown = false, startX = 0, scrollLeft = 0;
+			scroller.addEventListener('mousedown', (e)=>{ isDown = true; startX = e.pageX - scroller.offsetLeft; scrollLeft = scroller.scrollLeft; scroller.classList.add('dragging'); });
+			document.addEventListener('mouseup', ()=>{ isDown = false; scroller.classList.remove('dragging'); });
+			scroller.addEventListener('mouseleave', ()=>{ isDown = false; scroller.classList.remove('dragging'); });
+			scroller.addEventListener('mousemove', (e)=>{ if(!isDown) return; e.preventDefault(); const x = e.pageX - scroller.offsetLeft; const walk = (x - startX) * 1.1; scroller.scrollLeft = scrollLeft - walk; });
+		});
+	})();
 	/* =============================
 	   Color Scheme hint for UA controls
 	   ============================= */
 	try {
-		const mq = window.matchMedia('(prefers-color-scheme: dark)');
-		const applyScheme = () => {
-			document.documentElement.style.colorScheme = mq.matches ? 'dark' : 'light';
-		};
-		applyScheme();
-		if (mq.addEventListener) {
-			mq.addEventListener('change', applyScheme);
-		} else if (mq.addListener) {
-			mq.addListener(applyScheme);
-		}
+		// Force single dark theme across the app
+		document.documentElement.style.colorScheme = 'dark';
 	} catch {}
 	/* =============================
 	   Sidebar Submenu Functionality

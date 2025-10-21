@@ -33,6 +33,20 @@ class AuthController extends Controller
      */
     public function showLogin()
     {
+        // If user navigated here from another page, remember it to return after login
+        // Only set if not already set by the auth middleware (so protected routes keep priority)
+        $request = request();
+        if (!$request->session()->has('url.intended')) {
+            $previous = url()->previous();
+            $current  = url()->current();
+            // Avoid loops and non-useful pages
+            $blocked = [route('login', [], false), route('register', [], false)];
+            $isBlocked = in_array(parse_url($previous, PHP_URL_PATH), array_map(function($u){ return parse_url($u, PHP_URL_PATH); }, $blocked), true);
+            if ($previous && $previous !== $current && !$isBlocked) {
+                // Store absolute URL so intended works cross-domain if needed
+                $request->session()->put('url.intended', $previous);
+            }
+        }
         return view('auth.login');
     }
 
@@ -96,8 +110,8 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Your account has been deactivated. Please contact support for assistance.']);
             }
 
-            // Regular users go to events
-            return redirect()->intended(route('events.index'))
+            // Regular users: return to intended page (if any) else go to welcome (home)
+            return redirect()->intended(route('home'))
                 ->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
@@ -140,8 +154,8 @@ class AuthController extends Controller
         ]);
 
         Auth::login($user);
-
-        return redirect()->route('events.index')->with('success', 'Welcome to After Eight Events, ' . $user->name . '!');
+        // After registration, also honor intended URL (e.g., user started from an event page)
+        return redirect()->intended(route('home'))->with('success', 'Welcome to After Eight Events, ' . $user->name . '!');
     }
 
     /**
@@ -155,7 +169,7 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
     // Use a low-priority info flag instead of a prominent success toast
-    return redirect()->route('events.index')->with('info', 'You have been logged out.');
+    return redirect()->route('home')->with('info', 'You have been logged out.');
     }
 
     /**
@@ -255,9 +269,9 @@ class AuthController extends Controller
         }
 
         if ($user->role === Role::ADMIN) {
-            return redirect()->route('admin.dashboard')->with('success', 'Welcome back, ' . $user->name . '!');
+            return redirect()->intended(route('admin.dashboard'))->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
-        return redirect()->route('events.index')->with('success', 'Welcome back, ' . $user->name . '!');
+        return redirect()->intended(route('home'))->with('success', 'Welcome back, ' . $user->name . '!');
     }
 }

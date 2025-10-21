@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="color-scheme" content="light dark">
+    <meta name="color-scheme" content="dark">
 
     <title>{{ config('app.name', 'After Eight Booking') }} - @yield('title', 'Event Booking System')</title>
 
@@ -31,7 +31,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 {{-- Allow child views to override body class (e.g. auth screens) --}}
-<body class="@yield('body_class','')">
+<body class="bg-animated-red-black @yield('body_class','')">
 @php
     $pendingCount = 0;
     $authUser = auth()->user();
@@ -44,6 +44,8 @@
 
 <div class="d-flex">
     <!-- Sidebar (fixed for md+ screens) -->
+    @php $showDesktopSidebar = $authUser && method_exists($authUser,'isStaff') && $authUser->isStaff(); @endphp
+    @if($showDesktopSidebar)
     <aside class="sidebar sidebar-fixed border-end d-none d-md-flex flex-column">
         <div class="sidebar-brand">
             <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="brand-logo-link" aria-label="After Eight Home">
@@ -54,45 +56,60 @@
         @include('partials.sidebar-menu', ['authUser' => $authUser, 'pendingCount' => $pendingCount])
 
     </aside>
+    @endif
 
     <!-- Main Area -->
-    <div class="content-wrapper content-with-sidebar flex-grow-1 d-flex flex-column" style="min-height:100vh;width:100%;">
+    <div class="content-wrapper {{ $showDesktopSidebar ? 'content-with-sidebar' : '' }} flex-grow-1 d-flex flex-column" style="min-height:100vh;width:100%;">
         <header class="app-header">
             <div class="container-fluid d-flex justify-content-between align-items-center py-3">
                 <div class="d-flex align-items-center gap-2">
-                    <!-- Mobile: Hamburger to open offcanvas sidebar -->
+                    <!-- Mobile: Hamburger to open offcanvas sidebar (staff only) -->
+                    @if($showDesktopSidebar)
                     <button class="btn btn-icon d-inline-flex d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="Open navigation">
                         <i data-lucide="menu"></i>
                     </button>
+                    @endif
 
                     <!-- Desktop: Toggle collapse/expand sidebar -->
-                    <button id="sidebarToggleBtn" class="btn btn-icon d-none d-md-inline-flex" type="button" aria-label="Toggle sidebar">
-                        <i id="sidebarToggleIcon" data-lucide="panel-left"></i>
-                    </button>
-
-                    <h1 class="h5 mb-0">@yield('title','Event Booking System')</h1>
-                </div>
-                @auth
-                <div class="d-flex align-items-center gap-3">
-                    <div class="dropdown">
-                        <button class="btn btn-link text-light d-flex align-items-center text-decoration-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border:none;background:none;">
-                            <div class="user-initials-avatar me-2">
-                                {{ strtoupper(substr($authUser->name,0,1)) }}{{ strtoupper(substr(explode(' ', $authUser->name)[1] ?? '',0,1)) }}
-                            </div>
-                            <span class="fw-semibold">{{ explode(' ', $authUser->name)[0] }}</span>
+                    @if($showDesktopSidebar)
+                        <button id="sidebarToggleBtn" class="btn btn-icon d-none d-md-inline-flex" type="button" aria-label="Toggle sidebar">
+                            <i id="sidebarToggleIcon" data-lucide="panel-left"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <form method="POST" action="{{ route('logout') }}" class="mb-0">@csrf
-                                    <button type="submit" class="dropdown-item d-flex align-items-center text-danger"><i data-lucide="log-out" class="me-2"></i>Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
+                    @endif
+
+                    @if($showDesktopSidebar)
+                        <h1 class="h5 mb-0">@yield('title','Event Booking System')</h1>
+                    @endif
                 </div>
-                @endauth
+                @if($showDesktopSidebar)
+                    @auth
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dropdown">
+                            <button class="btn btn-link text-light d-flex align-items-center text-decoration-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border:none;background:none;">
+                                <div class="user-initials-avatar me-2">
+                                    {{ strtoupper(substr($authUser->name,0,1)) }}{{ strtoupper(substr(explode(' ', $authUser->name)[1] ?? '',0,1)) }}
+                                </div>
+                                <span class="fw-semibold">{{ explode(' ', $authUser->name)[0] }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @include('partials.user-menu-items', ['authUser' => $authUser])
+                            </ul>
+                        </div>
+                    </div>
+                    @endauth
+                @endif
             </div>
         </header>
+
+        @php
+            // Hide the pill bar for staff (when desktop sidebar exists) and on auth pages (login/register/etc.)
+            $isAuthBody = trim($__env->yieldContent('body_class','')) === 'auth-body';
+        @endphp
+        @if(!$showDesktopSidebar && !$isAuthBody)
+            <div class="home-container">
+                @include('partials.pill-nav')
+            </div>
+        @endif
 
         <script>
             window.__FLASH__ = {

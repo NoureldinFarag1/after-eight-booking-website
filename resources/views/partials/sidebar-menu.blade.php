@@ -28,6 +28,10 @@
                 <i data-lucide="qr-code"></i>
                 <span class="label-text">Tickets</span>
             </a>
+            <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.artists.*') ? 'active' : '' }}" href="{{ route('admin.artists.index') }}" @if(request()->routeIs('admin.artists.*')) aria-current="page" @endif>
+                <i data-lucide="music-3"></i>
+                <span class="label-text">Artists</span>
+            </a>
             <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}" @if(request()->routeIs('admin.event_requests.*')) aria-current="page" @endif>
                 <i data-lucide="bell"></i>
                 <span class="label-text">Requests</span>

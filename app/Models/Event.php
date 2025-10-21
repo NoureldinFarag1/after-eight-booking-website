@@ -29,6 +29,7 @@ class Event extends Model
         'type',
         'status',
         'image_url',
+        'layout_image_url',
         'terms_conditions',
         'fee_type',
         'fee_amount',
@@ -167,6 +168,11 @@ class Event extends Model
     public function invitations()
     {
         return $this->hasMany(Invitation::class);
+    }
+
+    public function artists()
+    {
+        return $this->belongsToMany(\App\Models\Artist::class);
     }
 
     public function financeOfficer()

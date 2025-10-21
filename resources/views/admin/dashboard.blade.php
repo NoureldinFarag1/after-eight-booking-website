@@ -19,7 +19,7 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.events.create') }}" class="btn btn-cta">
                                 <i data-lucide="plus-circle" class="me-1"></i>Create Event
                             </a>
                             <a href="{{ route('events.index') }}" class="btn btn-outline-primary">
@@ -462,7 +462,7 @@
                             <div class="text-center py-4">
                                 <i class="bi bi-calendar-x display-4 text-muted"></i>
                                 <p class="mt-2 text-muted">No events created yet.</p>
-                                <a href="{{ route('admin.events.create') }}" class="btn btn-primary">
+                                <a href="{{ route('admin.events.create') }}" class="btn btn-cta">
                                     <i class="bi bi-plus-circle me-1"></i>Create Your First Event
                                 </a>
                             </div>

@@ -97,15 +97,23 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="artists" class="form-label">Artists</label>
-                        <input type="text"
-                               class="form-control @error('artists') is-invalid @enderror"
-                               id="artists"
-                               name="artists"
-                               value="{{ old('artists', $event->artists) }}"
-                               placeholder="Artist One, Artist Two">
-                        <div class="form-text">Comma separated list of artists / performers.</div>
-                        @error('artists')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <label class="form-label">Assign Existing Artists</label>
+                        <select name="artist_ids[]" class="form-select" multiple>
+                            @foreach($artists as $artist)
+                                <option value="{{ $artist->id }}" {{ in_array($artist->id, $event->artists->pluck('id')->toArray()) ? 'selected' : '' }}>{{ $artist->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Hold Cmd/Ctrl to select multiple artists.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between align-items-center">
+                            Add New Artists
+                            <button type="button" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</button>
+                        </label>
+                        <div id="artists-new-list"></div>
+                        <div class="form-text">Each artist needs a name and optional picture.</div>
+                        @error('artists_new.*.name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        @error('artists_new.*.photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="row">
@@ -199,6 +207,18 @@
                             @endif
                             Recommended size: 800x600 pixels. Max file size: 2MB
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="layout_image" class="form-label">Venue Layout</label>
+                        @if($event->layout_image_url)
+                            <div class="mb-2">
+                                <img src="{{ Storage::url($event->layout_image_url) }}" alt="Current layout" class="img-thumbnail" style="max-height:200px;">
+                                <div class="form-text">Current layout image</div>
+                            </div>
+                        @endif
+                        <input type="file" class="form-control @error('layout_image') is-invalid @enderror" id="layout_image" name="layout_image" accept="image/*">
+                        @error('layout_image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="mb-3">
@@ -350,6 +370,30 @@
                     </div>
                 `;
                 list.appendChild(row);
+            });
+        }
+
+        // Artists repeater
+        const addArtistBtn = document.getElementById('add-artist-btn');
+        const artistsList = document.getElementById('artists-new-list');
+        if(addArtistBtn){
+            addArtistBtn.addEventListener('click', function(){
+                const idx = artistsList.children.length;
+                const row = document.createElement('div');
+                row.className = 'row g-2 align-items-end mb-2';
+                row.innerHTML = `
+                    <div class="col-md-5">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="artists_new[${idx}][name]" class="form-control" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Photo</label>
+                        <input type="file" name="artists_new[${idx}][photo]" accept="image/*" class="form-control">
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button type="button" class="btn btn-outline-danger" onclick="this.closest('.row').remove()">Remove</button>
+                    </div>`;
+                artistsList.appendChild(row);
             });
         }
     });

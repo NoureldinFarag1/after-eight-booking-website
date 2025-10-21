@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\Artist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -118,7 +119,8 @@ class EventController extends Controller
     {
         $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
         $operators = User::where('role', \App\Enums\Role::OPERATOR)->where('is_active', true)->get();
-        return view('events.create', compact('financeOfficers', 'operators'));
+        $artists = Artist::orderBy('name')->get();
+        return view('events.create', compact('financeOfficers', 'operators','artists'));
     }
 
     /**
@@ -138,10 +140,16 @@ class EventController extends Controller
             'type' => 'required|in:booking,request',
             'status' => 'required|in:draft,published,cancelled',
             'image' => 'nullable|image|max:2048',
+            'layout_image' => 'required|image|max:4096',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
             'operators' => 'nullable|array',
             'operators.*' => 'exists:users,id',
+            'artist_ids' => 'nullable|array',
+            'artist_ids.*' => 'integer|exists:artists,id',
+            'artists_new' => 'nullable|array',
+            'artists_new.*.name' => 'required_with:artists_new|string|max:255',
+            'artists_new.*.photo' => 'nullable|image|max:2048',
             'ticket_types' => 'nullable|array',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:255|distinct',
             'ticket_types.*.price' => 'required_with:ticket_types|numeric|min:0',
@@ -154,6 +162,8 @@ class EventController extends Controller
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('event_images', 'public');
         }
+        // Store required layout image
+        $validated['layout_image_url'] = $request->file('layout_image')->store('event_layouts', 'public');
 
         $coords = Event::parseCoordinatesFromUrl($validated['google_maps_url'] ?? null);
         $event = Event::create([
@@ -169,6 +179,7 @@ class EventController extends Controller
             'type' => $validated['type'],
             'status' => $validated['status'],
             'image_url' => $validated['image_url'] ?? null,
+            'layout_image_url' => $validated['layout_image_url'] ?? null,
             'terms_conditions' => $validated['terms_conditions'],
             'finance_officer_id' => $validated['finance_officer_id'],
             // Fees intentionally excluded at creation time; managed later with tickets.
@@ -178,6 +189,25 @@ class EventController extends Controller
 
         if (!empty($validated['operators'])) {
             $event->operators()->sync($validated['operators']);
+        }
+
+        // Attach existing artists
+        $attachIds = collect($request->input('artist_ids', []))
+            ->filter()->map(fn($id) => (int)$id)->values()->all();
+        if (!empty($attachIds)) {
+            $event->artists()->attach($attachIds);
+        }
+        // Create and attach new artists
+        $newArtists = $request->input('artists_new', []);
+        foreach ($newArtists as $idx => $a) {
+            if (!empty($a['name'])) {
+                $photoPath = null;
+                if ($request->hasFile("artists_new.$idx.photo")) {
+                    $photoPath = $request->file("artists_new.$idx.photo")->store('artist_images', 'public');
+                }
+                $artist = Artist::create(['name' => $a['name'], 'photo_url' => $photoPath]);
+                $event->artists()->attach($artist->id);
+            }
         }
 
         $types = $request->input('ticket_types', []);
@@ -211,7 +241,7 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        $event->load(['bookings.user', 'tickets', 'invitations.sender']);
+    $event->load(['bookings.user', 'tickets', 'invitations.sender','artists']);
 
         $user = Auth::user();
 
@@ -261,7 +291,9 @@ class EventController extends Controller
     {
         $financeOfficers = User::where('role', \App\Enums\Role::FINANCE_OFFICER)->get();
         $operators = User::where('role', \App\Enums\Role::OPERATOR)->where('is_active', true)->get();
-        return view('events.edit', compact('event', 'financeOfficers', 'operators'));
+        $artists = Artist::orderBy('name')->get();
+        $event->load('artists');
+        return view('events.edit', compact('event', 'financeOfficers', 'operators','artists'));
     }
 
     /**
@@ -281,10 +313,16 @@ class EventController extends Controller
             'type' => 'required|in:booking,request',
             'status' => 'required|in:draft,published,cancelled',
             'image' => 'nullable|image|max:2048',
+            'layout_image' => 'nullable|image|max:4096',
             'terms_conditions' => 'nullable|string',
             'finance_officer_id' => 'nullable|exists:users,id',
             'operators' => 'nullable|array',
             'operators.*' => 'exists:users,id',
+            'artist_ids' => 'nullable|array',
+            'artist_ids.*' => 'integer|exists:artists,id',
+            'artists_new' => 'nullable|array',
+            'artists_new.*.name' => 'required_with:artists_new|string|max:255',
+            'artists_new.*.photo' => 'nullable|image|max:2048',
             'ticket_types' => 'nullable|array',
             'ticket_types.*.id' => 'nullable|integer|exists:ticket_types,id',
             'ticket_types.*.name' => 'required_with:ticket_types|string|max:100|distinct',
@@ -301,6 +339,12 @@ class EventController extends Controller
                 Storage::disk('public')->delete($event->image_url);
             }
             $validated['image_url'] = $request->file('image')->store('event_images', 'public');
+        }
+        if ($request->hasFile('layout_image')) {
+            if ($event->layout_image_url) {
+                Storage::disk('public')->delete($event->layout_image_url);
+            }
+            $validated['layout_image_url'] = $request->file('layout_image')->store('event_layouts', 'public');
         }
 
         $coords = array_key_exists('google_maps_url',$validated)
@@ -319,6 +363,7 @@ class EventController extends Controller
             'type' => $validated['type'],
             'status' => $validated['status'],
             'image_url' => $validated['image_url'] ?? $event->image_url,
+            'layout_image_url' => $validated['layout_image_url'] ?? $event->layout_image_url,
             'terms_conditions' => $validated['terms_conditions'],
             // Fees remain unchanged here; will be managed via ticket management UI
             'artists' => $validated['artists'] ?? $event->artists,
@@ -329,6 +374,21 @@ class EventController extends Controller
             $event->operators()->sync($validated['operators']);
         } else {
             $event->operators()->detach();
+        }
+
+        // Sync existing artist IDs
+        $syncIds = collect($request->input('artist_ids', []))->filter()->map(fn($id) => (int)$id)->values()->all();
+        $event->artists()->sync($syncIds);
+        // Create any new artists and attach
+        foreach ($request->input('artists_new', []) as $idx => $a) {
+            if (!empty($a['name'])) {
+                $photoPath = null;
+                if ($request->hasFile("artists_new.$idx.photo")) {
+                    $photoPath = $request->file("artists_new.$idx.photo")->store('artist_images', 'public');
+                }
+                $artist = Artist::create(['name' => $a['name'], 'photo_url' => $photoPath]);
+                $event->artists()->attach($artist->id);
+            }
         }
 
         $types = $request->input('ticket_types', []);
