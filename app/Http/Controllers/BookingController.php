@@ -109,6 +109,66 @@ class BookingController extends Controller
     }
 
     /**
+     * Show checkout page for booking
+     */
+    public function checkout(Request $request)
+    {
+        $this->denyIfStaffRole();
+        $validated = $request->validate([
+            'event_id' => 'required|exists:events,id',
+            'quantity' => 'required|integer|min:1|max:10',
+            'ticket_type_id' => ['nullable', 'integer'],
+            'whatsapp' => ['nullable', 'boolean'],
+        ]);
+
+        $event = Event::findOrFail($validated['event_id']);
+        if (!$event->isBookable()) {
+            return redirect()->route('events.show', $event)->with('error', 'This event is not available for booking.');
+        }
+
+        $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
+        $selectedType = null;
+        if ($types->count() > 0) {
+            $request->validate([
+                'ticket_type_id' => [
+                    'required',
+                    Rule::exists('ticket_types', 'id')->where(function ($q) use ($event) {
+                        return $q->where('event_id', $event->id)->where('is_active', true);
+                    }),
+                ],
+            ]);
+            $selectedType = $types->firstWhere('id', (int)$request->input('ticket_type_id'));
+            if (!$selectedType) {
+                return back()->with('error', 'Invalid ticket type selected.');
+            }
+        }
+
+        $unitBase = $selectedType ? (float)$selectedType->price : 0;
+        $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0;
+        $unitPrice = $unitBase + $unitFee; // final per-ticket price including fee
+$quantity = (int)$validated['quantity'];
+        $subtotal = $unitBase * $quantity;
+        $handlingFee = $unitFee * $quantity;
+        $whatsappSelected = $request->boolean('whatsapp') ? true : false;
+        $whatsappFee = $whatsappSelected ? 25.00 : 0.00;
+        $total = ($unitPrice * $quantity) + $whatsappFee;
+
+        $ticketLabel = $selectedType ? $selectedType->name : 'General Admission';
+
+        return view('bookings.checkout', [
+            'event' => $event,
+            'ticketType' => $selectedType,
+            'ticketLabel' => $ticketLabel,
+            'unitBase' => $unitBase,
+            'unitPrice' => $unitPrice,
+            'quantity' => $quantity,
+            'subtotal' => $subtotal,
+            'handlingFee' => $handlingFee,
+            'total' => $total,
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -120,6 +180,7 @@ class BookingController extends Controller
             'event_id' => 'required|exists:events,id',
             'quantity' => 'required|integer|min:1|max:10',
             'ticket_type_id' => ['nullable', 'integer'],
+            'whatsapp' => ['nullable', 'boolean'],
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
@@ -172,12 +233,14 @@ class BookingController extends Controller
             $unitBase = $selectedType ? (float)$selectedType->price : 0;
             $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0;
             $unitPrice = $unitBase + $unitFee; // final per-ticket price including fee
+            // whatsapp fee (one-time)
+            $whatsappFee = request()->boolean('whatsapp') ? 25.00 : 0.00;
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'event_id' => $validated['event_id'],
                 'quantity' => $validated['quantity'],
-                'total_amount' => $unitPrice * $validated['quantity'],
+                'total_amount' => ($unitPrice * $validated['quantity']) + $whatsappFee,
                 'status' => BookingStatus::CONFIRMED,
                 'booking_date' => now(),
             ]);

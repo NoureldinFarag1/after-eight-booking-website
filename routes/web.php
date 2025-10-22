@@ -111,6 +111,7 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
     // Booking & user ticket routes (blocked for staff roles via middleware alias)
     Route::middleware('restrict_staff_personal')->group(function () {
         Route::get('/events/{event}/book', [BookingController::class, 'create'])->name('bookings.create');
+        Route::post('/bookings/checkout', [BookingController::class, 'checkout'])->name('bookings.checkout');
         Route::resource('bookings', BookingController::class)->except(['create']);
         Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 

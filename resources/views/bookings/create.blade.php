@@ -65,7 +65,7 @@
                     </div>
                 @else
                 <!-- Booking Form -->
-                <form action="{{ route('bookings.store') }}" method="POST" id="bookingForm">
+                <form action="{{ route('bookings.checkout') }}" method="POST" id="bookingForm">
                     @csrf
                     <input type="hidden" name="event_id" value="{{ $event->id }}">
 
