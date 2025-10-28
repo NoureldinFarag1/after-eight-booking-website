@@ -66,9 +66,9 @@
                 <tbody>
                     @forelse($users as $op)
                         <tr class="staff-row">
-                            <td class="text-truncate" style="max-width:160px">{{ $op->name }}</td>
-                            <td class="text-truncate" style="max-width:200px">{{ $op->email }}</td>
-                            <td class="text-truncate" style="max-width:110px">{{ $op->phone ?? '-' }}</td>
+                            <td class="text-truncate text-white" style="max-width:160px">{{ $op->name }}</td>
+                            <td class="text-truncate text-white" style="max-width:200px">{{ $op->email }}</td>
+                            <td class="text-truncate text-white" style="max-width:110px">{{ $op->phone ?? '-' }}</td>
                             <td><span class="badge bg-info text-dark small">{{ $op->role->label() }}</span></td>
                             <td class="whitespace-nowrap">
                                 @if(!empty($showDeleted))
@@ -105,8 +105,8 @@
                                     <form action="{{ route('admin.staff.destroy', $op) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-trash me-1"></i>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger text-danger">
+                                            <i class="bi bi-trash me-1 text-danger"></i>
                                             Delete
                                         </button>
                                     </form>

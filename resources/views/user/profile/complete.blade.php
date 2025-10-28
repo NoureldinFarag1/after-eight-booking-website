@@ -85,7 +85,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>You must be at least 13 years old
+                                <i class="fas fa-info-circle me-1"></i><p class="text-white">You must be at least 13 years old</p>
                             </div>
                         </div>
 
@@ -132,10 +132,10 @@
                         <!-- Privacy Notice -->
                         <div class="alert alert-light border">
                             <small class="text-muted">
-                                <i class="fas fa-shield-alt me-1"></i>
-                                <strong>Privacy Notice:</strong> Your personal information is securely stored and used only for
+                                <i class="fas fa-shield-alt me-1 text-black"></i>
+                                <strong class="text-black">Privacy Notice:</strong> <p class="text-black">Your personal information is securely stored and used only for
                                 event booking purposes. We do not share your information with third parties.
-                                Once submitted, this information cannot be modified through your profile for security reasons.
+                                Once submitted, this information cannot be modified through your profile for security reasons.</p>
                             </small>
                         </div>
 

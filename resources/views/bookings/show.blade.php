@@ -118,14 +118,6 @@
                     </a>
 
                     <div>
-                        @if($booking->canBeCancelled() && (!auth()->user()->isAdmin() || auth()->user()->id === $booking->user_id))
-                            <button type="button"
-                                    class="btn btn-outline-danger me-2"
-                                    onclick="confirmCancel('{{ $booking->id }}', '{{ $booking->booking_reference }}')">
-                                <i class="bi bi-x-circle me-1"></i>Cancel Booking
-                            </button>
-                        @endif
-
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('bookings.edit', $booking) }}" class="btn btn-outline-primary">
                                 <i class="bi bi-pencil me-1"></i>Edit Booking

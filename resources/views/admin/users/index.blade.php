@@ -201,15 +201,15 @@
         @if($users->count() > 0)
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                    <thead class="table-black">
                         <tr>
-                            <th>User</th>
-                            <th>Contact</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Bookings</th>
-                            <th class="text-center">Tickets</th>
-                            <th class="text-center">Joined</th>
-                            <th class="text-center">Actions</th>
+                            <th class="text-white">User</th>
+                            <th class="text-white">Contact</th>
+                            <th class="text-center text-white">Status</th>
+                            <th class="text-center text-white">Bookings</th>
+                            <th class="text-center text-white">Tickets</th>
+                            <th class="text-center text-white">Joined</th>
+                            <th class="text-center text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -227,7 +227,7 @@
                                             </div>
                                         </div>
                                         <div class="flex-grow-1 ms-3">
-                                            <div class="fw-semibold">{{ $user->name }}</div>
+                                            <div class="fw-semibold text-white">{{ $user->name }}</div>
                                             <div class="text-muted small">ID: {{ $user->id }}</div>
                                         </div>
                                     </div>
@@ -235,7 +235,7 @@
 
                                 <!-- Contact -->
                                 <td>
-                                    <div>{{ $user->email }}</div>
+                                    <div class="text-white">{{ $user->email }}</div>
                                     @if($user->phone)
                                         <div class="text-muted small">{{ $user->phone }}</div>
                                     @endif
@@ -254,7 +254,7 @@
 
                                 <!-- Bookings -->
                                 <td class="text-center">
-                                    <div class="fw-bold">{{ $user->bookings_count }}</div>
+                                    <div class="fw-bold text-muted">{{ $user->bookings_count }}</div>
                                     @if($user->bookings_count > 0)
                                         <div class="text-muted small">
                                             Latest: {{ $user->bookings->first()?->created_at->format('M j') }}
@@ -263,7 +263,7 @@
                                 </td>
 
                                 <!-- Tickets -->
-                                <td class="text-center">
+                                <td class="text-center text-muted">
                                     <div class="fw-bold">{{ $user->tickets_count }}</div>
                                     @if($user->tickets_count > 0)
                                         <div class="text-muted small">tickets</div>
@@ -271,7 +271,7 @@
                                 </td>
 
                                 <!-- Joined -->
-                                <td class="text-center">
+                                <td class="text-center text-muted">
                                     <div>{{ $user->created_at->format('M j, Y') }}</div>
                                     <div class="text-muted small">{{ $user->created_at->diffForHumans() }}</div>
                                 </td>
@@ -295,7 +295,7 @@
                                             </button>
 
                                             <button type="button"
-                                                    class="btn btn-outline-danger btn-sm delete-user-btn"
+                                                    class="btn btn-outline-danger btn-sm delete-user-btn text-danger"
                                                     data-user-id="{{ $user->id }}"
                                                     data-user-name="{{ $user->name }}"
                                                     title="Delete User">
@@ -319,7 +319,7 @@
             </div>
 
             <!-- Pagination -->
-            <div class="card-footer bg-light">
+            <div class="card-footer bg-black">
                 <div class="ae-pagination d-flex justify-content-center">
                     {{ $users->links() }}
                 </div>

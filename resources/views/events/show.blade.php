@@ -40,6 +40,7 @@
                                 <li><a class="dropdown-item" href="{{ route('invitations.create', ['event_id' => $event->id]) }}"><i class="bi bi-envelope-open me-2"></i>Send Invitation</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.events.edit', $event) }}"><i class="bi bi-pencil me-2"></i>Edit Event</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.events.ticket-types.index', $event) }}"><i class="bi bi-ticket-detailed me-2"></i>Manage Tickets</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.events.export', $event) }}"><i class="bi bi-download me-2"></i>Export (Excel)</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><button type="button" class="dropdown-item text-danger" onclick="confirmDelete('{{ $event->id }}')"><i class="bi bi-trash me-2"></i>Delete Event</button></li>
                             </ul>
@@ -59,7 +60,7 @@
                     </div>
                     <div class="col-md-5 p-3 border-end">
                         <div class="small text-white-50">Location</div>
-                        <div class="fw-semibold">{{ $event->location }}</div>
+                        <div class="fw-semibold">{{ $event->location ?: 'To be announced' }}</div>
                     </div>
                     <div class="col-md-3 p-3">
                         <div class="small text-white-50">Status</div>
@@ -83,7 +84,7 @@
                 @endif
             </div>
 
-            {{-- Tickets --}}
+            {{-- Tickets / Requests --}}
             @if($event->type === 'booking')
                 <h3 class="ae-section-title">Tickets</h3>
                 @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
@@ -126,6 +127,56 @@
                 @else
                     <div class="ae-card p-4 mb-4 text-white-50">Pricing will be announced.</div>
                 @endif
+            @elseif($event->type === 'request')
+                <h3 class="ae-section-title">Request Access</h3>
+                @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
+                @if($activeTypes->count())
+                    <div class="d-flex flex-column gap-3 mb-3">
+                        @foreach($activeTypes as $tt)
+                            <div class="ticket-card d-flex align-items-center p-3 rounded-3">
+                                <div class="flex-fill pe-3">
+                                    <div class="fw-semibold">{{ $tt->name }}</div>
+                                    @if(!empty($tt->description))
+                                        <div class="small text-white-50">{{ $tt->description }}</div>
+                                    @endif
+                                </div>
+                                <div class="text-end" style="min-width: 180px;">
+                                    <div class="h5 mb-2">
+                                        @if(!is_null($tt->price))
+                                            EGP {{ number_format((float)$tt->price, 2) }}
+                                        @else
+                                            —
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    @php
+                        $isPast = $event->event_date < now()->toDateString();
+                        $disabledLabel = null;
+                        if(!$event->isBookable()){
+                            if($isPast){
+                                $disabledLabel = 'Event Ended';
+                            } elseif($event->isSoldOut()){
+                                $disabledLabel = 'Fully Allocated';
+                            } elseif($event->status->value !== 'published'){
+                                $disabledLabel = 'Not Available';
+                            } else {
+                                $disabledLabel = 'Unavailable';
+                            }
+                        }
+                    @endphp
+                    @if($event->isBookable())
+                        <a href="{{ route('event-requests.create', $event) }}" class="btn btn-primary rounded-pill">
+                            <i class="bi bi-envelope-plus me-1"></i> Request Ticket
+                        </a>
+                    @else
+                        <button class="btn btn-outline-secondary rounded-pill" disabled>{{ $disabledLabel }}</button>
+                    @endif
+                @else
+                    <div class="ae-card p-4 mb-4 text-white-50">Ticket types will be announced.</div>
+                @endif
             @endif
 
             {{-- Lineup --}}
@@ -152,6 +203,19 @@
                 <h3 class="ae-section-title">Location on Map</h3>
                 <div class="ratio ratio-16x9 ae-card overflow-hidden mb-5">
                     <iframe src="https://www.google.com/maps?q={{ $coords['lat'] }},{{ $coords['lng'] }}&z=15&output=embed" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            @elseif($event->location)
+                <h3 class="ae-section-title">Location</h3>
+                <div class="ae-card p-4 mb-5">
+                    <div class="d-flex align-items-start gap-3">
+                        <i data-lucide="map-pin" class="text-white-50"></i>
+                        <div>
+                            <div class="fw-semibold">{{ $event->location }}</div>
+                            @if($event->google_maps_url)
+                                <a href="{{ $event->google_maps_url }}" target="_blank" rel="noopener" class="small text-white-50">Open in Google Maps</a>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             @else
                 <h3 class="ae-section-title">Location</h3>

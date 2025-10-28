@@ -61,6 +61,17 @@ class HomeController extends Controller
         });
 
         $featured = Cache::remember("home:featured:{$monthKey}", 600, function () use ($hotMonth, $now) {
+            // Prefer admin-promoted event
+            $promoted = Event::query()
+                ->published()
+                ->where('is_featured', true)
+                ->whereDate('event_date', '>=', $now->toDateString())
+                ->orderBy('event_date')
+                ->orderBy('event_time')
+                ->first();
+            if ($promoted) {
+                return $promoted;
+            }
             if ($hotMonth->isNotEmpty()) {
                 return $hotMonth->first();
             }

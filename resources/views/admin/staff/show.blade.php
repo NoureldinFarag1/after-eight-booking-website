@@ -54,8 +54,8 @@
                   <tbody>
                     @foreach($recentScans as $scan)
                     <tr>
-                      <td>{{ $scan->event->title ?? 'Unknown Event' }}</td>
-                      <td>{{ $scan->scanned_at->format('M j, Y g:i A') }}</td>
+                      <td class="text-muted">{{ $scan->event->title ?? 'Unknown Event' }}</td>
+                      <td class="text-muted">{{ $scan->scanned_at->format('M j, Y g:i A') }}</td>
                     </tr>
                     @endforeach
                   </tbody>

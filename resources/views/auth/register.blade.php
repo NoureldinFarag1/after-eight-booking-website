@@ -14,17 +14,17 @@
             @csrf
             <div class="mb-3">
                 <label for="name" class="form-label">Full Name</label>
-                <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" placeholder="Jane Doe" required>
+                <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required>
                 @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required>
+                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required>
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
                 <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+20 123 456 7890" required>
+                <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" required>
                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
@@ -80,7 +80,8 @@
         <div class="auth-divider"><span>Or continue with</span></div>
         <div class="d-grid mb-2">
             <a href="{{ route('auth.google.redirect') }}" class="btn btn-outline-primary social-btn">
-                <i data-lucide="mail" class="me-1"></i> Google
+                <i data-lucide="mail"></i>
+                Google
             </a>
         </div>
 

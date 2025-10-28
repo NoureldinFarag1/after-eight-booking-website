@@ -33,7 +33,7 @@
                 <span class="label-text">Artists</span>
             </a>
             <a class="nav-link d-flex align-items-center {{ request()->routeIs('admin.event_requests.*') ? 'active' : '' }}" href="{{ route('admin.event_requests.index') }}" @if(request()->routeIs('admin.event_requests.*')) aria-current="page" @endif>
-                <i data-lucide="bell"></i>
+                <i data-lucide="mails"></i>
                 <span class="label-text">Requests</span>
                 @if($pendingCount > 0)
                     <span class="badge rounded-pill bg-danger ms-auto">{{ $pendingCount }}</span>
@@ -55,7 +55,7 @@
             <div class="nav-item has-submenu {{ $isStaffSectionActive ? 'submenu-open' : '' }}">
                 <a class="nav-link d-flex align-items-center justify-content-between submenu-toggle" href="#" data-submenu="staff" aria-expanded="{{ $isStaffSectionActive ? 'true' : 'false' }}">
                     <span class="d-flex align-items-center">
-                        <i data-lucide="badge-check"></i>
+                        <i data-lucide="user-cog"></i>
                         <span class="label-text">Staff</span>
                     </span>
                     <span class="submenu-chevron"><i data-lucide="chevron-down"></i></span>
@@ -66,15 +66,15 @@
                         <span class="label-text">Admins</span>
                     </a>
                     <a class="nav-link submenu-link d-flex align-items-center {{ $isOperatorsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'operator']) }}" title="View & manage operators" @if($isOperatorsActive) aria-current="page" @endif>
-                        <i data-lucide="user-cog"></i>
+                        <i data-lucide="user-search"></i>
                         <span class="label-text">Operators</span>
                     </a>
                     <a class="nav-link submenu-link d-flex align-items-center {{ $isApprovalsActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'approval_officer']) }}" title="View & manage approval officers" @if($isApprovalsActive) aria-current="page" @endif>
-                        <i data-lucide="check-circle-2"></i>
+                        <i data-lucide="signature"></i>
                         <span class="label-text">Approval Officers</span>
                     </a>
                     <a class="nav-link submenu-link d-flex align-items-center {{ $isFinanceActive ? 'active' : '' }}" href="{{ route('admin.staff.index', ['role'=>'finance_officer']) }}" title="View & manage finance officers" @if($isFinanceActive) aria-current="page" @endif>
-                        <i data-lucide="wallet"></i>
+                        <i data-lucide="wallet-minimal"></i>
                         <span class="label-text">Finance Officers</span>
                     </a>
                 </div>
@@ -91,7 +91,7 @@
         @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
             <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}" @if(request()->routeIs('approval.*')) aria-current="page" @endif>
                 <span class="d-flex align-items-center">
-                    <i data-lucide="circle-check"></i>
+                    <i data-lucide="mails"></i>
                     <span class="label-text">Requests</span>
                 </span>
                 @if(($sharedPendingApprovals ?? 0) > 0)
@@ -115,7 +115,7 @@
                 <span class="label-text">Bookings</span>
             </a>
             <a class="nav-link d-flex align-items-center {{ request()->routeIs('event_requests.index') ? 'active' : '' }}" href="{{ route('event_requests.index') }}" title="Access requests status" @if(request()->routeIs('event_requests.index')) aria-current="page" @endif>
-                <i data-lucide="bell"></i>
+                <i data-lucide="mails"></i>
                 <span class="label-text">Requests</span>
             </a>
         @endif

@@ -9,17 +9,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="home-page bg-animated-red-black">
-        <div class="home-container">
-            <!-- Pill navbar -->
-            @include('partials.pill-nav')
+<body class="bg-animated-red-black">
+    <div class="home-nav-shell home-nav-shell--home">
+        @include('partials.pill-nav')
+    </div>
 
+    <div class="home-container">
             <!-- Hero banner -->
             @if(isset($featured) && $featured)
             <section class="mb-5">
-                <div class="position-relative rounded-4 overflow-hidden shadow-red-lg" style="min-height: 320px;">
+                <div class="home-hero shadow-red-lg">
                     @if($featured->image_url)
-                        <img src="{{ Storage::url($featured->image_url) }}" alt="{{ $featured->title }}" class="w-100 h-100 object-fit-cover" />
+                        <img src="{{ Storage::url($featured->image_url) }}" alt="{{ $featured->title }}" class="home-hero__img" />
                     @endif
                     <div class="position-absolute bottom-0 start-0 end-0 p-4 p-md-5" style="background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 60%, rgba(0,0,0,.75) 100%);">
                         <div class="text-white">
@@ -36,34 +37,6 @@
                             </a>
                         </div>
                     </div>
-                </div>
-            </section>
-            @endif
-
-            <!-- Tomorrow section -->
-            @if($tomorrow->count())
-            <section class="events-section">
-                <h2>Tomorrow</h2>
-                <div class="events-scroller-container">
-                    <button class="scroller-btn prev" data-scroll-target="#tomorrow-scroller" aria-label="Scroll left"><i data-lucide="chevron-left"></i></button>
-                    <div id="tomorrow-scroller" class="events-scroller">
-                        @foreach($tomorrow as $event)
-                        <a href="{{ route('events.show',$event) }}" class="home-event-card">
-                            @if($event->image_url)
-                                <img class="bg" src="{{ Storage::url($event->image_url) }}" alt="{{ $event->title }}" />
-                            @endif
-                            <div class="overlay">
-                                <div class="title">{{ $event->title }}</div>
-                                <div class="meta">
-                                    <span><i data-lucide="calendar"></i> {{ $event->event_date->format('M d') }}</span>
-                                    <span><i data-lucide="clock"></i> {{ $event->event_time->format('h:i A') }}</span>
-                                    <span><i data-lucide="map-pin"></i> {{ $event->location }}</span>
-                                </div>
-                            </div>
-                        </a>
-                        @endforeach
-                    </div>
-                    <button class="scroller-btn next" data-scroll-target="#tomorrow-scroller" aria-label="Scroll right"><i data-lucide="chevron-right"></i></button>
                 </div>
             </section>
             @endif
@@ -123,6 +96,35 @@
                 </div>
             </section>
             @endif
+
+            <!-- Tomorrow section -->
+            @if($tomorrow->count())
+            <section class="events-section">
+                <h2>Tomorrow</h2>
+                <div class="events-scroller-container">
+                    <button class="scroller-btn prev" data-scroll-target="#tomorrow-scroller" aria-label="Scroll left"><i data-lucide="chevron-left"></i></button>
+                    <div id="tomorrow-scroller" class="events-scroller">
+                        @foreach($tomorrow as $event)
+                        <a href="{{ route('events.show',$event) }}" class="home-event-card">
+                            @if($event->image_url)
+                                <img class="bg" src="{{ Storage::url($event->image_url) }}" alt="{{ $event->title }}" />
+                            @endif
+                            <div class="overlay">
+                                <div class="title">{{ $event->title }}</div>
+                                <div class="meta">
+                                    <span><i data-lucide="calendar"></i> {{ $event->event_date->format('M d') }}</span>
+                                    <span><i data-lucide="clock"></i> {{ $event->event_time->format('h:i A') }}</span>
+                                    <span><i data-lucide="map-pin"></i> {{ $event->location }}</span>
+                                </div>
+                            </div>
+                        </a>
+                        @endforeach
+                    </div>
+                    <button class="scroller-btn next" data-scroll-target="#tomorrow-scroller" aria-label="Scroll right"><i data-lucide="chevron-right"></i></button>
+                </div>
+            </section>
+            @endif
+
 
             <!-- Footer -->
             <footer class="mt-5 text-center text-muted small">

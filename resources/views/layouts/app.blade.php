@@ -106,7 +106,7 @@
             $isAuthBody = trim($__env->yieldContent('body_class','')) === 'auth-body';
         @endphp
         @if(!$showDesktopSidebar && !$isAuthBody)
-            <div class="home-container">
+            <div class="home-nav-shell">
                 @include('partials.pill-nav')
             </div>
         @endif

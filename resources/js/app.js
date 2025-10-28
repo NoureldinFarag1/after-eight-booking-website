@@ -79,7 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			const biClass = Array.from(el.classList).find(c => c.startsWith('bi-'));
 			if (!biClass) return;
 			const name = biClass.replace('bi-', '');
-			const lucideName = map[name] || name;
+			const lucideName = map[name];
+			if (!lucideName) return; // keep original Bootstrap icon when no Lucide equivalent
 			el.setAttribute('data-lucide', lucideName);
 			el.classList.remove('bi');
 			el.classList.remove(biClass);
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const btn = document.getElementById('sidebarToggleBtn');
 	const icon = document.getElementById('sidebarToggleIcon');
 	const MIN_DESKTOP_COLLAPSE = 1200; // px
+	const MANUAL_EXPAND_CLASS = 'sidebar-expanded-manual';
 
 	function applyTooltips(enable) {
 		// When collapsed, show tooltips using label text as title
@@ -325,9 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	function updateResponsiveCollapse() {
-		const shouldCollapse = window.innerWidth < MIN_DESKTOP_COLLAPSE;
-		body.classList.toggle('sidebar-collapsed-responsive', shouldCollapse);
-		applyTooltips(shouldCollapse || body.classList.contains('sidebar-collapsed'));
+		if (window.innerWidth >= MIN_DESKTOP_COLLAPSE) {
+			body.classList.remove('sidebar-collapsed-responsive');
+			body.classList.remove(MANUAL_EXPAND_CLASS);
+			applyTooltips(body.classList.contains('sidebar-collapsed'));
+			updateToggleIcon();
+			return;
+		}
+
+		const manualExpand = body.classList.contains(MANUAL_EXPAND_CLASS);
+		if (manualExpand) {
+			body.classList.remove('sidebar-collapsed-responsive');
+		} else {
+			body.classList.add('sidebar-collapsed-responsive');
+		}
+		applyTooltips(body.classList.contains('sidebar-collapsed') || body.classList.contains('sidebar-collapsed-responsive'));
 		updateToggleIcon();
 	}
 
@@ -356,8 +370,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			try {
 				localStorage.setItem(KEY, body.classList.contains('sidebar-collapsed') ? '1' : '0');
 			} catch {}
-			applyTooltips(body.classList.contains('sidebar-collapsed') || body.classList.contains('sidebar-collapsed-responsive'));
-			updateToggleIcon();
+			if (window.innerWidth < MIN_DESKTOP_COLLAPSE) {
+				if (body.classList.contains('sidebar-collapsed')) {
+					body.classList.remove(MANUAL_EXPAND_CLASS);
+				} else {
+					body.classList.add(MANUAL_EXPAND_CLASS);
+				}
+			} else {
+				body.classList.remove(MANUAL_EXPAND_CLASS);
+			}
+			updateResponsiveCollapse();
 		});
 	}
 

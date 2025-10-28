@@ -18,9 +18,8 @@ class ApprovalRequestController extends Controller
     public function approve(EventRequest $eventRequest)
     {
         Gate::authorize('approval.manage');
-        $eventRequest->status = 'approved';
-        $eventRequest->save();
-        return back()->with('success','Request approved.');
+        // Delegate to main approval flow which sets status to awaiting_payment and notifies user
+        return app(\App\Http\Controllers\EventRequestController::class)->approve($eventRequest);
     }
 
     public function reject(EventRequest $eventRequest)

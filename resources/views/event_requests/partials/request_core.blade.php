@@ -74,17 +74,17 @@
                     <tbody>
                         @foreach($guests as $idx => $g)
                             <tr>
-                                <td>{{ $idx + 1 }}</td>
-                                <td>{{ $g['name'] ?? '-' }}</td>
-                                <td>{{ $g['email'] ?? '-' }}</td>
-                                <td>
+                                <td class="text-white">{{ $idx + 1 }}</td>
+                                <td class="text-white">{{ $g['name'] ?? '-' }}</td>
+                                <td class="text-white">{{ $g['email'] ?? '-' }}</td>
+                                <td class="text-white">
                                     @if(!empty($g['social_url']))
                                         <a href="{{ $g['social_url'] }}" target="_blank" rel="noopener">{{ $g['social_url'] }}</a>
                                     @else
                                         -
                                     @endif
                                 </td>
-                                <td>{{ isset($g['ticket_type_id']) ? ($ticketTypeNames[$g['ticket_type_id']] ?? '-') : '-' }}</td>
+                                <td class="text-white">{{ isset($g['ticket_type_id']) ? ($ticketTypeNames[$g['ticket_type_id']] ?? '-') : '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

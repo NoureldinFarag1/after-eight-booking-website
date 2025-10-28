@@ -66,14 +66,14 @@ use App\Services\ThemeService;
                                             {{ substr($admin->name, 0, 1) }}
                                         </div>
                                         <div class="ms-3">
-                                            <div class="fw-bold text-nowrap">{{ $admin->name }}</div>
+                                            <div class="fw-bold text-nowrap text-white">{{ $admin->name }}</div>
                                             <div class="text-muted small text-truncate" style="max-width: 200px;">{{ $admin->email }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span class="text-nowrap">{{ $admin->phone ?? '-' }}</span>
+                                        <span class="text-nowrap text-white">{{ $admin->phone ?? '-' }}</span>
                                     </div>
                                 </td>
                                 <td>

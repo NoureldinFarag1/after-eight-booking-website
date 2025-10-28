@@ -52,8 +52,8 @@
                           <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                       </div>
                       <div class="mb-3">
-                          <label class="form-label">Description (optional)</label>
-                          <input type="text" name="description" class="form-control" value="{{ old('description') }}">
+                          <label class="form-label">Description</label>
+                          <input type="text" name="description" class="form-control" value="{{ old('description') }}" required>
                       </div>
                       <div class="row">
                           <div class="col-md-6 mb-3">
@@ -61,14 +61,14 @@
                               <input type="number" min="0" step="0.01" name="price" class="form-control" value="{{ old('price') }}" required>
                           </div>
                           <div class="col-md-6 mb-3">
-                              <label class="form-label">Capacity (optional)</label>
-                              <input type="number" min="0" max="{{ $remaining }}" name="capacity" class="form-control" value="{{ old('capacity') }}">
+                              <label class="form-label">Capacity</label>
+                              <input type="number" min="0" max="{{ $remaining }}" name="capacity" class="form-control" value="{{ old('capacity') }}" required>
                               <div class="form-text">Remaining available: {{ $remaining }}</div>
                           </div>
                       </div>
                       <div class="row">
                           <div class="col-md-6 mb-3">
-                              <label class="form-label">Fee Type (optional)</label>
+                              <label class="form-label">Fee Type</label>
                               <select name="fee_type" class="form-select" id="create_fee_type">
                                   <option value="" {{ old('fee_type') === null ? 'selected' : '' }}>No fee</option>
                                   <option value="percentage" {{ old('fee_type')==='percentage' ? 'selected' : '' }}>Percentage %</option>
@@ -83,8 +83,8 @@
                       </div>
                       <div class="form-check form-switch mb-3">
                           <input type="hidden" name="is_active" value="0">
-                          <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}>
-                          <label class="form-check-label" for="is_active">Active</label>
+                          <input class="form-check-input" type="checkbox" id="is_active_create" name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}>
+                          <label class="form-check-label" for="is_active_create">Active</label>
                       </div>
                       <button class="btn btn-primary">Create</button>
                   </form>
@@ -115,7 +115,7 @@
                           @forelse($types as $type)
                               <tr>
                                   <td>
-                                      <div class="fw-semibold">{{ $type->name }}</div>
+                                      <div class="fw-semibold text-white">{{ $type->name }}</div>
                                       <div class="text-muted small">{{ $type->description }}</div>
                                   </td>
                                   @php
@@ -123,8 +123,8 @@
                                       $feeCalc = $type->calculateFee();
                                       $totalWithFee = $base + $feeCalc;
                                   @endphp
-                                  <td>EGP {{ number_format($base, 2) }}</td>
-                                  <td>
+                                  <td class="text-white">EGP {{ number_format($base, 2) }}</td>
+                                  <td class=text-muted>
                                       @if($type->fee_type)
                                           {{ $type->fee_type === 'percentage' ? $type->fee_amount.'%' : 'EGP '.number_format((float)$type->fee_amount,2) }}
                                           <div class="text-muted small">= EGP {{ number_format($feeCalc,2) }}</div>
@@ -132,8 +132,8 @@
                                           <span class="text-muted">— (0)</span>
                                       @endif
                                   </td>
-                                  <td><strong>EGP {{ number_format($totalWithFee,2) }}</strong></td>
-                                  <td>{{ $type->capacity ?? '—' }}</td>
+                                  <td><strong class="text-muted">EGP {{ number_format($totalWithFee,2) }}</strong></td>
+                                  <td class="text-muted">{{ $type->capacity ?? '—' }}</td>
                                   <td>
                                       <span class="badge {{ $type->is_active ? 'bg-success' : 'bg-secondary' }}">
                                           {{ $type->is_active ? 'Active' : 'Inactive' }}
@@ -145,14 +145,14 @@
                                           <form method="POST" action="{{ route('admin.events.ticket-types.destroy', [$event, $type]) }}" onsubmit="return confirm('Delete this ticket type?');">
                                               @csrf
                                               @method('DELETE')
-                                              <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                              <button class="btn btn-sm btn-outline-danger text-danger">Delete</button>
                                           </form>
                                       </div>
                                   </td>
                               </tr>
                               <tr class="collapse" id="edit-{{ $type->id }}">
                                   <td colspan="5">
-                                      <form method="POST" action="{{ route('admin.events.ticket-types.update', [$event, $type]) }}" class="border rounded p-3 bg-light">
+                                      <form method="POST" action="{{ route('admin.events.ticket-types.update', [$event, $type]) }}" class="border rounded-3 p-3 ticket-type-edit-card">
                                           @csrf
                                           @method('PUT')
                                           <div class="row g-3">
@@ -170,12 +170,12 @@
                                               </div>
                                               <div class="col-md-3">
                                                   <label class="form-label">Capacity</label>
-                                                  <input type="number" min="0" name="capacity" class="form-control" value="{{ old('capacity', $type->capacity) }}">
+                                                  <input type="number" min="0" max="{{ $remaining + ($type->capacity ?? 0) }}" name="capacity" class="form-control" value="{{ old('capacity', $type->capacity) }}">
                                               </div>
                                               <div class="col-md-3">
                                                   <label class="form-label">Fee Type</label>
                                                   <select name="fee_type" class="form-select">
-                                                      <option value="" {{ old('fee_type', $type->fee_type) === null ? 'selected' : '' }}>No fee</option>
+                                                      <option value="" {{ old('fee_type') === null ? 'selected' : '' }}>No fee</option>
                                                       <option value="percentage" {{ old('fee_type', $type->fee_type)==='percentage' ? 'selected' : '' }}>Percentage %</option>
                                                       <option value="fixed" {{ old('fee_type', $type->fee_type)==='fixed' ? 'selected' : '' }}>Fixed Amount</option>
                                                   </select>

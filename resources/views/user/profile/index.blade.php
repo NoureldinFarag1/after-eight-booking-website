@@ -117,7 +117,7 @@
                 </div>
 
                 @if($user->hasCompletedProfile())
-                    <div class="mt-3 p-2 bg-light rounded">
+                    <div class="mt-3 p-2 bg-black rounded">
                         <div class="d-flex align-items-start">
                             <i class="bi bi-shield-check text-success me-2 mt-1"></i>
                             <div class="small">
@@ -133,51 +133,6 @@
                 @endif
             </div>
         </div>
-
-        <!-- Membership Stats -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-graph-up me-2"></i>Membership Statistics
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3 text-center">
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fs-4 fw-bold text-primary">{{ $membershipStats['total_bookings'] }}</div>
-                            <div class="small text-muted">Total Bookings</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fs-4 fw-bold text-info">{{ $membershipStats['total_tickets'] }}</div>
-                            <div class="small text-muted">Total Tickets</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fs-4 fw-bold text-success">
-                                {{ number_format($membershipStats['total_spent'], 2) }} EGP
-                            </div>
-                            <div class="small text-muted">Total Spent</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="border rounded p-3">
-                            <div class="fs-4 fw-bold text-warning">{{ $membershipStats['used_tickets'] }}</div>
-                            <div class="small text-muted">Used Tickets</div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="border rounded p-3">
-                            <div class="fs-4 fw-bold text-purple">{{ $membershipStats['upcoming_events'] }}</div>
-                            <div class="small text-muted">Upcoming Events</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Activity Details -->
@@ -187,13 +142,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-ticket-perforated me-2"></i>Recent Bookings
-                    <span class="badge bg-primary ms-2">{{ $recentBookings->count() }}</span>
                 </h5>
-                @if($membershipStats['total_bookings'] > 0)
-                    <a href="{{ route('bookings.index') }}" class="btn btn-sm btn-outline-primary">
-                        View All Bookings
-                    </a>
-                @endif
             </div>
             <div class="card-body">
                 @if($recentBookings->count() > 0)
@@ -214,24 +163,24 @@
                                     <tr>
                                         <td>
                                             <a href="{{ route('bookings.show', $booking) }}"
-                                               class="text-decoration-none fw-semibold">
+                                               class="text-decoration-none fw-semibold text-muted">
                                                 {{ $booking->booking_reference }}
                                             </a>
                                         </td>
                                         <td>
-                                            <div>{{ $booking->event->title }}</div>
+                                            <div class="text-muted small">{{ $booking->event->title }}</div>
                                             <div class="text-muted small">
                                                 {{ $booking->event->event_date->format('M j, Y') }}
                                             </div>
                                         </td>
                                         <td>
-                                            <div>{{ $booking->booking_date->format('M j, Y') }}</div>
+                                            <div class="text-muted small">{{ $booking->booking_date->format('M j, Y') }}</div>
                                             <div class="text-muted small">{{ $booking->booking_date->format('g:i A') }}</div>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge bg-light text-dark">{{ $booking->quantity }}</span>
+                                            <span class="badge bg-light text-black">{{ $booking->quantity }}</span>
                                         </td>
-                                        <td class="text-end fw-semibold">
+                                        <td class="text-end fw-semibold text-muted">
                                             {{ number_format((float)$booking->total_amount, 2) }} EGP
                                         </td>
                                         <td class="text-center">
@@ -265,13 +214,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-qr-code me-2"></i>Recent Tickets
-                    <span class="badge bg-info ms-2">{{ $recentTickets->count() }}</span>
                 </h5>
-                @if($membershipStats['total_tickets'] > 0)
-                    <a href="{{ route('tickets.index') }}" class="btn btn-sm btn-outline-info">
-                        View All Tickets
-                    </a>
-                @endif
             </div>
             <div class="card-body">
                 @if($recentTickets->count() > 0)
@@ -283,7 +226,6 @@
                                     <th>Event</th>
                                     <th>Booking</th>
                                     <th class="text-center">Status</th>
-                                    <th class="text-center">Used</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -291,12 +233,12 @@
                                     <tr>
                                         <td>
                                             <a href="{{ route('tickets.show', $ticket) }}"
-                                               class="text-decoration-none fw-semibold font-monospace">
+                                               class="text-decoration-none fw-semibold font-monospace text-muted">
                                                 {{ $ticket->qr_code }}
                                             </a>
                                         </td>
                                         <td>
-                                            <div>{{ $ticket->event->title }}</div>
+                                            <div class="text-muted">{{ $ticket->event->title }}</div>
                                             <div class="text-muted small">
                                                 {{ $ticket->event->event_date->format('M j, Y') }}
                                             </div>
@@ -304,7 +246,7 @@
                                         <td>
                                             @if($ticket->booking)
                                                 <a href="{{ route('bookings.show', $ticket->booking) }}"
-                                                   class="text-decoration-none">
+                                                   class="text-decoration-none text-muted">
                                                     {{ $ticket->booking->booking_reference }}
                                                 </a>
                                             @else
@@ -319,16 +261,6 @@
                                                 @else bg-secondary @endif">
                                                 {{ ucfirst($ticket->status->value) }}
                                             </span>
-                                        </td>
-                                        <td class="text-center">
-                                            @if($ticket->scanned_at)
-                                                <div class="text-success fw-semibold">
-                                                    <i class="bi bi-check-circle me-1"></i>
-                                                    {{ $ticket->scanned_at->format('M j, g:i A') }}
-                                                </div>
-                                            @else
-                                                <span class="text-muted">Not used</span>
-                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -349,7 +281,6 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-envelope-heart me-2"></i>Recent Invitations
-                    <span class="badge bg-warning ms-2">{{ $recentInvitations->count() }}</span>
                 </h5>
             </div>
             <div class="card-body">
@@ -368,7 +299,7 @@
                                     <tr>
                                         <td>
                                             @if($invitation->event)
-                                                <div class="fw-semibold">{{ $invitation->event->title }}</div>
+                                                <div class="fw-semibold text-muted">{{ $invitation->event->title }}</div>
                                                 <div class="text-muted small">
                                                     {{ $invitation->event->event_date->format('M j, Y') }}
                                                 </div>
@@ -378,10 +309,10 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <div>{{ $invitation->created_at->format('M j, Y') }}</div>
+                                            <div class="text-muted">{{ $invitation->created_at->format('M j, Y') }}</div>
                                             <div class="text-muted small">{{ $invitation->created_at->format('g:i A') }}</div>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center text-muted">
                                             <span class="badge
                                                 @if($invitation->status === 'sent') bg-info
                                                 @elseif($invitation->status === 'viewed') bg-warning

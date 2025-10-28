@@ -15,7 +15,7 @@
                 @endif
             </h1>
 
-            @if(auth()->user()->isOperator() || auth()->user()->isAdmin())
+            @if(auth()->user()->isOperator())
                 <a href="{{ route('tickets.scan') }}" class="btn btn-outline-primary">
                     <i class="bi bi-qr-code-scan me-1"></i>Scan Tickets
                 </a>

@@ -16,11 +16,11 @@
                 <tbody>
                 @foreach($requests as $req)
                     <tr>
-                        <td>{{ $req->id }}</td>
-                        <td>{{ $req->user->name ?? 'N/A' }}</td>
-                        <td>{{ $req->event->title ?? 'N/A' }}</td>
-                        <td>{{ $req->created_at->format('M j, Y') }}</td>
-                        <td>{{ ucfirst($req->status) }}</td>
+                        <td class="text-white">{{ $req->id }}</td>
+                        <td class="text-white">{{ $req->user->name ?? 'N/A' }}</td>
+                        <td class="text-white">{{ $req->event->title ?? 'N/A' }}</td>
+                        <td class="text-white">{{ $req->created_at->format('M j, Y') }}</td>
+                        <td class="text-white">{{ ucfirst($req->status) }}</td>
                         <td class="text-end">
                             <a href="{{ route('approval.show', $req->id) }}" class="btn btn-outline-primary btn-sm">View</a>
                         </td>

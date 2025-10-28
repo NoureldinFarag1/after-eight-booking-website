@@ -9,6 +9,7 @@ use App\Models\Artist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class EventController extends Controller
@@ -47,6 +48,11 @@ class EventController extends Controller
             if (in_array($status, $validStatuses, true)) {
                 $query->where('status', $status);
             }
+        }
+
+        // Admin-only: filter promoted (featured) events
+        if ($isAdmin && $request->boolean('promoted')) {
+            $query->where('is_featured', true);
         }
 
         if ($type = $request->input('type')) {
@@ -100,6 +106,7 @@ class EventController extends Controller
             'q' => $request->input('q'),
             'status' => $request->input('status'),
             'type' => $request->input('type'),
+            'promoted' => $request->input('promoted'),
             'date_from' => $request->input('date_from'),
             'date_to' => $request->input('date_to'),
             'capacity_min' => $request->input('capacity_min'),
@@ -157,7 +164,21 @@ class EventController extends Controller
             'ticket_types.*.fee_amount' => 'nullable|numeric|min:0|max:1000',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
+            'is_featured' => 'nullable|boolean',
         ]);
+
+        // Business rules for featuring on creation
+        if ($request->boolean('is_featured')) {
+            // 1) Not allowed to promote past events
+            $eventDateStr = \Illuminate\Support\Carbon::parse($validated['event_date'])->toDateString();
+            if ($eventDateStr < now()->toDateString()) {
+                return back()->withErrors(['is_featured' => 'Cannot promote a past event.'])->withInput();
+            }
+            // 2) Not allowed to have more than one promoted event at the same time
+            if (Event::where('is_featured', true)->exists()) {
+                return back()->withErrors(['is_featured' => 'Another event is already promoted. Unpromote it first.'])->withInput();
+            }
+        }
 
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('event_images', 'public');
@@ -178,6 +199,7 @@ class EventController extends Controller
             'capacity' => $validated['capacity'],
             'type' => $validated['type'],
             'status' => $validated['status'],
+            'is_featured' => $request->boolean('is_featured'),
             'image_url' => $validated['image_url'] ?? null,
             'layout_image_url' => $validated['layout_image_url'] ?? null,
             'terms_conditions' => $validated['terms_conditions'],
@@ -186,6 +208,9 @@ class EventController extends Controller
             'artists' => $validated['artists'] ?? null,
             'initial_capacity' => $validated['capacity'], // Store the original capacity
         ]);
+
+        // Invalidate homepage featured cache immediately
+        Cache::forget('home:featured:' . now()->format('Y-m'));
 
         if (!empty($validated['operators'])) {
             $event->operators()->sync($validated['operators']);
@@ -331,7 +356,21 @@ class EventController extends Controller
             'ticket_types.*.fee_amount' => 'nullable|numeric|min:0|max:1000',
             'ticket_types.*.capacity' => 'nullable|integer|min:0',
             'ticket_types.*.is_active' => 'nullable|in:0,1',
+            'is_featured' => 'nullable|boolean',
         ]);
+
+        // Business rules for featuring on update
+        $wantFeatured = $request->boolean('is_featured');
+        if ($wantFeatured && !$event->is_featured) {
+            // 1) Not allowed to promote past events (use incoming date)
+            if (\Carbon\Carbon::parse($validated['event_date'])->isBefore(now()->startOfDay())) {
+                return back()->withErrors(['is_featured' => 'Cannot promote a past event.'])->withInput();
+            }
+            // 2) Not allowed while another event is already featured
+            if (Event::where('is_featured', true)->where('id', '!=', $event->id)->exists()) {
+                return back()->withErrors(['is_featured' => 'Another event is already promoted. Unpromote it first.'])->withInput();
+            }
+        }
 
         if ($request->hasFile('image')) {
             // Delete old image if it exists
@@ -362,6 +401,7 @@ class EventController extends Controller
             'capacity' => $validated['capacity'],
             'type' => $validated['type'],
             'status' => $validated['status'],
+            'is_featured' => $request->boolean('is_featured'),
             'image_url' => $validated['image_url'] ?? $event->image_url,
             'layout_image_url' => $validated['layout_image_url'] ?? $event->layout_image_url,
             'terms_conditions' => $validated['terms_conditions'],
@@ -369,6 +409,9 @@ class EventController extends Controller
             'artists' => $validated['artists'] ?? $event->artists,
             'finance_officer_id' => $request->finance_officer_id,
         ]);
+
+        // Invalidate homepage featured cache immediately
+        Cache::forget('home:featured:' . now()->format('Y-m'));
 
         if (!empty($validated['operators'])) {
             $event->operators()->sync($validated['operators']);
@@ -474,6 +517,8 @@ class EventController extends Controller
             ? EventStatus::DRAFT
             : EventStatus::PUBLISHED;
         $event->save();
+        // Invalidate homepage cache in case publish state changes featured choice
+        Cache::forget('home:featured:' . now()->format('Y-m'));
         $msg = 'Event status updated to '. ucfirst($event->status->value) .'.';
         if (request()->wantsJson()) {
             return response()->json([
@@ -488,6 +533,52 @@ class EventController extends Controller
                 'event_id' => $event->id,
             ]);
         }
+        return back()->with('success', $msg);
+    }
+
+    public function toggleFeatured(Event $event)
+    {
+        if (!Auth::user() || Auth::user()->role !== \App\Enums\Role::ADMIN) {
+            if (request()->wantsJson()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+            abort(403);
+        }
+
+        // If trying to promote (currently not featured), enforce rules
+        if (!$event->is_featured) {
+            // Not allowed to promote past events
+            $eventDateStr = substr((string)$event->event_date, 0, 10);
+            if ($eventDateStr < now()->toDateString()) {
+                $msg = 'Cannot promote a past event.';
+                return request()->wantsJson()
+                    ? response()->json(['message' => $msg, 'is_featured' => false, 'event_id' => $event->id], 422)
+                    : back()->with('warning', $msg);
+            }
+            // Not allowed to promote when another event is already promoted
+            if (Event::where('is_featured', true)->where('id', '!=', $event->id)->exists()) {
+                $msg = 'Another event is already promoted. Unpromote it first.';
+                return request()->wantsJson()
+                    ? response()->json(['message' => $msg, 'is_featured' => false, 'event_id' => $event->id], 422)
+                    : back()->with('warning', $msg);
+            }
+        }
+
+        $event->is_featured = !$event->is_featured;
+        $event->save();
+
+        Cache::forget('home:featured:' . now()->format('Y-m'));
+
+        $msg = $event->is_featured ? 'Event promoted on homepage.' : 'Event removed from homepage promotion.';
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'message' => $msg,
+                'is_featured' => $event->is_featured,
+                'event_id' => $event->id,
+            ]);
+        }
+
         return back()->with('success', $msg);
     }
 
@@ -610,5 +701,111 @@ class EventController extends Controller
             'operatorStats',
             'dailyScanActivity'
         ));
+    }
+
+    /**
+     * Export a single event KPIs as a CSV (Excel-compatible).
+     */
+    public function exportSingle(Event $event)
+    {
+        if (!Auth::user() || Auth::user()->role !== \App\Enums\Role::ADMIN) {
+            abort(403);
+        }
+
+    // Filename: "Event name + date"
+    $title = (string) ($event->title ?? 'Event');
+    $dateStr = optional($event->event_date)->toDateString() ?? now()->toDateString();
+    $base = trim($title . ' ' . $dateStr);
+    // Sanitize filename (avoid regex meta issues by using str_replace for invalid chars)
+    $safe = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], ' ', $base);
+    $safe = preg_replace('/\s+/', ' ', $safe);
+    $filename = trim($safe) . '.xlsx';
+
+    return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\SingleEventExport($event), $filename);
+    }
+
+    /**
+     * Export multiple events (based on current filters) as CSV.
+     */
+    public function exportBulk(Request $request)
+    {
+        if (!Auth::user() || Auth::user()->role !== \App\Enums\Role::ADMIN) {
+            abort(403);
+        }
+
+        $query = Event::query();
+
+        // Optional filters similar to index()
+        if ($status = $request->input('status')) {
+            $validStatuses = collect(EventStatus::cases())->pluck('value')->all();
+            if (in_array($status, $validStatuses, true)) {
+                $query->where('status', $status);
+            }
+        }
+
+        if ($request->boolean('promoted')) {
+            $query->where('is_featured', true);
+        }
+
+        if ($type = $request->input('type')) {
+            if (in_array($type, ['booking', 'request'], true)) {
+                $query->where('type', $type);
+            }
+        }
+
+        if ($from = $request->input('date_from')) {
+            $query->whereDate('event_date', '>=', $from);
+        }
+        if ($to = $request->input('date_to')) {
+            $query->whereDate('event_date', '<=', $to);
+        }
+
+        if ($minCap = $request->input('capacity_min')) {
+            $query->where('capacity', '>=', (int) $minCap);
+        }
+        if ($maxCap = $request->input('capacity_max')) {
+            $query->where('capacity', '<=', (int) $maxCap);
+        }
+
+        // Sorting similar to index default
+        $sort = $request->input('sort', 'date_asc');
+        switch ($sort) {
+            case 'date_desc':
+                $query->orderBy('event_date', 'desc')->orderBy('event_time', 'desc');
+                break;
+            case 'created_desc':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'capacity_desc':
+                $query->orderBy('capacity', 'desc');
+                break;
+            case 'capacity_asc':
+                $query->orderBy('capacity', 'asc');
+                break;
+            case 'date_asc':
+            default:
+                $query->orderBy('event_date', 'asc')->orderBy('event_time', 'asc');
+        }
+
+        $events = $query->get();
+
+        // Filename: "Events from Date to Date"
+        $fromLabel = $request->input('date_from');
+        $toLabel = $request->input('date_to');
+        if (!$fromLabel && $events->count()) {
+            $fromLabel = optional($events->min('event_date'))?->toDateString();
+        }
+        if (!$toLabel && $events->count()) {
+            $toLabel = optional($events->max('event_date'))?->toDateString();
+        }
+        // Fallback if still empty
+        $fromLabel = $fromLabel ?: now()->toDateString();
+        $toLabel = $toLabel ?: $fromLabel;
+    $base = "Events from {$fromLabel} to {$toLabel}";
+    $safe = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], ' ', $base);
+    $safe = preg_replace('/\s+/', ' ', $safe);
+        $filename = trim($safe) . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\EventsBulkExport($events), $filename);
     }
 }

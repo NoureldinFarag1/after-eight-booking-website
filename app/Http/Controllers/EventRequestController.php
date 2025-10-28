@@ -351,7 +351,7 @@ class EventRequestController extends Controller
     public function approve(EventRequest $eventRequest)
     {
         $user = Auth::user();
-        if (! $user || ($user->role !== Role::ADMIN)) {
+        if (! $user || !in_array($user->role, [Role::ADMIN, Role::APPROVAL_OFFICER], true)) {
             abort(403, 'Unauthorized');
         }
         if ($eventRequest->status !== EventRequestStatus::PENDING->value) {
@@ -445,9 +445,130 @@ class EventRequestController extends Controller
         }
 
     // Notify the user their request was approved and they can now pay
-        Notification::send($eventRequest->user, new RequestApprovedForPaymentNotification($eventRequest));
+        try {
+            Notification::send($eventRequest->user, new RequestApprovedForPaymentNotification($eventRequest));
+            return back()->with('success', 'Request approved and user has been notified to complete payment.');
+        } catch (\Throwable $mailEx) {
+            Log::warning('Failed to send approval notification email', [
+                'event_request_id' => $eventRequest->id,
+                'error' => $mailEx->getMessage(),
+            ]);
+            return back()->with('success', 'Request approved. Email could not be sent in this environment. The user can track it from My Requests.');
+        }
+    }
 
-        return back()->with('success', 'Request approved and user has been notified to complete payment.');
+    // Complete payment for an approved request (owner or admin/finance/approval)
+    public function completePayment(EventRequest $eventRequest)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            abort(403, 'Unauthorized');
+        }
+        $isOwner = $user->id === $eventRequest->user_id;
+        $isPrivileged = in_array($user->role, [Role::ADMIN, Role::FINANCE_OFFICER, Role::APPROVAL_OFFICER], true);
+        if (!($isOwner || $isPrivileged)) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Must be awaiting payment and not expired
+        if ($eventRequest->status !== EventRequestStatus::AWAITING_PAYMENT->value) {
+            return back()->with('error', 'This request is not awaiting payment.');
+        }
+        if (Schema::hasColumn('event_requests','expires_at') && $eventRequest->expires_at && $eventRequest->expires_at->isPast()) {
+            $eventRequest->status = EventRequestStatus::EXPIRED->value;
+            $eventRequest->save();
+            return back()->with('error', 'This payment link has expired.');
+        }
+
+        // Build tickets and booking
+        try {
+            DB::transaction(function() use ($eventRequest, $user) {
+                $event = $eventRequest->event()->firstOrFail();
+
+                // Create booking confirmed
+                $booking = new \App\Models\Booking();
+                $booking->user_id = $eventRequest->user_id;
+                $booking->event_id = $event->id;
+                $booking->status = \App\Enums\BookingStatus::CONFIRMED;
+                $booking->booking_date = now();
+                $booking->quantity = 0; // will recalc
+                // total_amount will be computed after creating tickets
+                $booking->save();
+
+                $ticketsToCreate = [];
+                $ticketTypesCache = [];
+                $resolveType = function($id) use (&$ticketTypesCache) {
+                    if (!$id) return null;
+                    if (!isset($ticketTypesCache[$id])) {
+                        $ticketTypesCache[$id] = \App\Models\TicketType::find($id);
+                    }
+                    return $ticketTypesCache[$id];
+                };
+
+                // Primary attendee
+                $primaryType = $resolveType($eventRequest->primary_ticket_type_id);
+                if ($primaryType) {
+                    $ticketsToCreate[] = [
+                        'user_id' => $eventRequest->user_id,
+                        'event_id' => $event->id,
+                        'ticket_type_id' => $primaryType->id,
+                        'price' => (float)($primaryType->price ?? 0),
+                    ];
+                }
+                // Guests
+                $guests = is_array($eventRequest->guests) ? $eventRequest->guests : [];
+                foreach ($guests as $g) {
+                    if (!is_array($g) || empty($g['ticket_type_id'])) continue;
+                    $tt = $resolveType((int)$g['ticket_type_id']);
+                    if (!$tt) continue;
+                    $ticketsToCreate[] = [
+                        'user_id' => $eventRequest->user_id,
+                        'event_id' => $event->id,
+                        'ticket_type_id' => $tt->id,
+                        'price' => (float)($tt->price ?? 0),
+                    ];
+                }
+
+                // Persist tickets
+                $total = 0.0;
+                foreach ($ticketsToCreate as $payload) {
+                    $t = new \App\Models\Ticket($payload);
+                    $t->booking_id = $booking->id;
+                    $t->status = \App\Enums\TicketStatus::VALID;
+                    $t->save();
+                    $total += (float)$t->price;
+                }
+
+                $booking->quantity = count($ticketsToCreate);
+                $booking->save();
+
+                // Mark request as paid (approval timestamp already set during approve step)
+                $eventRequest->status = EventRequestStatus::PAID->value;
+                if (Schema::hasColumn('event_requests','paid_at')) {
+                    $eventRequest->paid_at = now();
+                }
+                $eventRequest->save();
+
+                // Send QR codes
+                try {
+                    Notification::send($eventRequest->user, new \App\Notifications\BookingConfirmationNotification($booking));
+                } catch (\Throwable $mailEx) {
+                    Log::warning('Failed to send booking confirmation email', [
+                        'booking_id' => $booking->id ?? null,
+                        'event_request_id' => $eventRequest->id,
+                        'error' => $mailEx->getMessage(),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('EventRequest payment completion failed', [
+                'event_request_id' => $eventRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', 'Payment processing failed: '.$e->getMessage());
+        }
+
+        return back()->with('success', 'Payment confirmed. Your tickets have been emailed.');
     }
 
     // Decline a request (admin only)

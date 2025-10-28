@@ -133,13 +133,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Artists</label>
-                            <input type="text" name="artists" class="form-control @error('artists') is-invalid @enderror" value="{{ old('artists') }}" placeholder="Artist One, Artist Two">
-                            <div class="form-text">Enter one or more artists separated by commas.</div>
-                            @error('artists')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
                     </div>
 
 
@@ -190,7 +183,7 @@
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between align-items-center">
                             Add New Artists
-                            <button type="button" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</button>
+                            <a href="{{ route('admin.artists.create') }}" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</a>
                         </label>
                         <div id="artists-new-list"></div>
                         <div class="form-text">Each artist needs a name and optional picture.</div>
@@ -240,6 +233,14 @@
 
                         <div>
                             <button type="submit" class="btn btn-primary">
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="is_featured" value="0">
+                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_featured">Promote on homepage</label>
+                            </div>
+                        </div>
+
                                 <i class="bi bi-check-circle me-1"></i>Create Event
                             </button>
                         </div>

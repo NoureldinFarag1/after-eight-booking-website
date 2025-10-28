@@ -28,6 +28,7 @@ class Event extends Model
         'initial_capacity',
         'type',
         'status',
+        'is_featured',
         'image_url',
         'layout_image_url',
         'terms_conditions',
@@ -43,6 +44,7 @@ class Event extends Model
     'fee_amount' => 'float',
     'latitude' => 'float',
     'longitude' => 'float',
+    'is_featured' => 'boolean',
     ];
 
     public function calculateFee(float $total): float

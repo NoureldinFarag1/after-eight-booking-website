@@ -14,28 +14,14 @@
     </li>
 @else
     @if(!$authUser->isStaff())
+        <!-- Keep desktop dropdown minimal: avoid duplicates with top nav
         <li>
             <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}">
                 <i data-lucide="qr-code" class="me-2"></i>Tickets
             </a>
         </li>
-        <li>
-            <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('bookings.*') ? 'active' : '' }}" href="{{ route('bookings.index') }}">
-                <i data-lucide="ticket" class="me-2"></i>Bookings
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('event_requests.index') ? 'active' : '' }}" href="{{ route('event_requests.index') }}">
-                <i data-lucide="bell" class="me-2"></i>Requests
-            </a>
-        </li>
-        <br>
-        <li>
-            <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('user.profile.*') ? 'active' : '' }}" href="{{ route('user.profile.index') }}">
-                <i data-lucide="settings" class="me-2"></i>Preferences
-            </a>
-        </li>
         <li><hr class="dropdown-divider"></li>
+        -->
     @else
         @if($authUser->isAdmin())
             <li>

@@ -169,8 +169,8 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Pricing</label>
-                            <div class="form-text">
-                                Pricing is managed via Ticket Types. Use <a href="{{ route('admin.events.ticket-types.index', $event) }}">Manage Ticket Types</a> to set prices and capacities. You can leave the base price blank.
+                            <div class="form-text text-white">
+                                Pricing is managed via Ticket Types. Use <a href="{{ route('admin.events.ticket-types.index', $event) }}">Manage Ticket Types</a> to set prices and capacities.
                             </div>
                         </div>
                     </div>
@@ -274,6 +274,8 @@
 
                         <div>
                             <button type="submit" class="btn btn-primary">
+
+
                                 <i class="bi bi-check-circle me-1"></i>Update Event
                             </button>
                         </div>

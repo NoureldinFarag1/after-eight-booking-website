@@ -9,8 +9,17 @@
             <h2 class="mb-1">Request #{{ $eventRequest->id }}</h2>
             <div class="text-muted">Submitted {{ $eventRequest->created_at->diffForHumans() }}</div>
         </div>
-    @php($badge = $eventRequest->status === 'approved' ? 'success' : ($eventRequest->status === 'declined' ? 'danger' : 'warning'))
-        <span class="badge bg-{{ $badge }} px-3 py-2">{{ ucfirst($eventRequest->status) }}</span>
+    @php(
+        $badge = match($eventRequest->status){
+            'approved' => 'success',
+            'declined' => 'danger',
+            'awaiting_payment' => 'info',
+            'paid' => 'success',
+            'expired' => 'secondary',
+            default => 'warning'
+        }
+    )
+        <span class="badge bg-{{ $badge }} px-3 py-2">{{ str_replace('_',' ',ucfirst($eventRequest->status)) }}</span>
     </div>
 
     @include('event_requests.partials.request_core', ['eventRequest' => $eventRequest, 'showJson' => !empty($eventRequest->payload)])

@@ -14,7 +14,7 @@
             @csrf
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" placeholder="you@example.com" required autofocus>
+                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" placeholder="" required autofocus>
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3 position-relative">
@@ -22,7 +22,7 @@
                     <a href="{{ route('password.request') }}" class="small text-decoration-none" style="font-weight:600; color: var(--ae-primary);">Forgot?</a>
                 </label>
                 <div class="input-group password-toggle-group">
-                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="••••••••" required>
+                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="" required>
                     <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i data-lucide="eye"></i></button>
                 </div>
                 @error('password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -41,7 +41,8 @@
         <div class="auth-divider"><span>Or continue with</span></div>
         <div class="d-grid mb-2">
             <a href="{{ route('auth.google.redirect') }}" class="btn btn-outline-primary social-btn">
-                <i data-lucide="mail" class="me-1"></i> Google
+                <i data-lucide="mail"></i>
+                Google
             </a>
         </div>
 

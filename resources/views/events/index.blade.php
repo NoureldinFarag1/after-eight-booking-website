@@ -6,7 +6,7 @@
 @php
     // Count active filters (exclude sort so user sees semantic filters only)
     $activeFilterCount = collect($filters ?? [])->filter(function($v,$k){
-        return in_array($k,['q','type','status','date_from','date_to','capacity_min','capacity_max']) && $v !== null && $v !== '';
+        return in_array($k,['q','type','status','promoted','date_from','date_to','capacity_min','capacity_max']) && $v !== null && $v !== '';
     })->count();
 @endphp
 
@@ -29,6 +29,9 @@
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('admin.events.create') }}" class="btn btn-primary d-none d-md-inline-flex">
                             <i data-lucide="plus-circle" class="me-1"></i>Create Event
+                        </a>
+                        <a href="{{ route('admin.events.export.bulk', request()->query()) }}" class="btn btn-outline-success d-none d-md-inline-flex bg-success text-white" title="Export current results to Excel (CSV)">
+                            <i class="bi bi-download me-1"></i>Export Results
                         </a>
                     @endif
                 @endauth
@@ -60,6 +63,15 @@
                                 <option value="{{ $st }}" @selected(($filters['status'] ?? '')===$st)>{{ ucfirst($st) }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    @endif
+                    @if(($isAdmin ?? false))
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted">Promoted</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="promoted" value="1" id="promotedFilter" {{ ($filters['promoted'] ?? '') ? 'checked' : '' }}>
+                            <label class="form-check-label" for="promotedFilter">Show only promoted</label>
+                        </div>
                     </div>
                     @endif
                     <div class="col-md-2">
@@ -129,6 +141,15 @@
                             </select>
                         </div>
                     @endif
+                    @if(($isAdmin ?? false))
+                        <div>
+                            <label class="form-label small text-muted">Promoted</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="promoted" value="1" id="promotedFilterMobile" {{ ($filters['promoted'] ?? '') ? 'checked' : '' }}>
+                                <label class="form-check-label" for="promotedFilterMobile">Show only promoted</label>
+                            </div>
+                        </div>
+                    @endif
                     <div class="d-flex gap-2">
                         <div class="flex-fill">
                             <label class="form-label small text-muted">Date From</label>
@@ -179,13 +200,11 @@
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="card h-100 event-card position-relative">
                             @if($event->image_url)
-                                <img src="{{ Storage::url($event->image_url) }}"
-                                     class="card-img-top"
-                                     alt="{{ $event->title }}"
-                                     style="height: 200px; object-fit: cover;">
+                                <div class="event-card__thumb">
+                                    <img src="{{ Storage::url($event->image_url) }}" alt="{{ $event->title }}">
+                                </div>
                             @else
-                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                                     style="height: 200px;">
+                                <div class="event-card__thumb bg-light d-flex align-items-center justify-content-center">
                                     <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
                                 </div>
                             @endif
@@ -203,6 +222,14 @@
                                         {{ ucfirst($event->status->value) }}
                                     </span>
                                 </div>
+
+                                @if(($isAdmin ?? false))
+                                    <div class="mb-2">
+                                        <span id="promoted-badge-{{ $event->id }}" class="badge bg-gradient-red-light text-white {{ $event->is_featured ? '' : 'd-none' }}">
+                                            <i class="bi bi-star-fill me-1"></i>Promoted
+                                        </span>
+                                    </div>
+                                @endif
 
                                 <p class="card-text text-muted">
                                     {{ Str::limit($event->description, 100) }}
@@ -250,7 +277,16 @@
 
                                             @auth
                                                 @if(auth()->user()->isAdmin())
-                                                                     <a href="{{ route('admin.events.edit', $event) }}"
+                                                    <form method="POST" action="{{ route('admin.events.toggle-featured', $event) }}" class="d-inline feature-toggle-form" data-event-id="{{ $event->id }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" id="feature-toggle-btn-{{ $event->id }}" class="btn btn-sm {{ $event->is_featured ? 'btn-outline-secondary' : 'btn-outline-primary' }} feature-toggle-btn" title="{{ $event->is_featured ? 'Unpromote from homepage' : 'Promote on homepage' }}" data-event-id="{{ $event->id }}" aria-pressed="{{ $event->is_featured ? 'true' : 'false' }}">
+                                                            <i class="bi bi-star{{ $event->is_featured ? '-fill' : '' }} me-1 feature-toggle-icon"></i>
+                                                            <span class="spinner-border spinner-border-sm align-middle feature-toggle-spinner d-none" role="status" aria-hidden="true"></span>
+                                                            <span class="d-none d-xl-inline feature-toggle-label">{{ $event->is_featured ? 'Unpromote' : 'Promote' }}</span>
+                                                        </button>
+                                                    </form>
+                                                    <a href="{{ route('admin.events.edit', $event) }}"
                                                        class="btn btn-outline-secondary btn-sm" title="Edit Event">
                                                         <i class="bi bi-pencil me-1"></i><span class="d-none d-xl-inline">Edit</span>
                                                     </a>
@@ -316,3 +352,113 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    function ensureToastContainer() {
+        let container = document.getElementById('ae-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'ae-toast-container';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1080';
+            document.body.appendChild(container);
+        }
+        return container;
+    }
+
+    function showToast(message, variant = 'primary') {
+        const container = ensureToastContainer();
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
+        toastEl.role = 'alert';
+        toastEl.ariaLive = 'assertive';
+        toastEl.ariaAtomic = 'true';
+        toastEl.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>`;
+        container.appendChild(toastEl);
+
+        const Toast = window.bootstrap?.Toast;
+        if (Toast) {
+            const toast = new Toast(toastEl, { delay: 2500 });
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        } else {
+            alert(message);
+            toastEl.remove();
+        }
+    }
+
+    // Delegate submit for all feature toggle forms
+    document.body.addEventListener('submit', async function(e) {
+        const form = e.target.closest('.feature-toggle-form');
+        if (!form) return;
+        e.preventDefault();
+
+        const eventId = form.dataset.eventId;
+        const btn = form.querySelector('.feature-toggle-btn');
+        const icon = form.querySelector('.feature-toggle-icon');
+        const label = form.querySelector('.feature-toggle-label');
+        const badge = document.getElementById(`promoted-badge-${eventId}`);
+            const spinner = form.querySelector('.feature-toggle-spinner');
+
+        const originalDisabled = btn.disabled;
+        btn.disabled = true;
+            if (spinner) spinner.classList.remove('d-none');
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'PATCH',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf || ''
+                }
+            });
+                    let data;
+                    if (!res.ok) {
+                        // Try to parse error message from JSON
+                        try { data = await res.json(); } catch (_) {}
+                        const msg = data && data.message ? data.message : 'Request failed';
+                        throw new Error(msg);
+                    }
+                    data = await res.json();
+
+            // Update UI based on is_featured
+            const isFeatured = !!data.is_featured;
+            if (isFeatured) {
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-outline-secondary');
+                if (icon) icon.classList.add('bi-star-fill');
+                if (icon) icon.classList.remove('bi-star');
+                if (label) label.textContent = 'Unpromote';
+                if (badge) badge.classList.remove('d-none');
+                    btn.setAttribute('aria-pressed', 'true');
+            } else {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-outline-primary');
+                if (icon) icon.classList.remove('bi-star-fill');
+                if (icon) icon.classList.add('bi-star');
+                if (label) label.textContent = 'Promote';
+                if (badge) badge.classList.add('d-none');
+                    btn.setAttribute('aria-pressed', 'false');
+            }
+
+            if (data.message) { showToast(data.message, 'success'); }
+
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Unable to toggle promotion right now. Please try again.', 'danger');
+        } finally {
+            btn.disabled = originalDisabled;
+                if (spinner) spinner.classList.add('d-none');
+        }
+    });
+});
+</script>
+@endpush

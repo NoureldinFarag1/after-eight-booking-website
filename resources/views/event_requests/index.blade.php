@@ -23,8 +23,8 @@
                 <tbody>
                     @foreach($requests as $req)
                         <tr>
-                            <td>{{ $req->event->title ?? 'Event Deleted' }}</td>
-                            <td>{{ $req->created_at->format('M d, Y H:i') }}</td>
+                            <td class="text-muted">{{ $req->event->title ?? 'Event Deleted' }}</td>
+                            <td class="text-muted">{{ $req->created_at->format('M d, Y H:i') }}</td>
                             <td>
                                 @if($req->status === 'pending')
                                     <span class="badge bg-warning text-dark">Pending</span>

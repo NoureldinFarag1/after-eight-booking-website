@@ -5,11 +5,6 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <h1 class="h3 mb-4 text-deep-red d-flex align-items-center">
-            <i data-lucide="layout-dashboard" class="me-2"></i>
-            Admin Dashboard
-        </h1>
-
         <!-- Quick Actions -->
         <div class="row mb-4">
             <div class="col-12">
@@ -31,12 +26,6 @@
                             <a href="{{ route('tickets.index') }}" class="btn btn-outline-secondary">
                                 <i data-lucide="qr-code" class="me-1"></i>View All Tickets
                             </a>
-                            {{-- Send Invitation Button (redirects to Create Invitation page) --}}
-                            @if(Auth::check() && Auth::user()->role === \App\Enums\Role::ADMIN)
-                                <a href="{{ route('invitations.store') }}" class="btn btn-success">
-                                    <i data-lucide="mail" class="me-1"></i>Send Invitation
-                                </a>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -195,7 +184,7 @@
                                                 <td class="position-relative">
                                                     <a href="{{ route('admin.staff.show', $operator['id']) }}" class="stretched-link" aria-label="View {{ $operator['name'] }}"></a>
                                                     <div>
-                                                        <strong>{{ $operator['name'] }}</strong>
+                                                        <strong class="text-white">{{ $operator['name'] }}</strong>
                                                         <br><small class="text-muted">{{ $operator['email'] }}</small>
                                                     </div>
                                                 </td>
@@ -203,25 +192,15 @@
                                                     <span class="badge bg-primary fs-6">{{ $operator['total_scans'] }}</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge {{ $operator['today_scans'] > 0 ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-light text-dark border' }}">
-                                                        {{ $operator['today_scans'] }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge {{ $operator['week_scans'] > 0 ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-light text-dark border' }}">
-                                                        {{ $operator['week_scans'] }}
-                                                    </span>
-                                                </td>
-                                                <td>
                                                     @if($operator['last_scan'])
-                                                        <small>{{ $operator['last_scan']->diffForHumans() }}</small>
+                                                        <small class="text-muted">{{ $operator['last_scan']->diffForHumans() }}</small>
                                                     @else
                                                         <small class="text-muted">Never</small>
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if($operator['recent_scans']->count() > 0)
-                                                        <div class="small">
+                                                        <div class="small text-muted">
                                                             @foreach($operator['recent_scans']->take(2) as $scan)
                                                                 <div class="text-muted">
                                                                     {{ $scan->event->title ?? 'Unknown Event' }}
@@ -237,7 +216,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <small>{{ $operator['member_since']->format('M j, Y') }}</small>
+                                                    <small class="text-white">{{ $operator['member_since']->format('M j, Y') }}</small>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -282,13 +261,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($eventPerformance->take(10) as $event)
+                                        @foreach($eventPerformance->take(5) as $event)
                                             <tr>
                                                 <td>
-                                                    <strong>{{ Str::limit($event['title'], 25) }}</strong>
+                                                    <strong class="text-white">{{ Str::limit($event['title'], 25) }}</strong>
                                                 </td>
-                                                <td>{{ $event['date'] }}</td>
-                                                <td>{{ $event['capacity'] }}</td>
+                                                <td class="text-white">{{ $event['date'] }}</td>
+                                                <td class="text-white">{{ $event['capacity'] }}</td>
                                                 <td>
                                                     <span class="badge metric-badge metric-badge--primary">{{ $event['tickets_sold'] }}</span>
                                                     <small class="text-muted">
@@ -301,14 +280,14 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="progress me-2" style="width: 60px; height: 8px;">
-                                                            <div class="progress-bar {{ $event['attendance_rate'] >= 80 ? 'bg-success' : ($event['attendance_rate'] >= 50 ? 'bg-warning' : 'bg-danger') }}"
+                                                            <div class="progress-bar text-white {{ $event['attendance_rate'] >= 80 ? 'bg-success' : ($event['attendance_rate'] >= 50 ? 'bg-warning' : 'bg-danger') }}"
                                                                  style="width: {{ $event['attendance_rate'] }}%"></div>
                                                         </div>
-                                                        <small>{{ $event['attendance_rate'] }}%</small>
+                                                        <small class="text-white">{{ $event['attendance_rate'] }}%</small>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <strong>EGP {{ number_format($event['revenue'], 0) }}</strong>
+                                                    <strong class="text-white">EGP {{ number_format($event['revenue'], 0) }}</strong>
                                                 </td>
                                                 <td>
                                                     @php
@@ -387,7 +366,7 @@
                                                             </div>
                                                         @endif
                                                         <div>
-                                                            <strong>{{ $event->title }}</strong>
+                                                            <strong class="text-white">{{ $event->title }}</strong>
                                                             <br>
                                                             <small class="text-muted">
                                                                 @php
@@ -403,12 +382,12 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <div>{{ $event->event_date->format('M j, Y') }}</div>
+                                                    <div class="text-white">{{ $event->event_date->format('M j, Y') }}</div>
                                                     <small class="text-muted">{{ $event->event_time->format('g:i A') }}</small>
                                                 </td>
-                                                <td>{{ Str::limit($event->location, 30) }}</td>
+                                                <td class="text-muted">{{ Str::limit($event->location, 30) }}</td>
                                                 <td>
-                                                    <div>{{ $event->getAvailableSeatsAttribute() }} / {{ $event->capacity }}</div>
+                                                    <div class="text-white">{{ $event->getAvailableSeatsAttribute() }} / {{ $event->capacity }}</div>
                                                     <small class="text-muted">available</small>
                                                 </td>
                                                 <td>
@@ -422,7 +401,7 @@
                                                             <div class="progress-bar {{ $event->scan_rate >= 80 ? 'bg-success' : ($event->scan_rate >= 50 ? 'bg-warning' : 'bg-danger') }}"
                                                                  style="width: {{ $event->scan_rate }}%"></div>
                                                         </div>
-                                                        <small>{{ $event->scan_rate }}%</small>
+                                                        <small class="text-muted">{{ $event->scan_rate }}%</small>
                                                     </div>
                                                     <small class="text-muted">{{ $event->scanned_tickets_count }}/{{ $event->tickets_count }}</small>
                                                 </td>

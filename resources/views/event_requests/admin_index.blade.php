@@ -36,30 +36,30 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>#</th>
-                            <th>User</th>
-                            <th>Event</th>
-                            <th>Primary</th>
-                            <th class="text-center">Attendees</th>
-                            <th>Tickets Mix</th>
-                            <th>Status</th>
-                            <th>Submitted</th>
-                            <th class="text-end">Action</th>
+                            <th class="text-black">#</th>
+                            <th class="text-black">User</th>
+                            <th class="text-black">Event</th>
+                            <th class="text-black">Primary</th>
+                            <th class="text-center text-black">Attendees</th>
+                            <th class="text-black">Tickets Mix</th>
+                            <th class="text-black">Status</th>
+                            <th class="text-black">Submitted</th>
+                            <th class="text-end text-black">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($requests as $r)
                             <tr>
-                                <td>{{ $r->id }}</td>
+                                <td class="text-muted">{{ $r->id }}</td>
                                 <td>
-                                    <div class="fw-semibold">{{ $r->user->name ?? 'N/A' }}</div>
+                                    <div class="fw-semibold text-muted">{{ $r->user->name ?? 'N/A' }}</div>
                                     <div class="text-muted small">{{ $r->user->email ?? '' }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">{{ $r->event->title ?? $r->event->name ?? 'N/A' }}</div>
+                                    <div class="fw-semibold text-muted">{{ $r->event->title ?? $r->event->name ?? 'N/A' }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">{{ $r->primary_name ?? '-' }}</div>
+                                    <div class="fw-semibold text-muted">{{ $r->primary_name ?? '-' }}</div>
                                     <div class="text-muted small">{{ $r->primary_email ?? '' }}</div>
                                 </td>
                                 <td class="text-center">
@@ -102,7 +102,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>{{ $r->created_at->diffForHumans() }}</td>
+                                <td class="text-muted">{{ $r->created_at->diffForHumans() }}</td>
                                 <td class="text-end">
                                     <a href="{{ route('event_requests.show', $r->id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Review</a>
                                 </td>

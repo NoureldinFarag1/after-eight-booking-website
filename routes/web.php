@@ -64,6 +64,10 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
             'destroy' => 'admin.events.destroy',
         ]);
         Route::patch('/admin/events/{event}/toggle-publish', [EventController::class, 'togglePublish'])->name('admin.events.toggle-publish');
+        Route::patch('/admin/events/{event}/toggle-featured', [EventController::class, 'toggleFeatured'])->name('admin.events.toggle-featured');
+    // Exports (Admin only)
+    Route::get('/admin/events/{event}/export', [EventController::class, 'exportSingle'])->name('admin.events.export');
+    Route::get('/admin/events/export', [EventController::class, 'exportBulk'])->name('admin.events.export.bulk');
 
         // Artists management (Admin only)
         Route::resource('admin/artists', AdminArtistController::class)->names([
@@ -86,8 +90,8 @@ Route::middleware(['auth', 'operator.redirect'])->group(function () {
 
         // Staff management (Admin only) - includes operators, approval officers, and finance officers
     Route::get('/admin/staff', [StaffController::class, 'index'])->name('admin.staff.index');
-    Route::get('/admin/staff/{user}', [StaffController::class, 'show'])->name('admin.staff.show');
     Route::get('/admin/staff/create', [StaffController::class, 'create'])->name('admin.staff.create');
+    Route::get('/admin/staff/{user}', [StaffController::class, 'show'])->name('admin.staff.show');
     Route::post('/admin/staff', [StaffController::class, 'store'])->name('admin.staff.store');
     Route::patch('/admin/staff/{user}/toggle', [StaffController::class, 'toggle'])->name('admin.staff.toggle');
     Route::get('/admin/staff/{user}/password', [StaffController::class, 'editPassword'])->name('admin.staff.password.edit');
@@ -170,6 +174,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/event-requests/{eventRequest}', [EventRequestController::class, 'update'])->name('event_requests.update');
 
     Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
+    Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
+    Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
 
 // Admin-side
 
