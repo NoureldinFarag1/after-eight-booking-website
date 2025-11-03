@@ -6,63 +6,89 @@
         <div>
             <h2 class="mb-1">Request #{{ $eventRequest->id }}</h2>
             <div class="text-muted">Submitted {{ $eventRequest->created_at->diffForHumans() }}</div>
-            @if($eventRequest->status !== 'pending' && $eventRequest->admin)
-                <div class="text-muted small mt-1">
-                    @if($eventRequest->status === 'approved')
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                    @else
-                        <i class="bi bi-x-circle-fill text-danger"></i>
-                    @endif
-                    Decided by {{ $eventRequest->admin->name }}
-                    <span title="{{ $eventRequest->updated_at }}">{{ $eventRequest->updated_at->diffForHumans() }}</span>
+            @php
+                $statusEnum = \App\Enums\EventRequestStatus::tryFrom($eventRequest->status);
+                $statusLabel = $statusEnum ? $statusEnum->label() : ucfirst(str_replace('_', ' ', $eventRequest->status));
+                $badgeClass = match($statusEnum) {
+                    \App\Enums\EventRequestStatus::PENDING => 'bg-warning text-dark',
+                    \App\Enums\EventRequestStatus::AWAITING_PAYMENT => 'bg-info text-dark',
+                    \App\Enums\EventRequestStatus::PAID => 'bg-success',
+                    \App\Enums\EventRequestStatus::DECLINED => 'bg-danger',
+                    \App\Enums\EventRequestStatus::EXPIRED => 'bg-secondary',
+                    \App\Enums\EventRequestStatus::APPROVED => 'bg-success',
+                    default => 'bg-secondary',
+                };
+                $decisionMeta = match($statusEnum) {
+                    \App\Enums\EventRequestStatus::DECLINED => ['icon' => 'x-circle', 'class' => 'text-danger', 'label' => 'Declined'],
+                    \App\Enums\EventRequestStatus::AWAITING_PAYMENT, \App\Enums\EventRequestStatus::PAID, \App\Enums\EventRequestStatus::APPROVED => ['icon' => 'check-circle-2', 'class' => 'text-success', 'label' => 'Approved'],
+                    default => null,
+                };
+            @endphp
+            @if($decisionMeta && $eventRequest->admin)
+                <div class="text-muted small mt-1 d-flex align-items-center gap-1">
+                    <i data-lucide="{{ $decisionMeta['icon'] }}" class="{{ $decisionMeta['class'] }}" style="width:14px;height:14px;"></i>
+                    <span>{{ $decisionMeta['label'] }} by {{ $eventRequest->admin->name }} · <span title="{{ $eventRequest->updated_at }}">{{ $eventRequest->updated_at->diffForHumans() }}</span></span>
                 </div>
             @endif
+            @if($statusEnum === \App\Enums\EventRequestStatus::EXPIRED && $eventRequest->expires_at)
+                <div class="text-muted small mt-1">Expired {{ $eventRequest->expires_at->diffForHumans() }}.</div>
+            @endif
         </div>
-        @php
-            $badge = match($eventRequest->status){
-                'approved' => 'success',
-                'declined' => 'danger',
-                'awaiting_payment' => 'info',
-                'paid' => 'success',
-                'expired' => 'secondary',
-                default => 'warning'
-            };
-        @endphp
-        <span class="badge bg-{{ $badge }} px-3 py-2">{{ str_replace('_',' ',ucfirst($eventRequest->status)) }}</span>
+        <span class="badge {{ $badgeClass }} px-3 py-2">{{ $statusLabel }}</span>
     </div>
 
     @include('event_requests.partials.request_core', ['eventRequest' => $eventRequest, 'showJson' => auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN])
 
     @php
-        $isAwaiting = $eventRequest->status === 'awaiting_payment';
+        $isAwaiting = $statusEnum === \App\Enums\EventRequestStatus::AWAITING_PAYMENT;
         $hasExpiry = !is_null($eventRequest->expires_at);
         $isExpired = $hasExpiry ? $eventRequest->expires_at->isPast() : false;
         $expiresEpochMs = $hasExpiry ? ($eventRequest->expires_at->timezone('UTC')->timestamp * 1000) : null;
+        $authUser = auth()->user();
+        $isOwner = $authUser && $authUser->id === $eventRequest->user_id;
+        $isAdminOrApproval = $authUser && in_array($authUser->role, [\App\Enums\Role::ADMIN, \App\Enums\Role::APPROVAL_OFFICER], true);
     @endphp
 
     @if($isAwaiting)
         @if($hasExpiry)
             @if($isExpired)
                 <div class="alert alert-danger d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <i data-lucide="alert-triangle" class="me-2" style="width:18px;height:18px;"></i>
                     <div>
                         This request has expired and can no longer be paid. Please submit a new request.
                     </div>
                 </div>
             @else
-                <div class="alert alert-warning d-flex align-items-center" role="alert">
-                    <i class="bi bi-stopwatch me-2"></i>
-                    <div>
-                        Please complete the payment within
-                        <strong id="paymentCountdown">--:--:--</strong>.
-                        Expires at {{ $eventRequest->expires_at->format('D M j, g:i A') }}.
+                @if($isOwner)
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i data-lucide="hourglass" class="me-2" style="width:18px;height:18px;"></i>
+                        <div>
+                            Please complete the payment within
+                            <strong id="paymentCountdown">--:--:--</strong>.
+                            Expires at {{ $eventRequest->expires_at->format('D M j, g:i A') }}.
+                        </div>
                     </div>
-                </div>
+                @elseif($isAdminOrApproval)
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i data-lucide="timer" class="me-2" style="width:18px;height:18px;"></i>
+                        <div>
+                            Payment window closes in <strong id="paymentCountdown">--:--:--</strong>. Expires at {{ $eventRequest->expires_at->format('D M j, g:i A') }}.
+                        </div>
+                    </div>
+                @endif
             @endif
         @else
-            <div class="alert alert-info" role="alert">
-                Please complete the payment as soon as possible to secure your spot.
-            </div>
+            @if($isOwner)
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i data-lucide="info" class="me-2" style="width:18px;height:18px;"></i>
+                    <div>Please complete the payment as soon as possible to secure your spot.</div>
+                </div>
+            @elseif($isAdminOrApproval)
+                <div class="alert alert-secondary d-flex align-items-center" role="alert">
+                    <i data-lucide="alert-circle" class="me-2" style="width:18px;height:18px;"></i>
+                    <div>Awaiting payment. No expiration timestamp has been set for this request.</div>
+                </div>
+            @endif
         @endif
     @endif
 
@@ -70,21 +96,30 @@
         @if(auth()->check() && auth()->id() === $eventRequest->user_id)
             <a href="{{ route('event_requests.index') }}" class="btn btn-secondary">Requests</a>
         @endif
-        @if(auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN && $eventRequest->status === 'pending')
+        @if(auth()->check() && in_array(auth()->user()->role, [\App\Enums\Role::ADMIN, \App\Enums\Role::APPROVAL_OFFICER], true) && $statusEnum === \App\Enums\EventRequestStatus::PENDING)
             <form method="POST" action="{{ route('admin.event_requests.approve', $eventRequest->id) }}" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> Approve</button>
+                <button type="submit" class="btn btn-success d-inline-flex align-items-center gap-1">
+                    <i data-lucide="check" style="width:16px;height:16px;"></i>
+                    <span>Approve</span>
+                </button>
             </form>
             <form method="POST" action="{{ route('admin.event_requests.decline', $eventRequest->id) }}" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-danger"><i class="bi bi-x"></i> Decline</button>
+                <button type="submit" class="btn btn-danger d-inline-flex align-items-center gap-1">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                    <span>Decline</span>
+                </button>
             </form>
         @endif
 
-        @if(auth()->check() && auth()->id() === $eventRequest->user_id && $eventRequest->status === 'awaiting_payment' && !($isExpired ?? false))
+    @if(auth()->check() && auth()->id() === $eventRequest->user_id && $statusEnum === \App\Enums\EventRequestStatus::AWAITING_PAYMENT && !$isExpired)
             <form method="POST" action="{{ route('event_requests.pay', $eventRequest->id) }}" class="d-inline" id="payForm">
                 @csrf
-                <button type="submit" class="btn btn-primary" id="payNowBtn"><i class="bi bi-credit-card"></i> Pay Now</button>
+                <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1" id="payNowBtn">
+                    <i data-lucide="credit-card" style="width:16px;height:16px;"></i>
+                    <span>Pay Now</span>
+                </button>
             </form>
         @endif
     </div>

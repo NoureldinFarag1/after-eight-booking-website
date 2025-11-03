@@ -16,6 +16,7 @@ class BookingConfirmationNotification extends Notification
 
     public Booking $booking;
     public array $qrCodePaths;
+    public array $qrDataUrls;
 
     /**
      * Create a new notification instance.
@@ -24,6 +25,7 @@ class BookingConfirmationNotification extends Notification
     {
         $this->booking = $booking;
         $this->qrCodePaths = [];
+        $this->qrDataUrls = [];
     }
 
     /**
@@ -52,7 +54,8 @@ class BookingConfirmationNotification extends Notification
                 'event' => $event,
                 'tickets' => $booking->tickets,
                 'user' => $notifiable,
-                'qrCodePaths' => $this->qrCodePaths
+                'qrCodePaths' => $this->qrCodePaths,
+                'qrDataUrls' => $this->qrDataUrls,
             ]);
 
         // Note: QR codes are now embedded in email template as base64 images
@@ -81,8 +84,19 @@ class BookingConfirmationNotification extends Notification
         $tickets = $this->booking->tickets;
 
         $this->qrCodePaths = [];
+        $this->qrDataUrls = [];
         foreach ($tickets as $ticket) {
-            $this->qrCodePaths[$ticket->id] = $qrCodeService->generateTicketQrCode($ticket);
+            $path = $qrCodeService->generateTicketQrCode($ticket);
+            $this->qrCodePaths[$ticket->id] = $path;
+            // Try to create base64 data URL for inline embedding
+            try {
+                $binary = Storage::disk('public')->get($path);
+                if ($binary) {
+                    $this->qrDataUrls[$ticket->id] = 'data:image/png;base64,' . base64_encode($binary);
+                }
+            } catch (\Throwable $e) {
+                // ignore if file missing; template will fall back to public URL if available
+            }
         }
     }
 

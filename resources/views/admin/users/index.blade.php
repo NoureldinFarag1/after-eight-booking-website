@@ -12,7 +12,7 @@
 
 <!-- Info Alert -->
 <div class="alert alert-info d-flex align-items-center mb-4">
-    <i class="bi bi-info-circle fs-5 me-3"></i>
+    <i data-lucide="info" class="fs-5 me-3"></i>
     <div>
         <strong>User Status Information:</strong>
         <ul class="mb-0 mt-1">
@@ -30,7 +30,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <i class="bi bi-people text-primary fs-2"></i>
+                        <i data-lucide="users" class="text-primary fs-2"></i>
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <div class="fw-bold h4 mb-0">{{ number_format($stats['total_users']) }}</div>
@@ -45,7 +45,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <i class="bi bi-person-check text-success fs-2"></i>
+                        <i data-lucide="user-check" class="text-success fs-2"></i>
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <div class="fw-bold h4 mb-0">{{ number_format($stats['active_users']) }}</div>
@@ -60,7 +60,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <i class="bi bi-ticket-perforated text-info fs-2"></i>
+                        <i data-lucide="ticket" class="text-info fs-2"></i>
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <div class="fw-bold h4 mb-0">{{ number_format($stats['users_with_bookings']) }}</div>
@@ -75,7 +75,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
-                        <i class="bi bi-person-plus text-warning fs-2"></i>
+                        <i data-lucide="user-plus" class="text-warning fs-2"></i>
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <div class="fw-bold h4 mb-0">{{ number_format($stats['new_users_this_month']) }}</div>
@@ -96,7 +96,7 @@
                 <label for="search" class="form-label">Search</label>
                 <div class="input-group">
                     <span class="input-group-text">
-                        <i class="bi bi-search"></i>
+                        <i data-lucide="search"></i>
                     </span>
                     <input type="text"
                            class="form-control"
@@ -151,10 +151,10 @@
             <div class="col-12">
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-funnel me-1"></i>Apply Filters
+                        <i data-lucide="filter" class="me-1"></i>Apply Filters
                     </button>
                     <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        <i data-lucide="rotate-ccw" class="me-1"></i>Reset
                     </a>
                 </div>
             </div>
@@ -171,21 +171,21 @@
                class="btn btn-outline-secondary {{ request('sort_by') === 'name' ? 'active' : '' }}">
                 Name
                 @if(request('sort_by') === 'name')
-                    <i class="bi bi-arrow-{{ request('sort_direction') === 'asc' ? 'up' : 'down' }}"></i>
+                    <i data-lucide="{{ request('sort_direction') === 'asc' ? 'arrow-up' : 'arrow-down' }}"></i>
                 @endif
             </a>
             <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'created_at', 'sort_direction' => request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}"
                class="btn btn-outline-secondary {{ request('sort_by') === 'created_at' || !request('sort_by') ? 'active' : '' }}">
                 Date Joined
                 @if(request('sort_by') === 'created_at' || !request('sort_by'))
-                    <i class="bi bi-arrow-{{ request('sort_direction') === 'asc' ? 'up' : 'down' }}"></i>
+                    <i data-lucide="{{ request('sort_direction') === 'asc' ? 'arrow-up' : 'arrow-down' }}"></i>
                 @endif
             </a>
             <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'bookings_count', 'sort_direction' => request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}"
                class="btn btn-outline-secondary {{ request('sort_by') === 'bookings_count' ? 'active' : '' }}">
                 Bookings
                 @if(request('sort_by') === 'bookings_count')
-                    <i class="bi bi-arrow-{{ request('sort_direction') === 'asc' ? 'up' : 'down' }}"></i>
+                    <i data-lucide="{{ request('sort_direction') === 'asc' ? 'arrow-up' : 'arrow-down' }}"></i>
                 @endif
             </a>
         </div>
@@ -282,7 +282,7 @@
                                         <a href="{{ route('admin.users.show', $user) }}"
                                            class="btn btn-outline-primary btn-sm"
                                            title="View">
-                                            <i class="bi bi-eye"></i>
+                                            <i data-lucide="eye"></i>
                                         </a>
 
                                         @if(!$user->deleted_at)
@@ -291,7 +291,7 @@
                                                     data-user-id="{{ $user->id }}"
                                                     data-current-status="{{ $user->active ? 'active' : 'inactive' }}"
                                                     title="{{ $user->active ? 'Deactivate user (they will be logged out immediately)' : 'Activate user (allow login access)' }}">
-                                                <i class="bi bi-{{ $user->active ? 'pause' : 'play' }}"></i>
+                                                <i data-lucide="{{ $user->active ? 'pause' : 'play' }}"></i>
                                             </button>
 
                                             <button type="button"
@@ -299,7 +299,7 @@
                                                     data-user-id="{{ $user->id }}"
                                                     data-user-name="{{ $user->name }}"
                                                     title="Delete User">
-                                                <i class="bi bi-trash"></i>
+                                                <i data-lucide="trash-2"></i>
                                             </button>
                                         @else
                                             <button type="button"
@@ -307,7 +307,7 @@
                                                     data-user-id="{{ $user->id }}"
                                                     data-user-name="{{ $user->name }}"
                                                     title="Restore User">
-                                                <i class="bi bi-arrow-clockwise"></i>
+                                                <i data-lucide="rotate-ccw"></i>
                                             </button>
                                         @endif
                                     </div>
@@ -326,11 +326,11 @@
             </div>
         @else
             <div class="text-center py-5">
-                <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                <i data-lucide="users" class="text-muted" style="width: 3rem; height: 3rem;"></i>
                 <h5 class="mt-3 text-muted">No Users Found</h5>
                 <p class="text-muted">No users match your current filters.</p>
                 <a href="{{ route('admin.users.index') }}" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Reset Filters
+                    <i data-lucide="rotate-ccw" class="me-1"></i>Reset Filters
                 </a>
             </div>
         @endif
@@ -347,7 +347,7 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex align-items-center mb-3">
-                    <i class="bi bi-exclamation-triangle text-warning fs-2 me-3"></i>
+                    <i data-lucide="alert-triangle" class="text-warning fs-2 me-3"></i>
                     <div>
                         <p class="mb-1">Are you sure you want to delete <strong class="user-name-placeholder"></strong>?</p>
                         <p class="text-muted small mb-0">This action will soft-delete the user. They can be restored later if needed.</p>
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 this.disabled = true;
-                this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
                 const response = await fetch(`/admin/users/${userId}/toggle-status`, {
                     method: 'PATCH',
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Reset button
                 this.disabled = false;
-                this.innerHTML = `<i class="bi bi-${currentStatus === 'active' ? 'pause' : 'play'}"></i>`;
+                this.innerHTML = `<i data-lucide="${currentStatus === 'active' ? 'pause' : 'play'}"></i>`;
             }
         });
     });
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             this.disabled = true;
-            this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Deleting...';
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Deleting...';
 
             const response = await fetch(`/admin/users/${deleteUserId}`, {
                 method: 'DELETE',
@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             this.disabled = true;
-            this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Restoring...';
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Restoring...';
 
             const response = await fetch(`/admin/users/${restoreUserId}/restore`, {
                 method: 'PATCH',

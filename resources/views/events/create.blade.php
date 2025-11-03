@@ -12,7 +12,7 @@
                 </h4>
             </div>
             <div class="card-body">
-                <form action="{{ route('admin.events.store') }}" method="POST" enctype="multipart/form-data">
+                <form id="create-event-form" action="{{ route('admin.events.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
                     <div class="row">
@@ -48,14 +48,11 @@
 
                     <div class="mb-3">
                         <label for="description" class="form-label">Description *</label>
-                        <textarea class="form-control @error('description') is-invalid @enderror"
-                                  id="description"
-                                  name="description"
-                                  rows="4"
-                                  required>{{ old('description') }}</textarea>
+                        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="10" required>{{ old('description') }}</textarea>
                         @error('description')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                        <div class="form-text">You can format text, add links, headings and images.</div>
                     </div>
 
                     <div class="mb-3">
@@ -233,14 +230,6 @@
 
                         <div>
                             <button type="submit" class="btn btn-primary">
-                        <div class="col-md-4 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
-                                <input type="hidden" name="is_featured" value="0">
-                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_featured">Promote on homepage</label>
-                            </div>
-                        </div>
-
                                 <i class="bi bi-check-circle me-1"></i>Create Event
                             </button>
                         </div>
@@ -252,10 +241,50 @@
 </div>
 
 @push('scripts')
+<script src="https://cdn.tiny.cloud/1/tn7ylhy4oklqxlnvfyipk51mn4ydwn567wo8heugvrcwkkf0/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const typeSelect = document.getElementById('type');
-        const container = document.getElementById('ticket-types-container');
+        // TinyMCE full-featured editor
+        tinymce.init({
+            selector: '#description',
+            menubar: false,
+            plugins: 'lists link image table code autoresize',
+            toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | table | removeformat | code',
+            height: 340,
+            branding: false,
+            convert_urls: false,
+            paste_data_images: true,
+            image_caption: true,
+            setup: function (editor) {
+                const save = () => editor.save();
+                editor.on('change keyup input undo redo', save);
+            },
+            file_picker_types: 'image',
+            file_picker_callback: function (cb, value, meta) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function () {
+                    const file = this.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        cb(reader.result, { title: file.name });
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+            }
+        });
+        // Final guard to ensure content is synced before HTML5 validation / submit
+        const formEl = document.getElementById('create-event-form');
+        if (formEl && window.tinymce) {
+            formEl.addEventListener('submit', function(){
+                try { window.tinymce.triggerSave(); } catch (e) {}
+            });
+        }
+
+    const typeSelect = document.getElementById('type');
+    const container = document.getElementById('ticket-types-container');
         const addBtn = document.getElementById('add-ticket-type');
         const mapInput = document.getElementById('google_maps_url');
         const toggleWrap = document.getElementById('map-preview-toggle');
@@ -285,6 +314,7 @@
         if(showBtn){ showBtn.addEventListener('click', ()=>{ if(!iframe.getAttribute('src') && iframe.dataset.src){ iframe.src=iframe.dataset.src; } previewWrap.classList.toggle('d-none'); showBtn.textContent = previewWrap.classList.contains('d-none') ? 'Show Map Preview' : 'Hide Map Preview'; }); }
 
         function toggleTypes() {
+            if (!container) return;
             const isBooking = typeSelect.value === 'booking';
             container.style.display = isBooking ? '' : 'none';
         }

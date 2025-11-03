@@ -17,15 +17,76 @@ use Illuminate\Support\Facades\Log;
 
 class EventRequestController extends Controller
 {
+    protected function denyIfStaffRole(): void
+    {
+        $user = Auth::user();
+        if ($user && $user->role && $user->role->isManageableStaff()) {
+            abort(403, 'Staff roles cannot submit event requests.');
+        }
+    }
+
+    /**
+     * Determine which statuses should block a user from submitting another request.
+     */
+    protected function statusesBlockingNewSubmission(): array
+    {
+        return [
+            EventRequestStatus::PENDING->value,
+            EventRequestStatus::AWAITING_PAYMENT->value,
+            EventRequestStatus::DECLINED->value,
+            EventRequestStatus::PAID->value,
+            // Legacy status retained for backward compatibility with historical records
+            EventRequestStatus::APPROVED->value,
+        ];
+    }
+
+    protected function findLatestUserRequestForEvent(Event $event): ?EventRequest
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return null;
+        }
+
+        return EventRequest::where('event_id', $event->id)
+            ->where('user_id', $userId)
+            ->latest('id')
+            ->first();
+    }
+
+    protected function redirectForExistingRequest(EventRequest $existing, Event $event)
+    {
+        $label = $this->formatStatusLabel($existing);
+        $flashKey = $existing->status === EventRequestStatus::DECLINED->value ? 'error' : 'warning';
+        $nextStep = match ($existing->status) {
+            EventRequestStatus::PENDING->value => ' You can review or edit your submission below.',
+            EventRequestStatus::AWAITING_PAYMENT->value => ' Please complete payment to confirm your spot.',
+            EventRequestStatus::PAID->value => ' Payment has already been completed.',
+            EventRequestStatus::DECLINED->value => ' The decision on this request is final.',
+            default => '',
+        };
+
+        return redirect()->route('events.show', $event)
+            ->with($flashKey, 'You have already submitted a request for this event. Status: ' . $label . '.' . $nextStep);
+    }
+
+    protected function formatStatusLabel(EventRequest $request): string
+    {
+        $enum = EventRequestStatus::tryFrom($request->status);
+
+        return $enum ? $enum->label() : ucfirst(str_replace('_', ' ', $request->status));
+    }
+
     // Show the form to create a request for an event
     public function create(Event $event)
     {
-        // If the user already has a pending (or any) request for this event, show it instead of new form
-        $existing = EventRequest::where('event_id', $event->id)
-            ->where('user_id', Auth::id())
-            ->first();
+        $this->denyIfStaffRole();
+        // If the user already has an active request for this event, surface it instead of opening a new form
+        $existing = $this->findLatestUserRequestForEvent($event);
         if ($existing) {
-            return redirect()->route('events.show', $event)->with('info', 'You already submitted a request for this event. You can view or edit it below.');
+            $existing->expireIfPastDeadline();
+            if (in_array($existing->status, $this->statusesBlockingNewSubmission(), true)) {
+                return $this->redirectForExistingRequest($existing, $event);
+            }
         }
         // Provide ticket types for selection (active only)
         $ticketTypes = $event->ticketTypes()->where('is_active', 1)->orderBy('price')->get();
@@ -35,13 +96,14 @@ class EventRequestController extends Controller
     // Store a new request
     public function store(Request $request, Event $event)
     {
+        $this->denyIfStaffRole();
         // Prevent duplicate request by same user for same event
-        $existing = EventRequest::where('event_id', $event->id)
-            ->where('user_id', Auth::id())
-            ->first();
+        $existing = $this->findLatestUserRequestForEvent($event);
         if ($existing) {
-            return redirect()->route('events.show', $event)
-                ->with('warning', 'You have already submitted a request for this event. Status: ' . ucfirst($existing->status) . '.');
+            $existing->expireIfPastDeadline();
+            if (in_array($existing->status, $this->statusesBlockingNewSubmission(), true)) {
+                return $this->redirectForExistingRequest($existing, $event);
+            }
         }
         // Normalize guests: drop completely empty rows so we only validate rows the user actually filled
         $rawGuests = $request->input('guests', []);
@@ -143,6 +205,9 @@ class EventRequestController extends Controller
     public function index()
     {
         $requests = EventRequest::where('user_id', Auth::id())->latest()->get();
+        $requests->each(function (EventRequest $request) {
+            $request->expireIfPastDeadline();
+        });
         return view('event_requests.index', compact('requests'));
     }
 
@@ -262,14 +327,15 @@ class EventRequestController extends Controller
     public function adminIndex(Request $request)
     {
         $user = Auth::user();
-        if (! $user || ($user->role !== Role::ADMIN)) {
+        if (! $user || !in_array($user->role, [Role::ADMIN, Role::APPROVAL_OFFICER], true)) {
             abort(403);
         }
-        $status = $request->query('status'); // pending|approved|declined|null
+    $status = $request->query('status'); // optional status filter value
         $q = trim((string) $request->query('q', ''));
 
-    $query = EventRequest::with(['user', 'event', 'admin'])->latest();
-        if (in_array($status, ['pending','approved','declined'], true)) {
+        $query = EventRequest::with(['user', 'event', 'admin'])->latest();
+        $allowedStatuses = collect(EventRequestStatus::cases())->map(fn ($case) => $case->value)->all();
+        if (in_array($status, $allowedStatuses, true)) {
             $query->where('status', $status);
         }
         if ($q !== '') {
@@ -308,6 +374,10 @@ class EventRequestController extends Controller
             'q' => $q !== '' ? $q : null,
         ]);
 
+        $requests->getCollection()->each(function (EventRequest $request) {
+            $request->expireIfPastDeadline();
+        });
+
         // Collect ticket_type_ids from current page (primary + guests) to avoid N+1 lookups in view
         $ticketTypeIds = collect();
         foreach ($requests as $req) {
@@ -343,7 +413,8 @@ class EventRequestController extends Controller
         if (! $isOwner && ! $isAdmin) {
             abort(403);
         }
-    $eventRequest->load(['event', 'user', 'admin']);
+        $eventRequest->expireIfPastDeadline();
+        $eventRequest->load(['event', 'user', 'admin']);
         return view('event_requests.show', ['eventRequest' => $eventRequest]);
     }
 
@@ -540,6 +611,8 @@ class EventRequestController extends Controller
                 }
 
                 $booking->quantity = count($ticketsToCreate);
+                $totalWithFees = round($event->getTotalWithFees($total), 2);
+                $booking->setAttribute('total_amount', $totalWithFees);
                 $booking->save();
 
                 // Mark request as paid (approval timestamp already set during approve step)
@@ -575,13 +648,13 @@ class EventRequestController extends Controller
     public function decline(EventRequest $eventRequest)
     {
         $user = Auth::user();
-        if (! $user || ($user->role !== Role::ADMIN)) {
+        if (! $user || !in_array($user->role, [Role::ADMIN, Role::APPROVAL_OFFICER], true)) {
             abort(403);
         }
-        if ($eventRequest->status !== 'pending') {
-            return back()->with('warning', 'This request has already been ' . $eventRequest->status . ' and cannot be changed.');
+        if ($eventRequest->status !== EventRequestStatus::PENDING->value) {
+            return back()->with('warning', 'This request has already been ' . strtolower($this->formatStatusLabel($eventRequest)) . ' and cannot be changed.');
         }
-        $eventRequest->status = 'declined';
+        $eventRequest->status = EventRequestStatus::DECLINED->value;
         if (Schema::hasColumn('event_requests', 'admin_id')) {
             $eventRequest->admin_id = $user->id;
         }

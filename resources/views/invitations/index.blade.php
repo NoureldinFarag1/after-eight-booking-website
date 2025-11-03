@@ -6,9 +6,9 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Invitations</h1>
-        <a href="{{ route('invitations.create') }}" class="btn btn-warning">
+        <!-- <a href="{{ route('invitations.create') }}" class="btn btn-warning">
             <i data-lucide="mail-plus" class="me-1"></i> New Invitation
-        </a>
+        </a> -->
     </div>
 
     @if(session('success'))
@@ -34,10 +34,10 @@
                 <tbody>
                     @forelse($invitations as $invitation)
                         <tr>
-                            <td>{{ $invitation->id }}</td>
-                            <td>{{ $invitation->name }}</td>
-                            <td>{{ $invitation->email }}</td>
-                            <td>
+                            <td class="text-white">{{ $invitation->id }}</td>
+                            <td class="text-white">{{ $invitation->name }}</td>
+                            <td class="text-white">{{ $invitation->email }}</td>
+                            <td class="text-white">
                                 @if($invitation->event)
                                     <div>
                                         <strong>{{ $invitation->event->title }}</strong><br>
@@ -74,7 +74,7 @@
                                     <i data-lucide="x-circle" class="text-muted"></i>
                                 @endif
                             </td>
-                            <td>{{ $invitation->created_at->format('Y-m-d H:i') }}</td>
+                            <td class="text-white">{{ $invitation->created_at->format('Y-m-d H:i') }}</td>
                             <td>
                                 <a href="{{ route('invitations.show', $invitation) }}"
                                    class="btn btn-sm btn-outline-primary"

@@ -84,10 +84,6 @@
                 <i data-lucide="scan"></i>
                 <span class="label-text">Scan Tickets</span>
             </a>
-            <a class="nav-link d-flex align-items-center {{ request()->routeIs('tickets.index') ? 'active' : '' }}" href="{{ route('tickets.index') }}" @if(request()->routeIs('tickets.index')) aria-current="page" @endif>
-                <i data-lucide="qr-code"></i>
-                <span class="label-text">All Tickets</span>
-            </a>
         @elseif($authUser->role === \App\Enums\Role::APPROVAL_OFFICER)
             <a class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('approval.*') ? 'active' : '' }}" href="{{ route('approval.index') }}" @if(request()->routeIs('approval.*')) aria-current="page" @endif>
                 <span class="d-flex align-items-center">

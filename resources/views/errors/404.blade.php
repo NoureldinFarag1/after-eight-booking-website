@@ -3,19 +3,27 @@
 @section('title', 'Page Not Found')
 
 @section('content')
-    <div class="mx-auto max-w-xl text-center py-16">
-        <h1 class="text-6xl font-extrabold text-red-500 mb-6">404</h1>
-        <h2 class="text-2xl font-semibold mb-4">Page Not Found</h2>
-        <p class="text-gray-300 mb-8">The page you're looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-            <a href="{{ route('home') }}" class="px-6 py-3 rounded bg-indigo-600 hover:bg-indigo-500 transition font-medium">Go Home</a>
-            <button onclick="history.back()" class="px-6 py-3 rounded bg-gray-700 hover:bg-gray-600 transition font-medium">Go Back</button>
-        </div>
-        <div class="max-w-md mx-auto">
-            <form action="{{ url('/') }}" method="GET" onsubmit="return false;" class="relative">
-                <input disabled type="text" placeholder="Search (future enhancement)" class="w-full px-4 py-3 rounded bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none" />
-                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
-            </form>
+    @php
+        $homeUrl = Route::has('home') ? route('home') : url('/');
+    @endphp
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-xl-6 col-lg-7">
+                <div class="ae-card text-center p-5">
+                    <div class="display-4 mb-3 text-warning"><i class="bi bi-compass"></i></div>
+                    <h1 class="h2 mb-2">Page Not Found</h1>
+                    <p class="text-white-50 mb-4">The page you're looking for might have been removed, renamed, or is temporarily unavailable.</p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mb-4">
+                        <button type="button" class="btn btn-outline-primary" onclick="window.history.length > 1 ? history.back() : window.location.assign('{{ $homeUrl }}')">
+                            <i class="bi bi-arrow-left me-1"></i>Previous Page
+                        </button>
+                        <a href="{{ $homeUrl }}" class="btn btn-primary">
+                            <i class="bi bi-house-door me-1"></i>Back to Home
+                        </a>
+                    </div>
+                    <div class="small text-white-50">If you believe this is an error, please reach out to support so we can help you find the right spot.</div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection

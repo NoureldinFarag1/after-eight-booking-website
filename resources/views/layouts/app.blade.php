@@ -48,9 +48,16 @@
     @if($showDesktopSidebar)
     <aside class="sidebar sidebar-fixed border-end d-none d-md-flex flex-column">
         <div class="sidebar-brand">
-            <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="brand-logo-link" aria-label="After Eight Home">
-                <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight logo" class="brand-logo-full" />
-            </a>
+            @php $isStaff = $authUser && method_exists($authUser,'isStaff') && $authUser->isStaff(); @endphp
+            @if($isStaff)
+                <span class="brand-logo-link brand-logo-link--static" aria-label="After Eight logo">
+                    <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight logo" class="brand-logo-full" />
+                </span>
+            @else
+                <a href="{{ $authUser && $authUser->isAdmin() ? route('admin.dashboard') : route('events.index') }}" class="brand-logo-link" aria-label="After Eight Home">
+                    <img src="{{ asset('images/Aftereight-logo.png') }}" alt="After Eight logo" class="brand-logo-full" />
+                </a>
+            @endif
         </div>
 
         @include('partials.sidebar-menu', ['authUser' => $authUser, 'pendingCount' => $pendingCount])
@@ -122,6 +129,7 @@
 
         <main class="container-fluid py-4">
             @yield('content')
+            @stack('after-content')
         </main>
 
         <footer class="bg-dark text-light py-4 mt-auto">

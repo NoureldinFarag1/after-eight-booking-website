@@ -188,8 +188,14 @@
                                                         <br><small class="text-muted">{{ $operator['email'] }}</small>
                                                     </div>
                                                 </td>
-                                                <td>
+                                                <td class="text-center">
                                                     <span class="badge bg-primary fs-6">{{ $operator['total_scans'] }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-dark text-white">{{ $operator['today_scans'] }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">{{ $operator['week_scans'] }}</span>
                                                 </td>
                                                 <td>
                                                     @if($operator['last_scan'])
@@ -216,7 +222,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <small class="text-white">{{ $operator['member_since']->format('M j, Y') }}</small>
+                                                    <small class="text-white">{{ $operator['member_since'] ? $operator['member_since']->format('M j, Y') : '—' }}</small>
                                                 </td>
                                             </tr>
                                         @endforeach

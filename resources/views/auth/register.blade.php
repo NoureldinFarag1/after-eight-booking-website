@@ -61,6 +61,19 @@
                         <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
                         <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password" aria-label="Show password"><i data-lucide="eye"></i></button>
                     </div>
+                    <div id="password-guidelines" class="form-text mt-2">
+                        <div class="mb-1 fw-semibold">Create a strong password:</div>
+                        <ul class="list-unstyled small mb-2" style="line-height:1.3;">
+                            <li id="pw-rule-length" class="text-danger">• At least 12 characters</li>
+                            <li id="pw-rule-mixedcase" class="text-danger">• Uppercase and lowercase letters</li>
+                            <li id="pw-rule-number" class="text-danger">• At least one number</li>
+                            <li id="pw-rule-symbol" class="text-danger">• At least one symbol (e.g., ! @ # $ %)</li>
+                            <li id="pw-rule-nospace" class="text-danger">• No spaces</li>
+                            <li id="pw-rule-personal" class="text-danger">• Don’t include your name or email</li>
+                            <li id="pw-rule-seq" class="text-danger">• Avoid sequences like 12345 or abcde</li>
+                            <li id="pw-rule-repeat" class="text-danger">• No 4+ identical characters in a row</li>
+                        </ul>
+                    </div>
                     @error('password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="mb-3">
@@ -71,7 +84,7 @@
                     </div>
                 </div>
             <div class="auth-actions d-grid mb-2">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-primary w-100" id="register-submit">
                     <i data-lucide="user-plus" class="me-1"></i>Create Account
                 </button>
             </div>
@@ -89,3 +102,87 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const $ = (sel) => document.querySelector(sel);
+    const pwd = $('#password');
+    const pwd2 = $('#password_confirmation');
+    const nameInput = $('#name');
+    const emailInput = $('#email');
+    const submitBtn = $('#register-submit');
+
+    const ruleEls = {
+        length: $('#pw-rule-length'),
+        mixed: $('#pw-rule-mixedcase'),
+        number: $('#pw-rule-number'),
+        symbol: $('#pw-rule-symbol'),
+        nospace: $('#pw-rule-nospace'),
+        personal: $('#pw-rule-personal'),
+        seq: $('#pw-rule-seq'),
+        repeat: $('#pw-rule-repeat'),
+    };
+
+    function mark(el, ok){
+        if(!el) return;
+        el.classList.toggle('text-success', !!ok);
+        el.classList.toggle('text-danger', !ok);
+    }
+
+        for(const p of parts){ if(v.includes(p)) return true; }
+        return false;
+    }
+
+    function score(v){
+        const symbol = /[^A-Za-z0-9]/.test(v);
+        const len = v.length;
+        const lower = /[a-z]/.test(v);
+        const upper = /[A-Z]/.test(v);
+        const number = /\d/.test(v);
+        const symbol = /[^A-Za-z0-9]/.test(v);
+        const nospace = !/\s/.test(v);
+        const norepeat = !(/(.)\1{3,}/.test(v));
+        const noseq = !hasSequence(v);
+        const nopersonal = !containsPersonal(v);
+
+        if(len>=12) s+=2; if(len>=16) s+=1;
+        if(lower) s+=1; if(upper) s+=1; if(number) s+=1; if(symbol) s+=1;
+        if(nospace) s+=1; if(norepeat) s+=1; if(noseq) s+=1; if(nopersonal) s+=1;
+        return Math.min(s, 12);
+    }
+
+    function update(){
+        const v = (pwd?.value || '');
+        const lower = /[a-z]/.test(v);
+        const upper = /[A-Z]/.test(v);
+        const number = /\d/.test(v);
+        const symbol = /[^A-Za-z0-9]/.test(v);
+        const nospace = !/\s/.test(v);
+        const norepeat = !(/(.)\1{3,}/.test(v));
+        const noseq = !hasSequence(v);
+        const nopersonal = !containsPersonal(v);
+
+        mark(ruleEls.length, v.length >= 12);
+        mark(ruleEls.mixed, lower && upper);
+        mark(ruleEls.number, number);
+        mark(ruleEls.symbol, symbol);
+        mark(ruleEls.nospace, nospace);
+        mark(ruleEls.repeat, norepeat);
+        mark(ruleEls.seq, noseq);
+        mark(ruleEls.personal, nopersonal);
+
+        const minimumOk = v.length>=12 && lower && upper && number && symbol && nospace && norepeat && noseq && nopersonal;
+        if(submitBtn){ submitBtn.disabled = !minimumOk; }
+    }
+
+    ['input','change','keyup'].forEach(ev => {
+        pwd?.addEventListener(ev, update);
+        pwd2?.addEventListener(ev, update);
+        nameInput?.addEventListener(ev, update);
+        emailInput?.addEventListener(ev, update);
+    });
+    update();
+})();
+</script>
+@endpush

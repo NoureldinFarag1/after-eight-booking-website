@@ -4,9 +4,9 @@
 
 @section('content')
     @php
-        $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
-        $isAdmin = auth()->check() && auth()->user()->isAdmin();
-        $isFinanceOfficer = auth()->check() && auth()->user()->isFinanceOfficer();
+    $isAdmin = auth()->check() && auth()->user()->isAdmin();
+    $isFinanceOfficer = auth()->check() && auth()->user()->isFinanceOfficer();
+    $canViewFinanceInsights = $canViewFinanceInsights ?? false;
     @endphp
     <div class="row justify-content-center">
         <div class="col-xl-9 col-lg-10">
@@ -49,6 +49,86 @@
                 </div>
             </div>
 
+            @if ($canViewFinanceInsights)
+                <h3 class="ae-section-title">Finance KPIs</h3>
+                <div class="ae-card p-4 mb-4">
+                    @php
+                        $ticketsSoldKpi = data_get($insights, 'tickets_sold', 0);
+                        $totalRevenueKpi = (float) data_get($insights, 'revenue', 0);
+                        $avgTicketValue = $ticketsSoldKpi > 0 ? $totalRevenueKpi / $ticketsSoldKpi : 0;
+                    @endphp
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="small text-white-50">Tickets Sold</div>
+                            <div class="h4 mb-0">{{ number_format($ticketsSoldKpi) }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-white-50">Total Revenue</div>
+                            <div class="h4 mb-0">EGP {{ number_format($totalRevenueKpi, 2) }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-white-50">Avg. Ticket Value</div>
+                            <div class="h4 mb-0">EGP {{ number_format($avgTicketValue, 2) }}</div>
+                        </div>
+                    </div>
+
+                    @php $ticketInsights = collect(data_get($insights, 'ticket_types', [])); @endphp
+                    @if ($ticketInsights->isNotEmpty())
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="fw-semibold">Ticket Types Overview</div>
+                            <div class="small text-white-50">Includes inactive ticket types</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Type</th>
+                                        <th scope="col" class="text-center">Status</th>
+                                        <th scope="col" class="text-end">Face Value</th>
+                                        <th scope="col" class="text-end">Fee / Ticket</th>
+                                        <th scope="col" class="text-end">Tickets Sold</th>
+                                        <th scope="col" class="text-end">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($ticketInsights as $typeInsight)
+                                        @php
+                                            $feeLabel = '—';
+                                            $feeType = $typeInsight['fee_type'] ?? null;
+                                            $feeAmount = $typeInsight['fee_amount'] ?? null;
+                                            $perTicketFee = $typeInsight['per_ticket_fee'] ?? 0;
+
+                                            if ($feeType === 'fixed' && !is_null($feeAmount)) {
+                                                $feeLabel = 'EGP ' . number_format((float) $feeAmount, 2);
+                                            } elseif ($feeType === 'percentage' && !is_null($feeAmount)) {
+                                                $percentLabel = rtrim(rtrim(number_format((float) $feeAmount, 2), '0'), '.');
+                                                $feeLabel = 'EGP ' . number_format((float) $perTicketFee, 2) . ' (' . $percentLabel . '%)';
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $typeInsight['name'] }}</td>
+                                            <td class="text-center">
+                                                <span class="badge {{ !empty($typeInsight['is_active']) ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ !empty($typeInsight['is_active']) ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">EGP {{ number_format((float) ($typeInsight['price'] ?? 0), 2) }}</td>
+                                            <td class="text-end">{{ $feeLabel }}</td>
+                                            <td class="text-end">{{ number_format((int) ($typeInsight['tickets_sold'] ?? 0)) }}</td>
+                                            <td class="text-end">EGP {{ number_format((float) ($typeInsight['revenue'] ?? 0), 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <hr class="my-4">
+                        <div class="text-white-50">No ticket sales have been recorded for this event yet.</div>
+                    @endif
+                </div>
+            @endif
+
             {{-- Quick Facts --}}
             <div class="ae-card p-3 mb-4">
                 <div class="row g-0">
@@ -74,7 +154,7 @@
             {{-- About --}}
             <h3 class="ae-section-title">About Event</h3>
             <div class="ae-card p-4 mb-4">
-                <p class="mb-0 text-white-75">{{ $event->description }}</p>
+                <div class="mb-0 text-white-75 ae-rich-content">{!! $event->description !!}</div>
                 @if ($event->terms_conditions)
                     <hr class="my-4">
                     <div>
@@ -84,98 +164,100 @@
                 @endif
             </div>
 
-            {{-- Tickets / Requests --}}
-            @if($event->type === 'booking')
-                <h3 class="ae-section-title">Tickets</h3>
-                @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
-                @if($activeTypes->count())
-                    <div class="d-flex flex-column gap-3 mb-4">
-                        @foreach($activeTypes as $tt)
-                            <div class="ticket-card d-flex align-items-center p-3 rounded-3">
-                                <div class="flex-fill pe-3">
-                                    <div class="fw-semibold">{{ $tt->name }}</div>
-                                    @if(!empty($tt->description))
-                                        <div class="small text-white-50">{{ $tt->description }}</div>
-                                    @endif
-                                </div>
-                                <div class="text-end" style="min-width: 180px;">
-                                    <div class="h5 mb-2">EGP {{ number_format((float)($tt->price ?? 0), 2) }}</div>
-                                    @php
-                                        $isPast = $event->event_date < now()->toDateString();
-                                        $disabledLabel = null;
-                                        if(!$event->isBookable()){
-                                            if($isPast){
-                                                $disabledLabel = 'Event Ended';
-                                            } elseif($event->isSoldOut()){
-                                                $disabledLabel = 'Sold Out';
-                                            } elseif($event->status->value !== 'published'){
-                                                $disabledLabel = 'Not Available';
-                                            } else {
-                                                $disabledLabel = 'Unavailable';
+            @if(!$isFinanceOfficer)
+                {{-- Tickets / Requests --}}
+                @if($event->type === 'booking')
+                    <h3 class="ae-section-title">Tickets</h3>
+                    @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
+                    @if($activeTypes->count())
+                        <div class="d-flex flex-column gap-3 mb-4">
+                            @foreach($activeTypes as $tt)
+                                <div class="ticket-card d-flex align-items-center p-3 rounded-3">
+                                    <div class="flex-fill pe-3">
+                                        <div class="fw-semibold">{{ $tt->name }}</div>
+                                        @if(!empty($tt->description))
+                                            <div class="small text-white-50">{{ $tt->description }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="text-end" style="min-width: 180px;">
+                                        <div class="h5 mb-2">EGP {{ number_format((float)($tt->price ?? 0), 2) }}</div>
+                                        @php
+                                            $isPast = $event->event_date < now()->toDateString();
+                                            $disabledLabel = null;
+                                            if(!$event->isBookable()){
+                                                if($isPast){
+                                                    $disabledLabel = 'Event Ended';
+                                                } elseif($event->isSoldOut()){
+                                                    $disabledLabel = 'Sold Out';
+                                                } elseif($event->status->value !== 'published'){
+                                                    $disabledLabel = 'Not Available';
+                                                } else {
+                                                    $disabledLabel = 'Unavailable';
+                                                }
                                             }
-                                        }
-                                    @endphp
-                                    @if($event->isBookable())
-                                        <a href="{{ route('bookings.create', $event) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
-                                    @else
-                                        <button class="btn btn-outline-secondary btn-sm rounded-pill" disabled>{{ $disabledLabel }}</button>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="ae-card p-4 mb-4 text-white-50">Pricing will be announced.</div>
-                @endif
-            @elseif($event->type === 'request')
-                <h3 class="ae-section-title">Request Access</h3>
-                @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
-                @if($activeTypes->count())
-                    <div class="d-flex flex-column gap-3 mb-3">
-                        @foreach($activeTypes as $tt)
-                            <div class="ticket-card d-flex align-items-center p-3 rounded-3">
-                                <div class="flex-fill pe-3">
-                                    <div class="fw-semibold">{{ $tt->name }}</div>
-                                    @if(!empty($tt->description))
-                                        <div class="small text-white-50">{{ $tt->description }}</div>
-                                    @endif
-                                </div>
-                                <div class="text-end" style="min-width: 180px;">
-                                    <div class="h5 mb-2">
-                                        @if(!is_null($tt->price))
-                                            EGP {{ number_format((float)$tt->price, 2) }}
+                                        @endphp
+                                        @if($event->isBookable())
+                                            <a href="{{ route('bookings.create', $event) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
                                         @else
-                                            —
+                                            <button class="btn btn-outline-secondary btn-sm rounded-pill" disabled>{{ $disabledLabel }}</button>
                                         @endif
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
-                    @php
-                        $isPast = $event->event_date < now()->toDateString();
-                        $disabledLabel = null;
-                        if(!$event->isBookable()){
-                            if($isPast){
-                                $disabledLabel = 'Event Ended';
-                            } elseif($event->isSoldOut()){
-                                $disabledLabel = 'Fully Allocated';
-                            } elseif($event->status->value !== 'published'){
-                                $disabledLabel = 'Not Available';
-                            } else {
-                                $disabledLabel = 'Unavailable';
-                            }
-                        }
-                    @endphp
-                    @if($event->isBookable())
-                        <a href="{{ route('event-requests.create', $event) }}" class="btn btn-primary rounded-pill">
-                            <i class="bi bi-envelope-plus me-1"></i> Request Ticket
-                        </a>
+                            @endforeach
+                        </div>
                     @else
-                        <button class="btn btn-outline-secondary rounded-pill" disabled>{{ $disabledLabel }}</button>
+                        <div class="ae-card p-4 mb-4 text-white-50">Pricing will be announced.</div>
                     @endif
-                @else
-                    <div class="ae-card p-4 mb-4 text-white-50">Ticket types will be announced.</div>
+                @elseif($event->type === 'request')
+                    <h3 class="ae-section-title">Request Access</h3>
+                    @php $activeTypes = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get(); @endphp
+                    @if($activeTypes->count())
+                        <div class="d-flex flex-column gap-3 mb-3">
+                            @foreach($activeTypes as $tt)
+                                <div class="ticket-card d-flex align-items-center p-3 rounded-3">
+                                    <div class="flex-fill pe-3">
+                                        <div class="fw-semibold">{{ $tt->name }}</div>
+                                        @if(!empty($tt->description))
+                                            <div class="small text-white-50">{{ $tt->description }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="text-end" style="min-width: 180px;">
+                                        <div class="h5 mb-2">
+                                            @if(!is_null($tt->price))
+                                                EGP {{ number_format((float)$tt->price, 2) }}
+                                            @else
+                                                —
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @php
+                            $isPast = $event->event_date < now()->toDateString();
+                            $disabledLabel = null;
+                            if(!$event->isBookable()){
+                                if($isPast){
+                                    $disabledLabel = 'Event Ended';
+                                } elseif($event->isSoldOut()){
+                                    $disabledLabel = 'Fully Allocated';
+                                } elseif($event->status->value !== 'published'){
+                                    $disabledLabel = 'Not Available';
+                                } else {
+                                    $disabledLabel = 'Unavailable';
+                                }
+                            }
+                        @endphp
+                        @if($event->isBookable())
+                            <a href="{{ route('event-requests.create', $event) }}" class="btn btn-primary rounded-pill">
+                                <i class="bi bi-envelope-plus me-1"></i> Request Ticket
+                            </a>
+                        @else
+                            <button class="btn btn-outline-secondary rounded-pill" disabled>{{ $disabledLabel }}</button>
+                        @endif
+                    @else
+                        <div class="ae-card p-4 mb-4 text-white-50">Ticket types will be announced.</div>
+                    @endif
                 @endif
             @endif
 

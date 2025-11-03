@@ -38,7 +38,7 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'event_date' => 'date',
+    'event_date' => 'datetime',
         'event_time' => 'datetime',
         'status' => EventStatus::class,
     'fee_amount' => 'float',

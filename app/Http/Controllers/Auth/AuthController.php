@@ -94,7 +94,7 @@ class AuthController extends Controller
                     Auth::logout();
                     return back()->withErrors(['email' => 'Your finance officer account is inactive. Please contact an administrator.']);
                 }
-                return redirect()->route('finance.insights')
+                return redirect()->route('events.index')
                     ->with('success', 'Welcome back, ' . $user->name . '!');
             }
 
@@ -133,13 +133,65 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        $name = (string) $request->input('name', '');
+        $email = (string) $request->input('email', '');
+        $emailLocal = strtolower((string) substr($email, 0, (int) strpos($email.'@','@')));
+        $nameParts = array_values(array_filter(preg_split('/\s+/', strtolower($name) ?? ''), fn($p) => strlen($p) >= 3));
+
+        // Build strong password rule; make compromised check environment-conditional
+        $pwRule = Rules\Password::min(12)
+            ->mixedCase()
+            ->letters()
+            ->numbers()
+            ->symbols();
+        if (app()->environment('production')) {
+            $pwRule = $pwRule->uncompromised();
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:20'],
             'birthday' => ['required', 'date', 'before:' . now()->subYears(13)->format('Y-m-d')],
             'gender' => ['required', 'in:male,female'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                $pwRule,
+                // No whitespace
+                'regex:/^\S+$/',
+                // Do not include obvious personal info (name parts or email local part) of length >= 3
+                function($attribute, $value, $fail) use ($nameParts, $emailLocal) {
+                    $v = strtolower((string) $value);
+                    if ($emailLocal && strlen($emailLocal) >= 3 && str_contains($v, $emailLocal)) {
+                        return $fail('The password must not contain parts of your email address.');
+                    }
+                    foreach ($nameParts as $part) {
+                        if ($part && strlen($part) >= 3 && str_contains($v, $part)) {
+                            return $fail('The password must not contain your name.');
+                        }
+                    }
+                },
+                // Prevent obvious sequences like 12345 or abcde of length >= 5
+                function($attribute, $value, $fail) {
+                    $v = strtolower((string) $value);
+                    $sequences = ['0123456789','abcdefghijklmnopqrstuvwxyz','qwertyuiop','asdfghjkl','zxcvbnm'];
+                    foreach ($sequences as $seq) {
+                        for ($i=0; $i <= strlen($seq)-5; $i++) {
+                            $chunk = substr($seq, $i, 5);
+                            if (str_contains($v, $chunk)) {
+                                return $fail('The password contains an obvious sequence (e.g., '.$chunk.').');
+                            }
+                        }
+                    }
+                },
+                // Limit repeated characters (no 4+ same char in a row)
+                function($attribute, $value, $fail) {
+                    if (preg_match('/(.)\\1{3,}/', (string) $value)) {
+                        return $fail('The password must not contain 4 or more repeating characters.');
+                    }
+                },
+            ],
         ]);
 
         $user = User::create([
@@ -264,7 +316,7 @@ class AuthController extends Controller
 
         // Finance officer redirect
         if ($user->role === Role::FINANCE_OFFICER) {
-            return redirect()->route('finance.insights')
+            return redirect()->route('events.index')
                 ->with('success', 'Welcome back, ' . $user->name . '!');
         }
 

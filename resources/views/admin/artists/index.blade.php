@@ -17,9 +17,9 @@
             <table class="table align-middle">
               <thead>
                 <tr>
-                  <th style="width:80px">Photo</th>
-                  <th>Name</th>
-                  <th class="text-end">Actions</th>
+                  <th style="width:100px">Photo</th>
+                  <th class="text-center">Name</th>
+                  <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -32,8 +32,8 @@
                         @endif
                       </div>
                     </td>
-                    <td class="text-muted">{{ $artist->name }}</td>
-                    <td class="text-end">
+                    <td class="text-muted text-center">{{ $artist->name }}</td>
+                    <td class="text-center">
                       <a href="{{ route('admin.artists.edit', $artist) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                       <form action="{{ route('admin.artists.destroy', $artist) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this artist?');">
                         @csrf

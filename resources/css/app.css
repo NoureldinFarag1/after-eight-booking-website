@@ -1953,6 +1953,8 @@ footer.bg-dark { background-color: #000 !important; }
 .brand-logo-link:hover .brand-logo-full,
 .brand-logo-link:focus .brand-logo-full { filter: drop-shadow(0 0 6px rgba(var(--ae-primary-rgb),0.55)) brightness(1.08) contrast(1.08); opacity:1; }
 .brand-logo-link:focus-visible { outline:2px solid rgba(var(--ae-primary-rgb),0.65); outline-offset:3px; border-radius:8px; }
+.brand-logo-link--static { pointer-events:none; cursor:default; display:block; width:100%; height:100%; position:relative; }
+.brand-logo-link--static .brand-logo-full { filter: brightness(1.02) contrast(1.05); }
 body.sidebar-collapsed .sidebar-brand, body.sidebar-collapsed-responsive .sidebar-brand { height:44px; }
 body.sidebar-collapsed .brand-logo-full, body.sidebar-collapsed-responsive .brand-logo-full { padding:2px 2px; max-width:46px; }
 /* Precise centering for mobile offcanvas logo */

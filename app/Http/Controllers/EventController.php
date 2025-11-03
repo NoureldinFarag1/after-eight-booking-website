@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BookingStatus;
 use App\Enums\EventStatus;
+use App\Enums\Role;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\Artist;
@@ -266,47 +268,97 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-    $event->load(['bookings.user', 'tickets', 'invitations.sender','artists']);
+        $event->load([
+            'bookings.user',
+            'tickets.type',
+            'invitations.sender',
+            'artists',
+            'ticketTypes',
+        ]);
 
         $user = Auth::user();
-
-                // Finance Officer Insights
         $insights = [];
-        if ($user && $user->role === \App\Enums\Role::FINANCE_OFFICER) {
-            // Total revenue (from bookings)
-            $totalRevenue = $event->bookings()->sum('total_amount');
+        $canViewFinanceInsights = false;
 
-            // Number of tickets sold
-            $ticketsSold = $event->tickets()->count();
+        if ($user && $user->role === Role::FINANCE_OFFICER) {
+            if ($event->finance_officer_id !== $user->id) {
+                abort(403, 'You are not authorized to view finance insights for this event.');
+            }
 
-            // Number of requests submitted (if event type is request)
-            $requestsSubmitted = $event->bookings()
-                ->when($event->type === 'request', fn($q) => $q)
-                ->count();
+            $canViewFinanceInsights = true;
+            $confirmedTickets = $event->tickets()
+                ->whereHas('booking', fn($q) => $q->where('status', BookingStatus::CONFIRMED->value))
+                ->with('type')
+                ->get();
 
-            // Invitations count
-            $totalInvitations = $event->invitations()->count();
+            $totalRevenue = $confirmedTickets->sum(function ($ticket) {
+                if (!is_null($ticket->price)) {
+                    return (float) $ticket->price;
+                }
 
-            // Invitations grouped by admin sender
-            $invitationsByAdmin = $event->invitations()
-                ->with('sender:id,name')
-                ->get()
-                ->groupBy('sender_id')
-                ->map(fn($group) => [
-                    'admin' => $group->first()->sender->name ?? 'Unknown',
-                    'count' => $group->count()
-                ])->values();
+                return $ticket->type ? (float) ($ticket->type->price ?? 0) : 0.0;
+            });
+
+            $ticketTypesInsights = $event->ticketTypes()
+                ->orderByDesc('is_active')
+                ->orderBy('price')
+                ->get();
+
+            $ticketTypesInsights = $ticketTypesInsights->map(function ($type) use ($confirmedTickets) {
+                    $ticketsForType = $confirmedTickets->where('ticket_type_id', $type->id);
+
+                    $revenueForType = $ticketsForType->sum(function ($ticket) use ($type) {
+                        if (!is_null($ticket->price)) {
+                            return (float) $ticket->price;
+                        }
+
+                        return $type->price ? (float) $type->price : 0.0;
+                    });
+
+                    return [
+                        'id' => $type->id,
+                        'name' => $type->name,
+                        'is_active' => (bool) $type->is_active,
+                        'price' => (float) ($type->price ?? 0),
+                        'tickets_sold' => $ticketsForType->count(),
+                        'revenue' => $revenueForType,
+                        'fee_type' => $type->fee_type,
+                        'fee_amount' => $type->fee_amount !== null ? (float) $type->fee_amount : null,
+                        'per_ticket_fee' => (float) $type->calculateFee(),
+                    ];
+                });
+
+            $untypedTickets = $confirmedTickets->whereNull('ticket_type_id');
+            if ($untypedTickets->isNotEmpty()) {
+                $untypedRevenue = $untypedTickets->sum(function ($ticket) {
+                    return (float) ($ticket->price ?? 0);
+                });
+
+                $ticketTypesInsights = $ticketTypesInsights->push([
+                    'id' => null,
+                    'name' => 'Unassigned Tickets',
+                    'is_active' => false,
+                    'price' => 0.0,
+                    'tickets_sold' => $untypedTickets->count(),
+                    'revenue' => $untypedRevenue,
+                    'fee_type' => null,
+                    'fee_amount' => null,
+                    'per_ticket_fee' => 0.0,
+                ]);
+            }
 
             $insights = [
                 'revenue' => $totalRevenue,
-                'tickets_sold' => $ticketsSold,
-                'requests' => $requestsSubmitted,
-                'invitations_total' => $totalInvitations,
-                'invitations_by_admin' => $invitationsByAdmin,
+                'tickets_sold' => $confirmedTickets->count(),
+                'ticket_types' => $ticketTypesInsights->values(),
             ];
         }
 
-        return view('events.show', compact('event', 'insights'));
+        return view('events.show', [
+            'event' => $event,
+            'insights' => $insights,
+            'canViewFinanceInsights' => $canViewFinanceInsights,
+        ]);
     }
 
     /**
