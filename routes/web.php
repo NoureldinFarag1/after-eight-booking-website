@@ -163,7 +163,7 @@ Route::prefix('api')->middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     // User-side
-    Route::get('/my-requests', [EventRequestController::class, 'myRequests'])->name('event_requests.index');
+    Route::get('/requests', [EventRequestController::class, 'myRequests'])->name('event_requests.index');
 
     Route::get('/events/{event}/request', [EventRequestController::class, 'create'])
         ->name('event-requests.create');
@@ -171,11 +171,12 @@ Route::middleware('auth')->group(function () {
         ->name('event-requests.store');
 
     Route::get('/event-requests/{eventRequest}/edit', [EventRequestController::class, 'edit'])->name('event_requests.edit');
-    Route::put('/event-requests/{eventRequest}', [EventRequestController::class, 'update'])->name('event_requests.update');
+    Route::put('/eventrequests/{eventRequest}', [EventRequestController::class, 'update'])->name('event_requests.update');
 
     Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
     Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
     Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
+    Route::post('/event-requests/{eventRequest}/remake', [EventRequestController::class, 'remake'])->name('event_requests.remake');
 
 // Admin-side
 

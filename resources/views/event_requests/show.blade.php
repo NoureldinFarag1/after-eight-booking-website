@@ -122,6 +122,15 @@
                 </button>
             </form>
         @endif
+        @if($statusEnum === \App\Enums\EventRequestStatus::EXPIRED && auth()->check() && auth()->id() === $eventRequest->user_id)
+            <form method="POST" action="{{ route('event_requests.remake', $eventRequest->id) }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
+                    <i data-lucide="refresh-ccw" style="width:16px;height:16px;"></i>
+                    <span>Remake Request</span>
+                </button>
+            </form>
+        @endif
     </div>
 
     @if($isAwaiting && $hasExpiry && !$isExpired)

@@ -40,6 +40,54 @@ class EventRequestController extends Controller
         ];
     }
 
+    /**
+     * Remake an expired request by cloning its user-entered fields into a new pending request.
+     */
+    public function remake(EventRequest $eventRequest)
+    {
+        $user = Auth::user();
+        if (!$user || $user->id !== $eventRequest->user_id) {
+            abort(403);
+        }
+
+        // Only allow remaking if original is expired
+        if ($eventRequest->status !== EventRequestStatus::EXPIRED->value) {
+            return back()->with('error', 'Only expired requests can be remade.');
+        }
+
+        $event = $eventRequest->event; // may be null if event deleted
+        if (!$event) {
+            return back()->with('error', 'The event for this request no longer exists.');
+        }
+
+        // Check that user does not already have a blocking request (excluding the expired one)
+        $existingActive = EventRequest::where('event_id', $event->id)
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $eventRequest->id)
+            ->whereIn('status', $this->statusesBlockingNewSubmission())
+            ->first();
+        if ($existingActive) {
+            return redirect()->route('event_requests.show', $existingActive)
+                ->with('warning', 'You already have an active request for this event.');
+        }
+
+        // Resubmit in-place to honor the unique(user_id,event_id) constraint.
+        $eventRequest->status = EventRequestStatus::PENDING->value;
+        if (Schema::hasColumn('event_requests', 'approved_at')) { $eventRequest->approved_at = null; }
+        if (Schema::hasColumn('event_requests', 'expires_at')) { $eventRequest->expires_at = null; }
+        if (Schema::hasColumn('event_requests', 'paid_at')) { $eventRequest->paid_at = null; }
+        if (Schema::hasColumn('event_requests', 'admin_id')) { $eventRequest->admin_id = null; }
+        // Recalculate attendee_count from guests just in case
+        $guestCount = is_array($eventRequest->guests) ? collect($eventRequest->guests)->filter(fn($g)=> isset($g['name']) && trim($g['name'])!=='')->count() : 0;
+        if (Schema::hasColumn('event_requests', 'attendee_count')) { $eventRequest->attendee_count = 1 + $guestCount; }
+        // Treat this as a new submission for UI sorting
+        $eventRequest->created_at = now();
+        $eventRequest->save();
+
+        return redirect()->route('event_requests.show', $eventRequest)
+            ->with('success', 'Your request has been remade and is now pending.');
+    }
+
     protected function findLatestUserRequestForEvent(Event $event): ?EventRequest
     {
         $userId = Auth::id();
