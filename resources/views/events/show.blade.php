@@ -179,7 +179,7 @@
                                             <div class="small text-white-50">{{ $tt->description }}</div>
                                         @endif
                                     </div>
-                                    <div class="text-end" style="min-width: 180px;">
+                                    <div class="text-end" style="min-width: 220px;">
                                         <div class="h5 mb-2">EGP {{ number_format((float)($tt->price ?? 0), 2) }}</div>
                                         @php
                                             $isPast = $event->event_date < now()->toDateString();
@@ -195,11 +195,34 @@
                                                     $disabledLabel = 'Unavailable';
                                                 }
                                             }
+
+                                            // Per-type remaining capacity (if capacity is set)
+                                            $remainingForType = null;
+                                            $typeSoldOut = false;
+                                            if(!is_null($tt->capacity)){
+                                                $soldCount = \App\Models\Ticket::where('event_id', $event->id)
+                                                    ->where('ticket_type_id', $tt->id)
+                                                    ->where('status', '!=', \App\Enums\TicketStatus::CANCELLED)
+                                                    ->count();
+                                                $remainingForType = max(0, $tt->capacity - $soldCount);
+                                                $typeSoldOut = ($remainingForType <= 0);
+                                            }
                                         @endphp
-                                        @if($event->isBookable())
+
+                                        @if($remainingForType !== null)
+                                            <div class="small text-white-50 mb-2">
+                                                @if($typeSoldOut)
+                                                    No Tickets Left
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        @if($event->isBookable() && !$typeSoldOut)
                                             <a href="{{ route('bookings.create', $event) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
                                         @else
-                                            <button class="btn btn-outline-secondary btn-sm rounded-pill" disabled>{{ $disabledLabel }}</button>
+                                            <button class="btn btn-primary btn-sm rounded-pill" disabled aria-disabled="true">
+                                                {{ !$event->isBookable() ? $disabledLabel : 'Sold Out' }}
+                                            </button>
                                         @endif
                                     </div>
                                 </div>

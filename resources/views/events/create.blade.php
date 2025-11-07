@@ -412,7 +412,7 @@
             </div>
             <div class="card-body">
                 <div id="ticket-types-list"></div>
-                <div class="form-text">You can also manage ticket types later from the event page.</div>
+                <div class="form-text text-muted">You can also manage ticket types later from the event page.</div>
             </div>
         </div>
     </div>

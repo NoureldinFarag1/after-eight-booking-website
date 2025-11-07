@@ -6,7 +6,24 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card p-3">
-            <h4>Payment Method</h4>
+            <h4 class="mb-3">Review & Payment</h4>
+
+            @if(session('error'))
+                <div class="alert alert-danger">{{ session('error') }}</div>
+            @endif
+            @if(session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    <strong>There were problems with your submission:</strong>
+                    <ul class="mb-0 small">
+                        @foreach($errors->all() as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <form action="{{ route('bookings.store') }}" method="POST" id="checkoutForm">
                 @csrf
                 <input type="hidden" name="event_id" value="{{ $event->id }}">
@@ -30,9 +47,9 @@
                     </ul>
                 </div>
 
-                <div class="mb-3">
-                    <input type="checkbox" id="whatsapp" name="whatsapp" value="1">
-                    <label for="whatsapp">Add WhatsApp Fees (EGP 25)</label>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="whatsapp" name="whatsapp" value="1" class="form-check-input" @checked($whatsappSelected)>
+                    <label for="whatsapp" class="form-check-label">Add WhatsApp service notification (EGP 25)</label>
                 </div>
 
                 <div class="mb-3">
@@ -41,7 +58,14 @@
                 </div>
 
                 <div class="mb-3">
-                    <button class="btn btn-danger w-100" type="submit">Confirm & Pay</button>
+                    <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" type="submit" id="confirmBtn">
+                        <i class="bi bi-credit-card"></i>
+                        <span id="confirmBtnText">Confirm & Pay</span>
+                        <span id="confirmSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="text-center">
+                    <a href="{{ route('events.show', $event) }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Back to event</a>
                 </div>
             </form>
         </div>
@@ -49,20 +73,32 @@
 </div>
 
 <script>
-(function(){
+(()=>{
     const whatsapp = document.getElementById('whatsapp');
     const totalDisplay = document.getElementById('totalDisplay');
     const whatsappLine = document.getElementById('whatsappLine');
-    const baseTotal = parseFloat({{ $total }});
-    whatsapp.addEventListener('change', function(){
+    const confirmBtn = document.getElementById('confirmBtn');
+    const confirmSpinner = document.getElementById('confirmSpinner');
+    const confirmBtnText = document.getElementById('confirmBtnText');
+    const baseTotal = parseFloat({{ $totalBeforeWhatsapp ?? $total }});
+
+    function recalc(){
         let total = baseTotal;
-        if(this.checked){
+        if(whatsapp.checked){
             total += 25;
             whatsappLine.style.display='list-item';
-        }else{
+        } else {
             whatsappLine.style.display='none';
         }
         totalDisplay.textContent = 'EGP ' + total.toFixed(2);
+    }
+    whatsapp.addEventListener('change', recalc);
+    recalc();
+
+    document.getElementById('checkoutForm').addEventListener('submit', function(){
+        confirmBtn.disabled = true;
+        confirmSpinner.classList.remove('d-none');
+        confirmBtnText.textContent = 'Processing...';
     });
 })();
 </script>

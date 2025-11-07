@@ -226,7 +226,7 @@
                                 @if(($isAdmin ?? false))
                                     <div class="mb-2">
                                         <span id="promoted-badge-{{ $event->id }}" class="badge bg-gradient-red-light text-white {{ $event->is_featured ? '' : 'd-none' }}">
-                                            <i class="bi bi-star-fill me-1"></i>Promoted
+                                            <i class="bi bi-star-fill me-1 text-white"></i>Promoted
                                         </span>
                                     </div>
                                 @endif

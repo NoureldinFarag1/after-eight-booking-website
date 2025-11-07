@@ -37,7 +37,7 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-    $this->denyIfStaffRole();
+        $this->denyIfStaffRole();
         /** @var User $user */
         $user = Auth::user();
 
@@ -94,7 +94,7 @@ class BookingController extends Controller
      */
     public function create(Event $event)
     {
-    $this->denyIfStaffRole();
+        $this->denyIfStaffRole();
         // Enforce business rule: admins cannot create bookings
         $this->authorize('create', Booking::class);
         if (!$event->isBookable()) {
@@ -109,19 +109,48 @@ class BookingController extends Controller
     }
 
     /**
-     * Show checkout page for booking
+     * Show checkout page for booking (PRG: POST -> redirect -> GET)
      */
     public function checkout(Request $request)
     {
         $this->denyIfStaffRole();
-        $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
-            'quantity' => 'required|integer|min:1|max:10',
-            'ticket_type_id' => ['nullable', 'integer'],
-            'whatsapp' => ['nullable', 'boolean'],
-        ]);
 
-        $event = Event::findOrFail($validated['event_id']);
+        if ($request->isMethod('post')) {
+            $validated = $request->validate([
+                'event_id' => 'required|exists:events,id',
+                'quantity' => 'required|integer|min:1|max:10',
+                'ticket_type_id' => ['nullable', 'integer'],
+                'whatsapp' => ['nullable', 'boolean'],
+            ]);
+
+            $event = Event::findOrFail($validated['event_id']);
+            if ($event->ticketTypes()->where('is_active', true)->exists()) {
+                $request->validate([
+                    'ticket_type_id' => [
+                        'required',
+                        Rule::exists('ticket_types', 'id')->where(function ($q) use ($event) {
+                            return $q->where('event_id', $event->id)->where('is_active', true);
+                        }),
+                    ],
+                ]);
+            }
+
+            session(['checkout.data' => [
+                'event_id' => (int) $validated['event_id'],
+                'quantity' => (int) $validated['quantity'],
+                'ticket_type_id' => $request->input('ticket_type_id'),
+                'whatsapp' => $request->boolean('whatsapp'),
+            ]]);
+
+            return redirect()->route('bookings.checkout.view');
+        }
+
+        $data = session('checkout.data');
+        if (!$data) {
+            return redirect()->route('events.index')->with('error', 'Please choose your tickets first.');
+        }
+
+        $event = Event::findOrFail($data['event_id']);
         if (!$event->isBookable()) {
             return redirect()->route('events.show', $event)->with('error', 'This event is not available for booking.');
         }
@@ -129,29 +158,22 @@ class BookingController extends Controller
         $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
         $selectedType = null;
         if ($types->count() > 0) {
-            $request->validate([
-                'ticket_type_id' => [
-                    'required',
-                    Rule::exists('ticket_types', 'id')->where(function ($q) use ($event) {
-                        return $q->where('event_id', $event->id)->where('is_active', true);
-                    }),
-                ],
-            ]);
-            $selectedType = $types->firstWhere('id', (int)$request->input('ticket_type_id'));
+            $selectedType = $types->firstWhere('id', (int)($data['ticket_type_id'] ?? 0));
             if (!$selectedType) {
-                return back()->with('error', 'Invalid ticket type selected.');
+                return redirect()->route('bookings.create', $event)->with('error', 'Please select a valid ticket type.');
             }
         }
 
-        $unitBase = $selectedType ? (float)$selectedType->price : 0;
-        $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0;
-        $unitPrice = $unitBase + $unitFee; // final per-ticket price including fee
-$quantity = (int)$validated['quantity'];
+        $unitBase = $selectedType ? (float) $selectedType->price : 0.0;
+        $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0.0;
+        $unitPrice = $unitBase + $unitFee; // per-ticket price including fee
+        $quantity = (int) $data['quantity'];
         $subtotal = $unitBase * $quantity;
         $handlingFee = $unitFee * $quantity;
-        $whatsappSelected = $request->boolean('whatsapp') ? true : false;
+        $whatsappSelected = !empty($data['whatsapp']);
         $whatsappFee = $whatsappSelected ? 25.00 : 0.00;
-        $total = ($unitPrice * $quantity) + $whatsappFee;
+    $totalBeforeWhatsapp = $unitPrice * $quantity;
+    $total = $totalBeforeWhatsapp + $whatsappFee;
 
         $ticketLabel = $selectedType ? $selectedType->name : 'General Admission';
 
@@ -165,6 +187,8 @@ $quantity = (int)$validated['quantity'];
             'subtotal' => $subtotal,
             'handlingFee' => $handlingFee,
             'total' => $total,
+            'totalBeforeWhatsapp' => $totalBeforeWhatsapp,
+            'whatsappSelected' => $whatsappSelected,
         ]);
     }
 
@@ -173,9 +197,10 @@ $quantity = (int)$validated['quantity'];
      */
     public function store(Request $request)
     {
-    $this->denyIfStaffRole();
+        $this->denyIfStaffRole();
         // Enforce business rule: admins cannot create bookings
         $this->authorize('create', Booking::class);
+
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'quantity' => 'required|integer|min:1|max:10',
@@ -186,20 +211,16 @@ $quantity = (int)$validated['quantity'];
         $event = Event::findOrFail($validated['event_id']);
 
         if (!$event->isBookable()) {
-            return redirect()
-                ->route('events.show', $event)
-                ->with('error', 'This event is not available for booking.');
+            return redirect()->route('events.show', $event)->with('error', 'This event is not available for booking.');
         }
 
         if ($event->getAvailableSeatsAttribute() < $validated['quantity']) {
-            return redirect()
-                ->route('events.show', $event)
-                ->with('error', 'Not enough seats available.');
+            return back()->withErrors(['quantity' => 'Not enough seats available.'])->withInput();
         }
 
-    $types = $event->ticketTypes()->where('is_active', true)->get();
-    $selectedType = null;
-    if ($types->count() > 0) {
+        $types = $event->ticketTypes()->where('is_active', true)->get();
+        $selectedType = null;
+        if ($types->count() > 0) {
             // When types exist, a valid type is required
             $request->validate([
                 'ticket_type_id' => [
@@ -229,13 +250,11 @@ $quantity = (int)$validated['quantity'];
         }
 
         $booking = DB::transaction(function () use ($validated, $event, $selectedType) {
-            // With ticket-type-first model, a type must be selected when types exist
             $unitBase = $selectedType ? (float)$selectedType->price : 0;
             $unitFee = $selectedType ? $selectedType->calculateFee($unitBase) : 0;
             $unitPrice = $unitBase + $unitFee; // final per-ticket price including fee
-            // whatsapp fee (one-time)
-            $whatsappFee = request()->boolean('whatsapp') ? 25.00 : 0.00;
-            // Create booking
+            $whatsappFee = request()->boolean('whatsapp') ? 25.00 : 0.00; // one-time
+
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'event_id' => $validated['event_id'],
@@ -253,7 +272,7 @@ $quantity = (int)$validated['quantity'];
                     'ticket_type_id' => $selectedType?->id,
                     'booking_id' => $booking->id,
                     'status' => TicketStatus::VALID,
-                    'price' => $unitPrice, // stored final price (base + fee)
+                    'price' => $unitPrice,
                 ]);
             }
 
@@ -268,8 +287,10 @@ $quantity = (int)$validated['quantity'];
         $user = Auth::user();
         $user->notify(new BookingConfirmationNotification($booking));
 
-        return redirect()
-            ->route('bookings.index')
+        // Clear checkout session payload to avoid stale data
+        session()->forget('checkout.data');
+
+        return redirect()->route('bookings.show', $booking)
             ->with('success', 'Booking created successfully! Your tickets have been generated.');
     }
 

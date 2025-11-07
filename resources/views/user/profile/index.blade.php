@@ -143,9 +143,11 @@
                 <h5 class="mb-0">
                     <i class="bi bi-ticket-perforated me-2"></i>Recent Bookings
                 </h5>
+                <a href="{{ route('bookings.index') }}" class="small text-decoration-none">View all</a>
             </div>
             <div class="card-body">
-                @if($recentBookings->count() > 0)
+                @php $recentBookingsLimited = $recentBookings->take(5); @endphp
+                @if($recentBookingsLimited->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead>
@@ -159,7 +161,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($recentBookings as $booking)
+                                @foreach($recentBookingsLimited as $booking)
                                     <tr>
                                         <td>
                                             <a href="{{ route('bookings.show', $booking) }}"
@@ -215,9 +217,11 @@
                 <h5 class="mb-0">
                     <i class="bi bi-qr-code me-2"></i>Recent Tickets
                 </h5>
+                <a href="{{ route('tickets.index') }}" class="small text-decoration-none">View all</a>
             </div>
             <div class="card-body">
-                @if($recentTickets->count() > 0)
+                @php $recentTicketsLimited = $recentTickets->take(5); @endphp
+                @if($recentTicketsLimited->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead>
@@ -229,7 +233,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($recentTickets as $ticket)
+                                @foreach($recentTicketsLimited as $ticket)
                                     <tr>
                                         <td>
                                             <a href="{{ route('tickets.show', $ticket) }}"
@@ -282,9 +286,11 @@
                 <h5 class="mb-0">
                     <i class="bi bi-envelope-heart me-2"></i>Recent Invitations
                 </h5>
+                <a href="{{ route('invitations.index') }}" class="small text-decoration-none">View all</a>
             </div>
             <div class="card-body">
-                @if($recentInvitations->count() > 0)
+                @php $recentInvitationsLimited = $recentInvitations->take(5); @endphp
+                @if($recentInvitationsLimited->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead>
@@ -295,7 +301,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($recentInvitations as $invitation)
+                                @foreach($recentInvitationsLimited as $invitation)
                                     <tr>
                                         <td>
                                             @if($invitation->event)

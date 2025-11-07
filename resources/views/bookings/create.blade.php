@@ -185,7 +185,7 @@
                         </a>
 
                         <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
-                            <i class="bi bi-credit-card me-1"></i>Complete Booking
+                            <i class="bi bi-credit-card me-1"></i>Review & Checkout
                         </button>
                     </div>
                 </form>

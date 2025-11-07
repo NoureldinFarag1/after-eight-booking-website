@@ -66,8 +66,8 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Booking Details</label>
                             <div class="form-control-plaintext">
-                                <div><strong>Quantity:</strong> {{ $booking->quantity }} tickets</div>
-                                <div><strong>Total Amount:</strong> EGP {{ number_format((float)$booking->total_amount, 2) }}</div>
+                                <div class="text-muted"><strong class="text-white">Quantity:</strong> {{ $booking->quantity }} tickets</div>
+                                <div class="text-muted"><strong class="text-white">Total Amount:</strong> EGP {{ number_format((float)$booking->total_amount, 2) }}</div>
                             </div>
                         </div>
                     </div>
