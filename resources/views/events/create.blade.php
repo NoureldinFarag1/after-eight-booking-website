@@ -174,7 +174,7 @@
                                 <option value="{{ $artist->id }}">{{ $artist->name }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text">Hold Cmd/Ctrl to select multiple artists.</div>
+                        <div class="text-white">Hold Cmd/Ctrl to select multiple artists.</div>
                     </div>
 
                     <div class="mb-3">
@@ -183,7 +183,7 @@
                             <a href="{{ route('admin.artists.create') }}" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</a>
                         </label>
                         <div id="artists-new-list"></div>
-                        <div class="form-text">Each artist needs a name and optional picture.</div>
+                        <div class="text-muted">Each artist needs a name and optional picture.</div>
                         @error('artists_new.*.name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         @error('artists_new.*.photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>

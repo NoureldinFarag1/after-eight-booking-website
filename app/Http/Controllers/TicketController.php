@@ -104,6 +104,20 @@ class TicketController extends Controller
             ]);
         }
 
+        // Operators must be assigned to the event for which they're scanning
+        if ($user->isOperator()) {
+            $isAssigned = $ticket->event
+                ? $ticket->event->operators()->where('users.id', $user->id)->exists()
+                : false;
+            if (!$isAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not assigned to this event',
+                    'status' => 'unauthorized'
+                ], 403);
+            }
+        }
+
         // Check if ticket is already used
         if ($ticket->isUsed()) {
             return response()->json([

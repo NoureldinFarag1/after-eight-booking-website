@@ -141,6 +141,10 @@
     let codeReader = null;
     let selectedDeviceId = null;
     let currentTicket = null;
+    let scanningPaused = false;
+    let lastScanCode = null;
+    let lastScanTime = 0; // ms timestamp
+    const DUPLICATE_SUPPRESS_MS = 3000; // ignore same code within 3s
 
     // Initialize scanner
     document.addEventListener('DOMContentLoaded', function() {
@@ -300,14 +304,21 @@
         };
 
         const decodePromise = codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-            console.log('=== DECODE CALLBACK ===');
-            if (result) {
-                console.log('QR Code scanned successfully:', result.text);
-                handleScanResult(result.text);
-            }
             if (err && !(err instanceof ZXing.NotFoundException)) {
                 console.error('Scanning error in callback:', err);
             }
+            if (!result) return;
+            const code = result.text;
+            const now = Date.now();
+            // Suppress rapid duplicates & pause state
+            if (scanningPaused) return;
+            if (code === lastScanCode && (now - lastScanTime) < DUPLICATE_SUPPRESS_MS) {
+                return; // ignore duplicate within suppression window
+            }
+            lastScanCode = code;
+            lastScanTime = now;
+            console.log('QR Code scanned:', code);
+            handleScanResult(code);
         });
 
         console.log('Decode promise:', decodePromise);
@@ -391,54 +402,64 @@
     }
 
     // Handle scan result
-    function handleScanResult(qrCode) {
-        console.log('Handling scan result:', qrCode);
+    function normalizeQr(input) {
+        // If input is a URL, extract the ticket's QR code across all supported patterns
+        try {
+            const url = new URL(input);
+            const path = url.pathname; // e.g., /tickets/verify/{ticket}/{code} or /tickets/validate/{code}
 
-        // Temporarily pause scanning to prevent multiple scans
-        const isScanning = document.getElementById('start-scanner').style.display === 'none';
-        if (isScanning) {
-            // Stop the current scan temporarily
-            if (codeReader) {
-                codeReader.reset();
-            }
-        }
+            // 1) /tickets/validate/{code}
+            let m = path.match(/\/tickets\/validate\/([^\/?#]+)/i);
+            if (m && m[1]) return decodeURIComponent(m[1]);
 
-        // Make AJAX request to validate ticket using the correct route
+            // 2) /tickets/verify/{ticket}/{code} -> we want the last segment (code)
+            m = path.match(/\/tickets\/verify\/[^\/?#]+\/([^\/?#]+)/i);
+            if (m && m[1]) return decodeURIComponent(m[1]);
+
+            // 3) /scan?qr_code=...
+            let qp = url.searchParams.get('qr_code');
+            if (qp) return qp;
+
+            // 4) Sometimes apps use ?code=... or ?qr=...
+            qp = url.searchParams.get('code') || url.searchParams.get('qr');
+            if (qp) return qp;
+
+            // Fallback: if it's a URL we don't recognize, return the original string
+            return input;
+        } catch { /* not a URL, likely the raw code */ }
+        return input;
+    }
+
+    function handleScanResult(qrCodeRaw) {
+        console.log('Handling scan result (raw):', qrCodeRaw);
+        const qrCode = normalizeQr(qrCodeRaw);
+        console.log('Normalized QR code:', qrCode);
+        scanningPaused = true; // pause accepting new codes until validation completes
+
         fetch(`{{ route("tickets.validate", ":qr_code") }}`.replace(':qr_code', encodeURIComponent(qrCode)), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             }
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showValidTicket(data.ticket);
             } else {
-                showInvalidTicket(data.message);
+                showInvalidTicket(data.message || 'Ticket invalid');
             }
             addToRecentScans(data);
-
-            // After showing result, restart scanning if it was active
-            if (isScanning) {
-                setTimeout(() => {
-                    console.log('Restarting scanner after successful scan...');
-                    startScanning();
-                }, 2000); // Wait 2 seconds before restarting
-            }
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(err => {
+            console.error('Validation error:', err);
             showAlert('Error validating ticket', 'danger');
-
-            // Restart scanning even on error
-            if (isScanning) {
-                setTimeout(() => {
-                    console.log('Restarting scanner after error...');
-                    startScanning();
-                }, 1000);
-            }
+        })
+        .finally(() => {
+            // Resume scanning after short delay so operator can move camera away
+            setTimeout(() => { scanningPaused = false; }, 1500);
         });
     }
 
@@ -475,18 +496,10 @@
         modal.show();
 
         // Reset camera when modal is hidden
+        // No camera reset on modal close; stream remains active for performance
         document.getElementById('scanResultModal').addEventListener('hidden.bs.modal', function() {
-            console.log('Modal closed, refreshing camera stream...');
-            const videoElement = document.getElementById('scanner-video');
-            if (videoElement && videoElement.srcObject) {
-                // Force refresh the video stream to reset exposure
-                const stream = videoElement.srcObject;
-                videoElement.srcObject = null;
-                setTimeout(() => {
-                    videoElement.srcObject = stream;
-                }, 100);
-            }
-        }, { once: true }); // Use once: true to prevent multiple event listeners
+            scanningPaused = false; // ensure scanning resumes
+        }, { once: true });
     }
 
     function showInvalidTicket(message) {

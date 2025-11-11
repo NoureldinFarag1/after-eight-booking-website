@@ -92,7 +92,7 @@ class BookingController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Event $event)
+    public function create(Request $request, Event $event)
     {
         $this->denyIfStaffRole();
         // Enforce business rule: admins cannot create bookings
@@ -105,7 +105,18 @@ class BookingController extends Controller
 
         $types = $event->ticketTypes()->where('is_active', true)->orderBy('price')->get();
 
-        return view('bookings.create', compact('event', 'types'));
+        // Optional preselected ticket type from "Buy Now"
+        $preselectedType = null;
+        $reqTypeId = (int) $request->query('ticket_type_id', 0);
+        if ($reqTypeId > 0 && $types->count() > 0) {
+            $candidate = $types->firstWhere('id', $reqTypeId);
+            if ($candidate) {
+                // Check per-type capacity if defined; if fully sold-out, ignore preselection
+                $preselectedType = $candidate;
+            }
+        }
+
+        return view('bookings.create', compact('event', 'types', 'preselectedType'));
     }
 
     /**

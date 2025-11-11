@@ -217,11 +217,22 @@
                                             </div>
                                         @endif
 
-                                        @if($event->isBookable() && !$typeSoldOut)
-                                            <a href="{{ route('bookings.create', $event) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
+                                        @php
+                                            $currentUser = auth()->user();
+                                            $isStaffUser = $currentUser && $currentUser->isStaff();
+                                            $canShowBuy = $event->isBookable() && !$typeSoldOut && !$isStaffUser;
+                                        @endphp
+                                        @if($canShowBuy)
+                                            <a href="{{ route('bookings.create', [$event, 'ticket_type_id' => $tt->id]) }}" class="btn btn-primary btn-sm rounded-pill">Buy Now</a>
                                         @else
                                             <button class="btn btn-primary btn-sm rounded-pill" disabled aria-disabled="true">
-                                                {{ !$event->isBookable() ? $disabledLabel : 'Sold Out' }}
+                                                @if($isStaffUser)
+                                                    Staff are unable to purchase tickets.
+                                                @elseif(!$event->isBookable())
+                                                    {{ $disabledLabel }}
+                                                @else
+                                                    Sold Out
+                                                @endif
                                             </button>
                                         @endif
                                     </div>

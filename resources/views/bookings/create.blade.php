@@ -70,25 +70,51 @@
                     <input type="hidden" name="event_id" value="{{ $event->id }}">
 
                     <div class="row">
+                        @php $hasPreselected = isset($preselectedType) && $preselectedType; @endphp
                         @if(isset($types) && $types->count() > 0)
-                            <div class="col-md-6 mb-3">
-                                <label for="ticket_type_id" class="form-label">Ticket Type *</label>
-                                <select class="form-select @error('ticket_type_id') is-invalid @enderror"
-                                        id="ticket_type_id"
-                                        name="ticket_type_id"
-                                        required>
-                                    <option value="">Select type</option>
-                                    @foreach($types as $t)
-                                        <option value="{{ $t->id }}" data-price="{{ $t->price }}" {{ old('ticket_type_id') == $t->id ? 'selected' : '' }}>
-                                            {{ $t->name }} — EGP {{ number_format($t->price, 2) }}
-                                            @if(auth()->user()->isAdmin() && !is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('ticket_type_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
+                            @if($hasPreselected)
+                                <input type="hidden" name="ticket_type_id" value="{{ $preselectedType->id }}">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Ticket Type</label>
+                                    <div class="form-control-plaintext fw-semibold text-white">
+                                        {{ $preselectedType->name }} — EGP {{ number_format((float)$preselectedType->price, 2) }}
+                                    </div>
+                                </div>
+                            @else
+                                <div class="col-md-6 mb-3">
+                                    <label for="ticket_type_id" class="form-label">Ticket Type *</label>
+                                    <select class="form-select @error('ticket_type_id') is-invalid @enderror"
+                                            id="ticket_type_id"
+                                            name="ticket_type_id"
+                                            required>
+                                        <option value="">Select type</option>
+                                        @foreach($types as $t)
+                                            @php
+                                                // Determine if this ticket type is sold out (only when capacity is defined)
+                                                $typeSoldOut = false;
+                                                if(!is_null($t->capacity)){
+                                                    $soldCount = \App\Models\Ticket::where('event_id', $event->id)
+                                                        ->where('ticket_type_id', $t->id)
+                                                        ->where('status', '!=', \App\Enums\TicketStatus::CANCELLED)
+                                                        ->count();
+                                                    $remainingForType = max(0, $t->capacity - $soldCount);
+                                                    $typeSoldOut = ($remainingForType <= 0);
+                                                }
+                                            @endphp
+                                            <option value="{{ $t->id }}"
+                                                    data-price="{{ $t->price }}"
+                                                    {{ old('ticket_type_id') == $t->id ? 'selected' : '' }}
+                                                    {{ $typeSoldOut ? 'disabled' : '' }}>
+                                                {{ $t->name }} — EGP {{ number_format($t->price, 2) }}
+                                                @if($typeSoldOut) (Sold Out) @elseif(auth()->user()->isAdmin() && !is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('ticket_type_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            @endif
                         @endif
 
                         <div class="col-md-6 mb-3">
@@ -117,7 +143,11 @@
                             <div class="form-control-plaintext h5 text-primary mb-0">
                                 <span id="unit-price">
                                     @if(isset($types) && $types->count() > 0)
-                                        Select a ticket type
+                                        @if(isset($preselectedType) && $preselectedType)
+                                            EGP {{ number_format((float)$preselectedType->price, 2) }}
+                                        @else
+                                            Select a ticket type
+                                        @endif
                                     @else
                                         Pricing will be announced
                                     @endif
@@ -205,8 +235,16 @@
         const summaryTotal = document.getElementById('summary-total');
 
     const hasTypes = {{ isset($types) && $types->count() > 0 ? 'true' : 'false' }};
+    const preselected = {{ isset($preselectedType) && $preselectedType ? 'true' : 'false' }};
     const typeSelect = document.getElementById('ticket_type_id');
-    let pricePerTicket = hasTypes ? parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0) : 0;
+    let pricePerTicket = 0;
+    if (hasTypes) {
+        if (preselected) {
+            pricePerTicket = parseFloat({{ isset($preselectedType) && $preselectedType ? (float)$preselectedType->price : 0 }});
+        } else {
+            pricePerTicket = parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0);
+        }
+    }
 
         function updateSummary() {
             const quantity = parseInt(quantitySelect.value) || 0;
@@ -231,7 +269,7 @@
         function updateSubmitButton() {
             const hasQuantity = quantitySelect.value !== '';
             const hasAgreed = agreeCheckbox.checked;
-            const hasTypeSelection = !hasTypes || (typeSelect && typeSelect.value !== '');
+            const hasTypeSelection = !hasTypes || preselected || (typeSelect && typeSelect.value !== '');
 
             submitBtn.disabled = !(hasQuantity && hasAgreed && hasTypeSelection);
         }

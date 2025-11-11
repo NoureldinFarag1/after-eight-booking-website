@@ -136,7 +136,9 @@ class Ticket extends Model
      */
     public function getQrCodeUrlAttribute(): string
     {
-        return route('tickets.scan', ['qr_code' => $this->qr_code]);
+        // Prefer direct validation endpoint so scanner can parse uniformly;
+        // operators use POST /tickets/validate/{qr_code} (protected) while public verify uses separate route.
+        return route('tickets.validate', ['qr_code' => $this->qr_code]);
     }
 
     /**

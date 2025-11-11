@@ -7,7 +7,7 @@
 @section('content')
     <h1>Hello {{ $invitation->name }}!</h1>
     <p>
-        {{ $invitation->sender->name }} has invited you to attend the following event. Please present the QR code at the entrance for scanning.
+        You have been invited to attend {{ $invitation->event->title ?? 'an event' }}. Please present the QR code at the entrance for scanning.
     </p>
 
     @if($invitation->event)
@@ -33,10 +33,8 @@
     @endif
 
     @if($invitation->message)
-        <div class="panel">
-            <h2>Message from {{ $invitation->sender->name }}</h2>
+        <h3>A Special message for you, {{ $invitation->name }}</h3>
             <p>{{ $invitation->message }}</p>
-        </div>
     @endif
 
     @if(!empty($qrDataUrl) || !empty($qrUrl))

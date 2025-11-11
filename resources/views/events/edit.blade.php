@@ -104,7 +104,7 @@
                                 <option value="{{ $artist->id }}" {{ in_array($artist->id, $selectedArtistIds, true) ? 'selected' : '' }}>{{ $artist->name }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text">Hold Cmd/Ctrl to select multiple artists.</div>
+                        <div class="form-text text-white">Hold Cmd/Ctrl to select multiple artists.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label d-flex justify-content-between align-items-center">
@@ -112,7 +112,7 @@
                             <button type="button" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</button>
                         </label>
                         <div id="artists-new-list"></div>
-                        <div class="form-text">Each artist needs a name and optional picture.</div>
+                        <div class="form-text text-muted">Each artist needs a name and optional picture.</div>
                         @error('artists_new.*.name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         @error('artists_new.*.photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
@@ -415,7 +415,7 @@
             </div>
             <div class="card-body">
                 <div id="ticket-types-list"></div>
-                <div class="form-text">Existing types can be managed from the “Manage Ticket Types” page.</div>
+                <div class="form-text text-muted">Existing types can be managed from the “Manage Ticket Types” page.</div>
             </div>
         </div>
     </div>
