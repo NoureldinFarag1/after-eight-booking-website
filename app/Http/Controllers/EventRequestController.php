@@ -428,7 +428,7 @@ class EventRequestController extends Controller
 
         // Collect ticket_type_ids from current page (primary + guests) to avoid N+1 lookups in view
         $ticketTypeIds = collect();
-        foreach ($requests as $req) {
+        $requests->getCollection()->each(function (EventRequest $req) use ($ticketTypeIds) {
             if ($req->primary_ticket_type_id) {
                 $ticketTypeIds->push($req->primary_ticket_type_id);
             }
@@ -439,7 +439,7 @@ class EventRequestController extends Controller
                     }
                 }
             }
-        }
+        });
         $ticketTypeIds = $ticketTypeIds->unique()->values();
         $ticketTypeMap = [];
         if ($ticketTypeIds->count() > 0) {
@@ -603,17 +603,7 @@ class EventRequestController extends Controller
         try {
             DB::transaction(function() use ($eventRequest, $user) {
                 $event = $eventRequest->event()->firstOrFail();
-
-                // Create booking confirmed
-                $booking = new \App\Models\Booking();
-                $booking->user_id = $eventRequest->user_id;
-                $booking->event_id = $event->id;
-                $booking->status = \App\Enums\BookingStatus::CONFIRMED;
-                $booking->booking_date = now();
-                $booking->quantity = 0; // will recalc
-                // total_amount will be computed after creating tickets
-                $booking->save();
-
+                // Stage tickets to create and compute totals up-front to satisfy NOT NULL DB constraints
                 $ticketsToCreate = [];
                 $ticketTypesCache = [];
                 $resolveType = function($id) use (&$ticketTypesCache) {
@@ -647,21 +637,27 @@ class EventRequestController extends Controller
                         'price' => (float)($tt->price ?? 0),
                     ];
                 }
+                // Compute totals prior to creating the booking to avoid NOT NULL violations
+                $rawTotal = array_reduce($ticketsToCreate, function($carry, $item){ return $carry + (float)($item['price'] ?? 0); }, 0.0);
+                $totalWithFees = round($event->getTotalWithFees($rawTotal), 2);
+
+                // Create booking confirmed with final totals calculated
+                $booking = new \App\Models\Booking();
+                $booking->user_id = $eventRequest->user_id;
+                $booking->event_id = $event->id;
+                $booking->status = \App\Enums\BookingStatus::CONFIRMED;
+                $booking->booking_date = now();
+                $booking->quantity = count($ticketsToCreate);
+                $booking->total_amount = $totalWithFees;
+                $booking->save();
 
                 // Persist tickets
-                $total = 0.0;
                 foreach ($ticketsToCreate as $payload) {
                     $t = new \App\Models\Ticket($payload);
                     $t->booking_id = $booking->id;
                     $t->status = \App\Enums\TicketStatus::VALID;
                     $t->save();
-                    $total += (float)$t->price;
                 }
-
-                $booking->quantity = count($ticketsToCreate);
-                $totalWithFees = round($event->getTotalWithFees($total), 2);
-                $booking->setAttribute('total_amount', $totalWithFees);
-                $booking->save();
 
                 // Mark request as paid (approval timestamp already set during approve step)
                 $eventRequest->status = EventRequestStatus::PAID->value;

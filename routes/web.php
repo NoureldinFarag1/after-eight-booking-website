@@ -178,7 +178,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/event-requests/{eventRequest}', [EventRequestController::class, 'show'])->name('event_requests.show');
     Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
-    Route::post('/event-requests/{eventRequest}/pay', [EventRequestController::class, 'completePayment'])->name('event_requests.pay');
     Route::post('/event-requests/{eventRequest}/remake', [EventRequestController::class, 'remake'])->name('event_requests.remake');
 
 // Admin-side

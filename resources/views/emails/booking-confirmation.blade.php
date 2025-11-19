@@ -37,10 +37,6 @@
             <span class="value">{{ $booking->booking_reference ?? ('BK-' . $booking->id) }}</span>
         </div>
         <div class="detail-row">
-            <span class="label">Booked By</span>
-            <span class="value">{{ $user->name }}</span>
-        </div>
-        <div class="detail-row">
             <span class="label">Number of Tickets</span>
             <span class="value">{{ $tickets->count() }}</span>
         </div>
@@ -57,15 +53,11 @@
         <div class="panel">
             <div class="detail-row">
                 <span class="label">Ticket ID</span>
-                <span class="value">{{ $ticket->ticket_id ?? $ticket->id }}</span>
+                <span class="value">{{ $ticket->ticket_number ?? $ticket->id }}</span>
             </div>
             <div class="detail-row">
                 <span class="label">Ticket Type</span>
-                <span class="value">{{ $ticket->ticketType->name ?? 'General' }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Attendee</span>
-                <span class="value">{{ $ticket->attendee_name }}</span>
+                <span class="value">{{ optional($ticket->type)->name }}</span>
             </div>
             <div class="detail-row">
                 <span class="label">Status</span>

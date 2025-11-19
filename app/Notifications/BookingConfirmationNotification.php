@@ -41,7 +41,8 @@ class BookingConfirmationNotification extends Notification
      */
     public function toMail($notifiable): MailMessage
     {
-        $booking = $this->booking;
+        // Ensure related models are available to the view without N+1 queries
+        $booking = $this->booking->loadMissing(['event', 'tickets.type']);
         $event = $booking->event;
 
         // Generate QR codes just before sending

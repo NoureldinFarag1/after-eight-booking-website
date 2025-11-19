@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class TicketController extends Controller
@@ -92,85 +93,90 @@ class TicketController extends Controller
             ], 403);
         }
 
-        $ticket = Ticket::where('qr_code', $qrCode)
-            ->with(['event', 'user', 'booking', 'type'])
-            ->first();
+        // Use a transaction + row lock to avoid race conditions when two operators scan at the same time
+        return DB::transaction(function () use ($qrCode, $user) {
+            $ticket = Ticket::where('qr_code', $qrCode)
+                ->lockForUpdate()
+                ->with(['event', 'user', 'booking', 'type', 'scannedBy'])
+                ->first();
 
-        if (!$ticket) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid ticket - QR code not found',
-                'status' => 'invalid'
-            ]);
-        }
-
-        // Operators must be assigned to the event for which they're scanning
-        if ($user->isOperator()) {
-            $isAssigned = $ticket->event
-                ? $ticket->event->operators()->where('users.id', $user->id)->exists()
-                : false;
-            if (!$isAssigned) {
+            if (!$ticket) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You are not assigned to this event',
-                    'status' => 'unauthorized'
-                ], 403);
+                    'message' => 'Invalid ticket - QR code not found',
+                    'status' => 'invalid'
+                ]);
             }
-        }
 
-        // Check if ticket is already used
-        if ($ticket->isUsed()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ticket already used',
-                'status' => 'used',
-                'ticket' => [
-                    'ticket_number' => $ticket->ticket_number,
-                    'event_title' => $ticket->event->title,
-                    'user_name' => $ticket->user->name,
-                    'ticket_type' => $ticket->type->name ?? null,
-                    'scanned_at' => $ticket->scanned_at,
-                    'scanned_by' => $ticket->scannedBy->name ?? 'Unknown'
-                ]
+            // Operators must be assigned to the event for which they're scanning
+            if ($user->isOperator()) {
+                $isAssigned = $ticket->event
+                    ? $ticket->event->operators()->where('users.id', $user->id)->exists()
+                    : false;
+                if (!$isAssigned) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You are not assigned to this event',
+                        'status' => 'unauthorized'
+                    ], 403);
+                }
+            }
+
+            // If another operator just used it, we'll see it here due to the lock
+            if ($ticket->isUsed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket already used',
+                    'status' => 'used',
+                    'ticket' => [
+                        'ticket_number' => $ticket->ticket_number,
+                        'event_title' => $ticket->event->title,
+                        'user_name' => $ticket->user->name,
+                        'ticket_type' => $ticket->type->name ?? null,
+                        'scanned_at' => $ticket->scanned_at,
+                        'scanned_by' => $ticket->scannedBy->name ?? 'Unknown'
+                    ]
+                ]);
+            }
+
+            // Expired or invalid check under lock
+            if ($ticket->isExpired()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket expired',
+                    'status' => 'expired',
+                    'ticket' => [
+                        'ticket_number' => $ticket->ticket_number,
+                        'event_title' => $ticket->event->title,
+                        'event_date' => $ticket->event->event_date,
+                        'user_name' => $ticket->user->name,
+                        'ticket_type' => $ticket->type->name ?? null,
+                    ]
+                ]);
+            }
+
+            if (!$ticket->isValid()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket is not valid',
+                    'status' => 'invalid',
+                    'ticket' => [
+                        'ticket_number' => $ticket->ticket_number,
+                        'status' => $ticket->status->label(),
+                        'event_title' => $ticket->event->title,
+                        'user_name' => $ticket->user->name,
+                        'ticket_type' => $ticket->type->name ?? null,
+                    ]
+                ]);
+            }
+
+            // Mark as used atomically inside the transaction
+            $ticket->update([
+                'status' => TicketStatus::USED,
+                'scanned_at' => now(),
+                'scanned_by' => $user->id,
             ]);
-        }
 
-        // Check if ticket is expired
-        if ($ticket->isExpired()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ticket expired',
-                'status' => 'expired',
-                'ticket' => [
-                    'ticket_number' => $ticket->ticket_number,
-                    'event_title' => $ticket->event->title,
-                    'event_date' => $ticket->event->event_date,
-                    'user_name' => $ticket->user->name,
-                    'ticket_type' => $ticket->type->name ?? null,
-                ]
-            ]);
-        }
-
-        // Check if ticket is valid
-        if (!$ticket->isValid()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ticket is not valid',
-                'status' => 'invalid',
-                'ticket' => [
-                    'ticket_number' => $ticket->ticket_number,
-                    'status' => $ticket->status->label(),
-                    'event_title' => $ticket->event->title,
-                    'user_name' => $ticket->user->name,
-                    'ticket_type' => $ticket->type->name ?? null,
-                ]
-            ]);
-        }
-
-        // Mark ticket as used
-        $success = $ticket->markAsUsed($user->id);
-
-        if ($success) {
             return response()->json([
                 'success' => true,
                 'message' => 'Ticket validated successfully',
@@ -188,13 +194,7 @@ class TicketController extends Controller
                     'validated_by' => $user->name
                 ]
             ]);
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to validate ticket',
-            'status' => 'error'
-        ]);
+        });
     }
 
     /**
