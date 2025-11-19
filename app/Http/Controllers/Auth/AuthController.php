@@ -148,7 +148,7 @@ class AuthController extends Controller
             $pwRule = $pwRule->uncompromised();
         }
 
-        $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:20'],
@@ -192,7 +192,12 @@ class AuthController extends Controller
                     }
                 },
             ],
-        ]);
+        ];
+
+    // Add Google reCAPTCHA (NoCaptcha) validation
+    $rules['g-recaptcha-response'] = ['required', 'captcha'];
+
+        $request->validate($rules);
 
         $user = User::create([
             'name' => $request->name,

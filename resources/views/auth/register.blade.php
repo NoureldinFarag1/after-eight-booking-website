@@ -83,6 +83,19 @@
                         <button type="button" class="btn btn-outline-primary toggle-password" data-target="#password_confirmation" aria-label="Show password"><i data-lucide="eye"></i></button>
                     </div>
                 </div>
+                <div class="mb-3">
+                    @php($siteKey = config('captcha.sitekey'))
+                    @if(empty($siteKey))
+                        <div class="alert alert-warning small mb-2">
+                            reCAPTCHA is not configured. Please set NOCAPTCHA_SITEKEY and NOCAPTCHA_SECRET in your .env.
+                        </div>
+                    @else
+                            <div id="recaptcha-container">
+                                <div id="recaptcha-manual" style="min-height:78px; width: 304px;"></div>
+                            </div>
+                    @endif
+                    @error('g-recaptcha-response')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
             <div class="auth-actions d-grid mb-2">
                 <button type="submit" class="btn btn-primary w-100" id="register-submit">
                     <i data-lucide="user-plus" class="me-1"></i>Create Account
@@ -100,10 +113,45 @@
 
         <div class="auth-footer mt-3">Already have an account? <a href="{{ route('login') }}">Login</a></div>
     </div>
-</div>
 @endsection
 
+@push('styles')
+<style>
+/* Make reCAPTCHA box visually consistent and all-white */
+#recaptcha-container,
+#recaptcha-manual {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important; /* all white */
+    border-radius: 6px;
+}
+#recaptcha-manual > div,
+#recaptcha-manual iframe {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important; /* let parent white show through */
+}
+</style>
+@endpush
+
 @push('scripts')
+<script>
+window.initRecaptcha = function(){
+    try {
+        var el = document.getElementById('recaptcha-manual');
+        if (el && window.grecaptcha && typeof window.grecaptcha.render === 'function') {
+            if (!el.hasChildNodes()) {
+                window.grecaptcha.render('recaptcha-manual', { sitekey: @json(config('captcha.sitekey')), theme: 'light' });
+            } else {
+                // already rendered
+            }
+        }
+    } catch(e) { /* no-op */ }
+};
+</script>
+<script src="https://www.google.com/recaptcha/api.js?onload=initRecaptcha&render=explicit" async defer></script>
 <script>
 (function(){
     const $ = (sel) => document.querySelector(sel);
@@ -112,6 +160,7 @@
     const nameInput = $('#name');
     const emailInput = $('#email');
     const submitBtn = $('#register-submit');
+
 
     const ruleEls = {
         length: $('#pw-rule-length'),
@@ -130,26 +179,39 @@
         el.classList.toggle('text-danger', !ok);
     }
 
-        for(const p of parts){ if(v.includes(p)) return true; }
+    function hasSequence(v){
+        if(!v) return false;
+        v = String(v).toLowerCase();
+        const sequences = [
+            'abcdefghijklmnopqrstuvwxyz',
+            'qwertyuiopasdfghjklzxcvbnm',
+            '0123456789'
+        ];
+        // Check common sequences
+        for(const seq of sequences){
+            for(let i=0;i<=seq.length-5;i++){
+                if(v.includes(seq.slice(i, i+5))) return true;
+            }
+        }
+        // Check ascending sequences within the value itself
+        for(let i=0;i<=v.length-5;i++){
+            let asc = true;
+            for(let j=1;j<5;j++){
+                if(v.charCodeAt(i+j) !== v.charCodeAt(i+j-1)+1){ asc = false; break; }
+            }
+            if(asc) return true;
+        }
         return false;
     }
 
-    function score(v){
-        const symbol = /[^A-Za-z0-9]/.test(v);
-        const len = v.length;
-        const lower = /[a-z]/.test(v);
-        const upper = /[A-Z]/.test(v);
-        const number = /\d/.test(v);
-        const symbol = /[^A-Za-z0-9]/.test(v);
-        const nospace = !/\s/.test(v);
-        const norepeat = !(/(.)\1{3,}/.test(v));
-        const noseq = !hasSequence(v);
-        const nopersonal = !containsPersonal(v);
-
-        if(len>=12) s+=2; if(len>=16) s+=1;
-        if(lower) s+=1; if(upper) s+=1; if(number) s+=1; if(symbol) s+=1;
-        if(nospace) s+=1; if(norepeat) s+=1; if(noseq) s+=1; if(nopersonal) s+=1;
-        return Math.min(s, 12);
+    function containsPersonal(v){
+        v = (v || '').toLowerCase();
+        const nameVal = (nameInput?.value || '').toLowerCase();
+        const emailVal = (emailInput?.value || '').toLowerCase();
+        const tokens = [];
+        if(nameVal){ tokens.push(...nameVal.split(/[\s\-_.]+/).filter(t => t.length >= 3)); }
+        if(emailVal){ tokens.push(...emailVal.split(/[@._\-+]/).filter(t => t.length >= 3)); }
+        return tokens.some(t => v.includes(t));
     }
 
     function update(){
@@ -183,6 +245,27 @@
         emailInput?.addEventListener(ev, update);
     });
     update();
+
+    // Try manual render in case auto-render didn't initialize the widget
+    (function recaptchaManualRender(){
+        var tries = 0, max = 12;
+    var sitekey = @json(config('captcha.sitekey'));
+        function tick(){
+            tries++;
+            var el = document.getElementById('recaptcha-manual');
+            if (!el) return; // container missing
+            if (window.grecaptcha && typeof window.grecaptcha.render === 'function') {
+                if (!el.hasChildNodes()) {
+                    try { window.grecaptcha.render('recaptcha-manual', { sitekey: sitekey, theme: 'light' }); } catch(e) {}
+                }
+                return; // success or already rendered
+            }
+            if (tries < max) setTimeout(tick, 500);
+            else { /* give up silently */ }
+        }
+        setTimeout(tick, 500);
+    })();
+    // no UI debug hints in production for cleaner UX
 })();
 </script>
 @endpush
