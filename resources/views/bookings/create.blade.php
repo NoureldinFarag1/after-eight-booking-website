@@ -45,7 +45,11 @@
                                 </p>
                                 <p class="mb-1">
                                     <i class="bi bi-people text-primary me-1"></i>
-                                    {{ $event->getAvailableSeatsAttribute() }} seats available
+                                    @if(auth()->user()->isAdmin())
+                                        {{ $event->getAvailableSeatsAttribute() }} seats available
+                                    @else
+                                        Registration Available
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -54,12 +58,65 @@
 
                 <hr>
 
+                @if(auth()->user()->isAdmin())
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Administrators are not allowed to create bookings.
+                    </div>
+                @else
                 <!-- Booking Form -->
-                <form action="{{ route('bookings.store') }}" method="POST" id="bookingForm">
+                <form action="{{ route('bookings.checkout') }}" method="POST" id="bookingForm">
                     @csrf
                     <input type="hidden" name="event_id" value="{{ $event->id }}">
 
                     <div class="row">
+                        @php $hasPreselected = isset($preselectedType) && $preselectedType; @endphp
+                        @if(isset($types) && $types->count() > 0)
+                            @if($hasPreselected)
+                                <input type="hidden" name="ticket_type_id" value="{{ $preselectedType->id }}">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Ticket Type</label>
+                                    <div class="form-control-plaintext fw-semibold text-white">
+                                        {{ $preselectedType->name }} — EGP {{ number_format((float)$preselectedType->price, 2) }}
+                                    </div>
+                                </div>
+                            @else
+                                <div class="col-md-6 mb-3">
+                                    <label for="ticket_type_id" class="form-label">Ticket Type *</label>
+                                    <select class="form-select @error('ticket_type_id') is-invalid @enderror"
+                                            id="ticket_type_id"
+                                            name="ticket_type_id"
+                                            required>
+                                        <option value="">Select type</option>
+                                        @foreach($types as $t)
+                                            @php
+                                                // Determine if this ticket type is sold out (only when capacity is defined)
+                                                $typeSoldOut = false;
+                                                if(!is_null($t->capacity)){
+                                                    $soldCount = \App\Models\Ticket::where('event_id', $event->id)
+                                                        ->where('ticket_type_id', $t->id)
+                                                        ->where('status', '!=', \App\Enums\TicketStatus::CANCELLED)
+                                                        ->count();
+                                                    $remainingForType = max(0, $t->capacity - $soldCount);
+                                                    $typeSoldOut = ($remainingForType <= 0);
+                                                }
+                                            @endphp
+                                            <option value="{{ $t->id }}"
+                                                    data-price="{{ $t->price }}"
+                                                    {{ old('ticket_type_id') == $t->id ? 'selected' : '' }}
+                                                    {{ $typeSoldOut ? 'disabled' : '' }}>
+                                                {{ $t->name }} — EGP {{ number_format($t->price, 2) }}
+                                                @if($typeSoldOut) (Sold Out) @elseif(auth()->user()->isAdmin() && !is_null($t->capacity)) (cap: {{ $t->capacity }}) @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('ticket_type_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            @endif
+                        @endif
+
                         <div class="col-md-6 mb-3">
                             <label for="quantity" class="form-label">Number of Tickets *</label>
                             <select class="form-select @error('quantity') is-invalid @enderror"
@@ -67,7 +124,10 @@
                                     name="quantity"
                                     required>
                                 <option value="">Select quantity</option>
-                                @for($i = 1; $i <= min(10, $event->getAvailableSeatsAttribute()); $i++)
+                                @php
+                                    $maxTickets = auth()->user()->isAdmin() ? min(10, $event->getAvailableSeatsAttribute()) : 10;
+                                @endphp
+                                @for($i = 1; $i <= $maxTickets; $i++)
                                     <option value="{{ $i }}" {{ old('quantity') == $i ? 'selected' : '' }}>
                                         {{ $i }} ticket{{ $i > 1 ? 's' : '' }}
                                     </option>
@@ -81,11 +141,17 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Price per Ticket</label>
                             <div class="form-control-plaintext h5 text-primary mb-0">
-                                @if($event->price > 0)
-                                    ${{ number_format($event->price, 2) }}
-                                @else
-                                    Free
-                                @endif
+                                <span id="unit-price">
+                                    @if(isset($types) && $types->count() > 0)
+                                        @if(isset($preselectedType) && $preselectedType)
+                                            EGP {{ number_format((float)$preselectedType->price, 2) }}
+                                        @else
+                                            Select a ticket type
+                                        @endif
+                                    @else
+                                        Pricing will be announced
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -96,16 +162,16 @@
                             <h6 class="card-title">Order Summary</h6>
                             <div class="d-flex justify-content-between">
                                 <span>Tickets (<span id="summary-quantity">0</span>):</span>
-                                <span id="summary-subtotal">$0.00</span>
+                                <span id="summary-subtotal">EGP 0.00</span>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <span>Service Fee:</span>
-                                <span>$0.00</span>
+                                <span>EGP 0.00</span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between fw-bold h5">
                                 <span>Total:</span>
-                                <span class="text-primary" id="summary-total">$0.00</span>
+                                <span class="text-primary" id="summary-total">EGP 0.00</span>
                             </div>
                         </div>
                     </div>
@@ -145,14 +211,15 @@
 
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Event
+                            <i class="bi bi-arrow-left me-1"></i>Event
                         </a>
 
                         <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
-                            <i class="bi bi-credit-card me-1"></i>Complete Booking
+                            <i class="bi bi-credit-card me-1"></i>Review & Checkout
                         </button>
                     </div>
                 </form>
+                @endif
             </div>
         </div>
     </div>
@@ -167,7 +234,17 @@
         const summarySubtotal = document.getElementById('summary-subtotal');
         const summaryTotal = document.getElementById('summary-total');
 
-        const pricePerTicket = {{ $event->price }};
+    const hasTypes = {{ isset($types) && $types->count() > 0 ? 'true' : 'false' }};
+    const preselected = {{ isset($preselectedType) && $preselectedType ? 'true' : 'false' }};
+    const typeSelect = document.getElementById('ticket_type_id');
+    let pricePerTicket = 0;
+    if (hasTypes) {
+        if (preselected) {
+            pricePerTicket = parseFloat({{ isset($preselectedType) && $preselectedType ? (float)$preselectedType->price : 0 }});
+        } else {
+            pricePerTicket = parseFloat(typeSelect?.selectedOptions[0]?.dataset.price || 0);
+        }
+    }
 
         function updateSummary() {
             const quantity = parseInt(quantitySelect.value) || 0;
@@ -175,26 +252,40 @@
 
             summaryQuantity.textContent = quantity;
 
-            if (pricePerTicket > 0) {
-                summarySubtotal.textContent = '$' + subtotal.toFixed(2);
-                summaryTotal.textContent = '$' + subtotal.toFixed(2);
+            const unitPriceEl = document.getElementById('unit-price');
+            if (unitPriceEl) {
+                unitPriceEl.textContent = pricePerTicket > 0 ? 'EGP ' + pricePerTicket.toFixed(2) : 'Free';
+            }
+
+            if (pricePerTicket > 0 && quantity > 0) {
+                summarySubtotal.textContent = 'EGP ' + subtotal.toFixed(2);
+                summaryTotal.textContent = 'EGP ' + subtotal.toFixed(2);
             } else {
-                summarySubtotal.textContent = 'Free';
-                summaryTotal.textContent = 'Free';
+                summarySubtotal.textContent = quantity > 0 ? 'EGP 0.00' : 'EGP 0.00';
+                summaryTotal.textContent = quantity > 0 ? 'EGP 0.00' : 'EGP 0.00';
             }
         }
 
         function updateSubmitButton() {
             const hasQuantity = quantitySelect.value !== '';
             const hasAgreed = agreeCheckbox.checked;
+            const hasTypeSelection = !hasTypes || preselected || (typeSelect && typeSelect.value !== '');
 
-            submitBtn.disabled = !(hasQuantity && hasAgreed);
+            submitBtn.disabled = !(hasQuantity && hasAgreed && hasTypeSelection);
         }
 
         quantitySelect.addEventListener('change', function() {
             updateSummary();
             updateSubmitButton();
         });
+
+        if (hasTypes && typeSelect) {
+            typeSelect.addEventListener('change', function() {
+                pricePerTicket = parseFloat(this.selectedOptions[0].dataset.price || 0);
+                updateSummary();
+                updateSubmitButton();
+            });
+        }
 
         agreeCheckbox.addEventListener('change', updateSubmitButton);
 

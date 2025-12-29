@@ -6,7 +6,7 @@
 @if(auth()->user()->isOperator())
     <!-- Operator-only notice -->
     <div class="alert alert-info mb-4">
-        <i class="bi bi-info-circle me-1"></i>
+        <i data-lucide="info" class="me-1"></i>
         <strong>Operator Mode:</strong> You have access to the ticket scanning system only. Use the scanner below to validate tickets at the event entrance.
     </div>
 @endif
@@ -16,7 +16,7 @@
         <div class="card">
             <div class="card-header">
                 <h4 class="mb-0">
-                    <i class="bi bi-upc-scan me-2"></i>Ticket Scanner
+                    <i data-lucide="scan-line" class="me-2"></i>Ticket Scanner
                 </h4>
                 <small class="text-muted">Scan QR codes to validate entry</small>
             </div>
@@ -25,7 +25,7 @@
                 <div class="text-center mb-4">
                     <!-- Camera Access Notice -->
                     <div class="alert alert-info mb-3">
-                        <i class="bi bi-info-circle me-1"></i>
+                        <i data-lucide="info" class="me-1"></i>
                         <strong>Camera Access Required:</strong> This page needs camera permission to scan QR codes.
                         If using Chrome, the site must be accessed via HTTPS or localhost for camera access.
                         <br><small>Make sure to allow camera access when prompted by your browser.</small>
@@ -44,16 +44,16 @@
                         <!-- Camera Controls -->
                         <div class="mt-3">
                             <button id="start-scanner" class="btn btn-success me-2">
-                                <i class="bi bi-camera-video me-1"></i>Start Scanner
+                                <i data-lucide="camera" class="me-1"></i>Start Scanner
                             </button>
                             <button id="stop-scanner" class="btn btn-danger me-2" style="display: none;">
-                                <i class="bi bi-camera-video-off me-1"></i>Stop Scanner
+                                <i data-lucide="camera-off" class="me-1"></i>Stop Scanner
                             </button>
                             <button id="toggle-camera" class="btn btn-outline-secondary me-2" style="display: none;">
-                                <i class="bi bi-arrow-repeat me-1"></i>Switch Camera
+                                <i data-lucide="refresh-ccw" class="me-1"></i>Switch Camera
                             </button>
                             <button id="test-camera" class="btn btn-outline-info">
-                                <i class="bi bi-camera me-1"></i>Test Camera
+                                <i data-lucide="aperture" class="me-1"></i>Test Camera
                             </button>
                         </div>
                     </div>
@@ -65,7 +65,7 @@
                         <div class="input-group">
                             <input type="text" id="manual-code" class="form-control" placeholder="Enter ticket number or QR code manually">
                             <button class="btn btn-outline-primary" type="button" onclick="validateManualCode()">
-                                <i class="bi bi-search me-1"></i>Validate
+                                <i data-lucide="search" class="me-1"></i>Validate
                             </button>
                         </div>
                     </div>
@@ -84,12 +84,12 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0">Recent Scans</h6>
                         <button class="btn btn-outline-secondary btn-sm" onclick="refreshRecentScans()">
-                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                            <i data-lucide="rotate-ccw" class="me-1"></i>Refresh
                         </button>
                     </div>
                     <div id="recent-scans-list">
                         <div class="text-center text-muted py-3">
-                            <i class="bi bi-clock-history"></i>
+                            <i data-lucide="history"></i>
                             <p class="mb-0">No recent scans</p>
                         </div>
                     </div>
@@ -141,6 +141,10 @@
     let codeReader = null;
     let selectedDeviceId = null;
     let currentTicket = null;
+    let scanningPaused = false;
+    let lastScanCode = null;
+    let lastScanTime = 0; // ms timestamp
+    const DUPLICATE_SUPPRESS_MS = 3000; // ignore same code within 3s
 
     // Initialize scanner
     document.addEventListener('DOMContentLoaded', function() {
@@ -300,14 +304,21 @@
         };
 
         const decodePromise = codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-            console.log('=== DECODE CALLBACK ===');
-            if (result) {
-                console.log('QR Code scanned successfully:', result.text);
-                handleScanResult(result.text);
-            }
             if (err && !(err instanceof ZXing.NotFoundException)) {
                 console.error('Scanning error in callback:', err);
             }
+            if (!result) return;
+            const code = result.text;
+            const now = Date.now();
+            // Suppress rapid duplicates & pause state
+            if (scanningPaused) return;
+            if (code === lastScanCode && (now - lastScanTime) < DUPLICATE_SUPPRESS_MS) {
+                return; // ignore duplicate within suppression window
+            }
+            lastScanCode = code;
+            lastScanTime = now;
+            console.log('QR Code scanned:', code);
+            handleScanResult(code);
         });
 
         console.log('Decode promise:', decodePromise);
@@ -391,54 +402,64 @@
     }
 
     // Handle scan result
-    function handleScanResult(qrCode) {
-        console.log('Handling scan result:', qrCode);
+    function normalizeQr(input) {
+        // If input is a URL, extract the ticket's QR code across all supported patterns
+        try {
+            const url = new URL(input);
+            const path = url.pathname; // e.g., /tickets/verify/{ticket}/{code} or /tickets/validate/{code}
 
-        // Temporarily pause scanning to prevent multiple scans
-        const isScanning = document.getElementById('start-scanner').style.display === 'none';
-        if (isScanning) {
-            // Stop the current scan temporarily
-            if (codeReader) {
-                codeReader.reset();
-            }
-        }
+            // 1) /tickets/validate/{code}
+            let m = path.match(/\/tickets\/validate\/([^\/?#]+)/i);
+            if (m && m[1]) return decodeURIComponent(m[1]);
 
-        // Make AJAX request to validate ticket using the correct route
+            // 2) /tickets/verify/{ticket}/{code} -> we want the last segment (code)
+            m = path.match(/\/tickets\/verify\/[^\/?#]+\/([^\/?#]+)/i);
+            if (m && m[1]) return decodeURIComponent(m[1]);
+
+            // 3) /scan?qr_code=...
+            let qp = url.searchParams.get('qr_code');
+            if (qp) return qp;
+
+            // 4) Sometimes apps use ?code=... or ?qr=...
+            qp = url.searchParams.get('code') || url.searchParams.get('qr');
+            if (qp) return qp;
+
+            // Fallback: if it's a URL we don't recognize, return the original string
+            return input;
+        } catch { /* not a URL, likely the raw code */ }
+        return input;
+    }
+
+    function handleScanResult(qrCodeRaw) {
+        console.log('Handling scan result (raw):', qrCodeRaw);
+        const qrCode = normalizeQr(qrCodeRaw);
+        console.log('Normalized QR code:', qrCode);
+        scanningPaused = true; // pause accepting new codes until validation completes
+
         fetch(`{{ route("tickets.validate", ":qr_code") }}`.replace(':qr_code', encodeURIComponent(qrCode)), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             }
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showValidTicket(data.ticket);
             } else {
-                showInvalidTicket(data.message);
+                showInvalidTicket(data.message || 'Ticket invalid');
             }
             addToRecentScans(data);
-
-            // After showing result, restart scanning if it was active
-            if (isScanning) {
-                setTimeout(() => {
-                    console.log('Restarting scanner after successful scan...');
-                    startScanning();
-                }, 2000); // Wait 2 seconds before restarting
-            }
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(err => {
+            console.error('Validation error:', err);
             showAlert('Error validating ticket', 'danger');
-
-            // Restart scanning even on error
-            if (isScanning) {
-                setTimeout(() => {
-                    console.log('Restarting scanner after error...');
-                    startScanning();
-                }, 1000);
-            }
+        })
+        .finally(() => {
+            // Resume scanning after short delay so operator can move camera away
+            setTimeout(() => { scanningPaused = false; }, 1500);
         });
     }
 
@@ -453,7 +474,7 @@
 
         modalBody.innerHTML = `
             <div class="alert alert-success">
-                <h6><i class="bi bi-check-circle me-1"></i>Ticket Validated Successfully</h6>
+                <h6><i data-lucide="check-circle" class="me-1"></i>Ticket Validated Successfully</h6>
             </div>
             <div class="row">
                 <div class="col-sm-6">
@@ -475,18 +496,10 @@
         modal.show();
 
         // Reset camera when modal is hidden
+        // No camera reset on modal close; stream remains active for performance
         document.getElementById('scanResultModal').addEventListener('hidden.bs.modal', function() {
-            console.log('Modal closed, refreshing camera stream...');
-            const videoElement = document.getElementById('scanner-video');
-            if (videoElement && videoElement.srcObject) {
-                // Force refresh the video stream to reset exposure
-                const stream = videoElement.srcObject;
-                videoElement.srcObject = null;
-                setTimeout(() => {
-                    videoElement.srcObject = stream;
-                }, 100);
-            }
-        }, { once: true }); // Use once: true to prevent multiple event listeners
+            scanningPaused = false; // ensure scanning resumes
+        }, { once: true });
     }
 
     function showInvalidTicket(message) {
@@ -498,7 +511,7 @@
 
         modalBody.innerHTML = `
             <div class="alert alert-danger">
-                <h6><i class="bi bi-x-circle me-1"></i>Invalid Ticket</h6>
+                <h6><i data-lucide="x-circle" class="me-1"></i>Invalid Ticket</h6>
                 <p class="mb-0">${message}</p>
             </div>
         `;

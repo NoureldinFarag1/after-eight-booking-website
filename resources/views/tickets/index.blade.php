@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Tickets')
+@section('title', 'Tickets')
 
 @section('content')
 <div class="row">
@@ -11,11 +11,11 @@
                 @if(auth()->user()->isAdmin())
                     All Tickets
                 @else
-                    My Tickets
+                    Tickets
                 @endif
             </h1>
 
-            @if(auth()->user()->isOperator() || auth()->user()->isAdmin())
+            @if(auth()->user()->isOperator())
                 <a href="{{ route('tickets.scan') }}" class="btn btn-outline-primary">
                     <i class="bi bi-qr-code-scan me-1"></i>Scan Tickets
                 </a>
@@ -56,6 +56,15 @@
                                             {{ $ticket->event->title }}
                                         </a>
                                     </h5>
+                                    @if($ticket->type)
+                                        <p class="mb-1">
+                                            <i class="bi bi-ticket-detailed me-1"></i>
+                                            <strong>Type:</strong> {{ $ticket->type->name }}
+                                            @if(!is_null($ticket->price))
+                                                <span class="text-muted">• EGP {{ number_format($ticket->price, 2) }}</span>
+                                            @endif
+                                        </p>
+                                    @endif
 
                                     @if(auth()->user()->isAdmin())
                                         <p class="mb-1">
@@ -183,8 +192,8 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center">
-                {{ $tickets->links() }}
+            <div class="d-flex justify-content-center mt-4">
+                <x-pagination :paginator="$tickets->appends(request()->query())" />
             </div>
         @else
             <div class="text-center py-5">
@@ -207,7 +216,7 @@
     <!-- Status Update Form -->
     <form id="statusUpdateForm" method="POST" style="display: none;">
         @csrf
-        @method('PUT')
+        @method('PATCH')
         <input type="hidden" name="status" id="statusInput">
     </form>
 

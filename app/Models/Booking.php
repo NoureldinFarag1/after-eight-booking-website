@@ -88,7 +88,8 @@ class Booking extends Model
      */
     public function calculateTotalAmount(): float
     {
-        return $this->event->price * $this->quantity;
+        // Sum ticket prices to get authoritative total
+        return (float) $this->tickets()->sum('price');
     }
 
     /**

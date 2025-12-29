@@ -16,10 +16,12 @@ class Ticket extends Model
     protected $fillable = [
         'user_id',
         'event_id',
+        'ticket_type_id',
         'booking_id',
         'ticket_number',
         'qr_code',
         'status',
+        'price',
         'scanned_at',
         'scanned_by',
         'seat_number',
@@ -28,6 +30,7 @@ class Ticket extends Model
     protected $casts = [
         'scanned_at' => 'datetime',
         'status' => TicketStatus::class,
+        'price' => 'decimal:2',
     ];
 
     protected static function boot()
@@ -58,6 +61,14 @@ class Ticket extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /**
+     * Get the ticket type for this ticket
+     */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(TicketType::class, 'ticket_type_id');
     }
 
     /**
@@ -125,7 +136,9 @@ class Ticket extends Model
      */
     public function getQrCodeUrlAttribute(): string
     {
-        return route('tickets.scan', ['qr_code' => $this->qr_code]);
+        // Prefer direct validation endpoint so scanner can parse uniformly;
+        // operators use POST /tickets/validate/{qr_code} (protected) while public verify uses separate route.
+        return route('tickets.validate', ['qr_code' => $this->qr_code]);
     }
 
     /**

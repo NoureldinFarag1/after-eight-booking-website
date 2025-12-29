@@ -72,6 +72,51 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="google_maps_url" class="form-label">Google Maps Link *</label>
+               <input type="url"
+                               class="form-control @error('google_maps_url') is-invalid @enderror"
+                               id="google_maps_url"
+                               name="google_maps_url"
+                               placeholder="https://maps.app.goo.gl/..."
+                   value="{{ old('google_maps_url', $event->google_maps_url) }}" required>
+                        @error('google_maps_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        @if($event->google_maps_url)
+                            <div class="mt-2 small">
+                                Current: <a href="{{ $event->google_maps_url }}" target="_blank" rel="noopener">Open Link</a>
+                            </div>
+                        @endif
+                        <div id="map-preview-toggle" class="mt-2 d-none">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="show-map-btn">Show Map Preview</button>
+                        </div>
+                        <div id="map-preview-wrapper" class="mt-2 d-none">
+                            <div class="ratio ratio-16x9 border rounded">
+                                <iframe id="map-preview-iframe" src="" style="border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Assign Existing Artists</label>
+                        @php $selectedArtistIds = ($event->getRelationValue('artists') ?? collect())->pluck('id')->all(); @endphp
+                        <select name="artist_ids[]" class="form-select" multiple>
+                            @foreach($artists as $artist)
+                                <option value="{{ $artist->id }}" {{ in_array($artist->id, $selectedArtistIds, true) ? 'selected' : '' }}>{{ $artist->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text text-white">Hold Cmd/Ctrl to select multiple artists.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between align-items-center">
+                            Add New Artists
+                            <button type="button" id="add-artist-btn" class="btn btn-sm btn-outline-primary">Add Artist</button>
+                        </label>
+                        <div id="artists-new-list"></div>
+                        <div class="form-text text-muted">Each artist needs a name and optional picture.</div>
+                        @error('artists_new.*.name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        @error('artists_new.*.photo')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="event_date" class="form-label">Event Date *</label>
@@ -123,20 +168,19 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="price" class="form-label">Price ($) *</label>
-                            <input type="number"
-                                   class="form-control @error('price') is-invalid @enderror"
-                                   id="price"
-                                   name="price"
-                                   value="{{ old('price', $event->price) }}"
-                                   min="0"
-                                   step="0.01"
-                                   required>
-                            @error('price')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <div class="form-text">Enter 0 for free events</div>
+                            <label class="form-label">Pricing</label>
+                            <div class="form-text text-white">
+                                Pricing is managed via Ticket Types. Use <a href="{{ route('admin.events.ticket-types.index', $event) }}">Manage Ticket Types</a> to set prices and capacities.
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="type">Event Type</label>
+                        <select name="type" id="type" class="form-control" required>
+                            <option value="booking" {{ $event->type == 'booking' ? 'selected' : '' }}>Booking</option>
+                            <option value="request" {{ $event->type == 'request' ? 'selected' : '' }}>Request</option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
@@ -167,6 +211,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="layout_image" class="form-label">Venue Layout</label>
+                        @if($event->layout_image_url)
+                            <div class="mb-2">
+                                <img src="{{ Storage::url($event->layout_image_url) }}" alt="Current layout" class="img-thumbnail" style="max-height:200px;">
+                                <div class="form-text">Current layout image</div>
+                            </div>
+                        @endif
+                        <input type="file" class="form-control @error('layout_image') is-invalid @enderror" id="layout_image" name="layout_image" accept="image/*">
+                        @error('layout_image')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label for="terms_conditions" class="form-label">Terms & Conditions</label>
                         <textarea class="form-control @error('terms_conditions') is-invalid @enderror"
                                   id="terms_conditions"
@@ -177,6 +233,8 @@
                         @enderror
                     </div>
 
+                    {{-- Fees removed from edit form; manage via ticket management workflow --}}
+
                     @if($event->bookings->count() > 0)
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-1"></i>
@@ -185,13 +243,39 @@
                         </div>
                     @endif
 
+                    <div class="mb-3">
+                        <label class="form-label">Finance Officer</label>
+                        <select name="finance_officer_id" class="form-control">
+                            <option value="">-- None --</option>
+                            @foreach($financeOfficers as $officer)
+                                <option value="{{ $officer->id }}" {{ old('finance_officer_id', isset($event) ? $event->finance_officer_id : '') == $officer->id ? 'selected' : '' }}>
+                                    {{ $officer->name }} ({{ $officer->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Assign Operators</label>
+                        <select name="operators[]" class="form-control" multiple>
+                            @foreach($operators as $operator)
+                                <option value="{{ $operator->id }}" {{ in_array($operator->id, $event->operators->pluck('id')->toArray()) ? 'selected' : '' }}>
+                                    {{ $operator->name }} ({{ $operator->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Select one or more operators to assign to this event.</div>
+                    </div>
+
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Event
+                            <i class="bi bi-arrow-left me-1"></i>Event
                         </a>
 
                         <div>
                             <button type="submit" class="btn btn-primary">
+
+
                                 <i class="bi bi-check-circle me-1"></i>Update Event
                             </button>
                         </div>
@@ -201,4 +285,140 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeSelect = document.getElementById('type');
+        const container = document.getElementById('ticket-types-container');
+        const addBtn = document.getElementById('add-ticket-type');
+        const mapInput = document.getElementById('google_maps_url');
+        const toggleWrap = document.getElementById('map-preview-toggle');
+        const showBtn = document.getElementById('show-map-btn');
+        const previewWrap = document.getElementById('map-preview-wrapper');
+        const iframe = document.getElementById('map-preview-iframe');
+        function extractCoords(url){
+            if(!url) return null;
+            const patterns = [/@(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/, /[?&]q=(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)/, /\/(-?[0-9]{1,3}\.[0-9]+),(-?[0-9]{1,3}\.[0-9]+)(?:\/|$)/];
+            for(const p of patterns){
+                const m=url.match(p); if(m){const lat=parseFloat(m[1]); const lng=parseFloat(m[2]); if(Math.abs(lat)<=90 && Math.abs(lng)<=180) return {lat,lng};}
+            }
+            return null;
+        }
+        function evaluate(){
+            const coords = extractCoords(mapInput.value.trim());
+            if(coords){
+                toggleWrap.classList.remove('d-none');
+                iframe.dataset.src = `https://www.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`;
+            } else {
+                toggleWrap.classList.add('d-none');
+                previewWrap.classList.add('d-none');
+                iframe.removeAttribute('src');
+            }
+        }
+        if(mapInput){ mapInput.addEventListener('input', evaluate); mapInput.addEventListener('change', evaluate); evaluate(); }
+        if(showBtn){ showBtn.addEventListener('click', ()=>{ if(!iframe.getAttribute('src') && iframe.dataset.src){ iframe.src=iframe.dataset.src; } previewWrap.classList.toggle('d-none'); showBtn.textContent = previewWrap.classList.contains('d-none') ? 'Show Map Preview' : 'Hide Map Preview'; }); }
+
+        function toggleTypes() {
+            const isBooking = typeSelect.value === 'booking';
+            container.style.display = isBooking ? '' : 'none';
+        }
+        if (typeSelect) {
+            typeSelect.addEventListener('change', toggleTypes);
+            toggleTypes();
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const list = document.getElementById('ticket-types-list');
+                const idx = list.children.length;
+                const row = document.createElement('div');
+                row.className = 'row g-2 align-items-end mb-2';
+                row.innerHTML = `
+                    <div class="col-md-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="ticket_types[${idx}][name]" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" name="ticket_types[${idx}][price]" class="form-control" min="0" step="0.01" required>
+                    </div>
+                    <div class=\"col-md-2\">
+                        <label class=\"form-label\">Fee Type</label>
+                        <select name=\"ticket_types[${idx}][fee_type]\" class=\"form-select\">
+                            <option value=\"\">None</option>
+                            <option value=\"fixed\">Fixed</option>
+                            <option value=\"percentage\">%</option>
+                        </select>
+                    </div>
+                    <div class=\"col-md-2\">
+                        <label class=\"form-label\">Fee</label>
+                        <input type=\"number\" name=\"ticket_types[${idx}][fee_amount]\" class=\"form-control\" min=\"0\" step=\"0.01\" placeholder=\"0\">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Capacity (optional)</label>
+                        <input type="number" name="ticket_types[${idx}][capacity]" class="form-control" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="ticket_types[${idx}][is_active]" value="0">
+                            <input class="form-check-input" type="checkbox" name="ticket_types[${idx}][is_active]" value="1" checked>
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-end">
+                        <button class="btn btn-outline-danger btn-sm" onclick="this.closest('.row').remove()" title="Remove">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // Artists repeater
+        const addArtistBtn = document.getElementById('add-artist-btn');
+        const artistsList = document.getElementById('artists-new-list');
+        if(addArtistBtn){
+            addArtistBtn.addEventListener('click', function(){
+                const idx = artistsList.children.length;
+                const row = document.createElement('div');
+                row.className = 'row g-2 align-items-end mb-2';
+                row.innerHTML = `
+                    <div class="col-md-5">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="artists_new[${idx}][name]" class="form-control" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Photo</label>
+                        <input type="file" name="artists_new[${idx}][photo]" accept="image/*" class="form-control">
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button type="button" class="btn btn-outline-danger" onclick="this.closest('.row').remove()">Remove</button>
+                    </div>`;
+                artistsList.appendChild(row);
+            });
+        }
+    });
+</script>
+@endpush
+
+@push('after-content')
+<div class="row justify-content-center mt-3" id="ticket-types-container" style="display:none;">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Add Ticket Types</strong>
+                <button id="add-ticket-type" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus"></i> Add Type
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ticket-types-list"></div>
+                <div class="form-text text-muted">Existing types can be managed from the “Manage Ticket Types” page.</div>
+            </div>
+        </div>
+    </div>
+</div>
+@endpush
 @endsection

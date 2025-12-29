@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Bookings')
+@section('title', 'Bookings')
 
 @section('content')
 <div class="row">
@@ -11,12 +11,74 @@
                 @if(auth()->user()->isAdmin())
                     All Bookings
                 @else
-                    My Bookings
+                    Bookings
                 @endif
             </h1>
         </div>
 
-        @if($bookings->count() > 0)
+        @php
+            // $eventRequests now provided as a LengthAwarePaginator when user is not admin
+        @endphp
+
+        @if(($bookings->count() + $eventRequests->count()) > 0)
+            <form method="get" class="card mb-4 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted">Search</label>
+                            <input type="text" class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Reference or Event Title">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">Any</option>
+                                @foreach(($statusOptions ?? []) as $st)
+                                    <option value="{{ $st }}" @selected(($filters['status'] ?? '')===$st)>{{ ucfirst($st) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Filter</button>
+                            <a href="{{ route('bookings.index') }}" class="btn btn-outline-secondary" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            @if(!$eventRequests->isEmpty())
+                <div class="mb-4">
+                    <h2 class="h5 mb-3 d-flex align-items-center"><i class="bi bi-bell me-2"></i>My Event Requests</h2>
+                    <div class="row">
+                        @foreach($eventRequests as $req)
+                            <div class="col-lg-6 col-xl-4 mb-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="mb-1">{{ $req->event?->title ?? 'Event #' . $req->event_id }}</h6>
+                                                <small class="text-muted">Submitted {{ $req->created_at?->diffForHumans() }}</small>
+                                            </div>
+                                            <span class="badge status-badge @if($req->status==='approved') bg-success @elseif($req->status==='pending') bg-warning text-dark @elseif($req->status==='declined') bg-danger @else bg-secondary @endif">{{ ucfirst($req->status) }}</span>
+                                        </div>
+                                        <p class="mb-2 small text-muted">Primary: {{ $req->primary_name }} &lt;{{ $req->primary_email }}&gt;</p>
+                                        <p class="mb-0 small">Attendees: <strong>{{ $req->attendee_count }}</strong></p>
+                                    </div>
+                                    <div class="card-footer bg-transparent d-flex justify-content-between">
+                                        <a href="{{ route('event_requests.show', $req) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>Details
+                                        </a>
+                                        @if($req->status==='pending')
+                                            <span class="text-muted small">Awaiting review</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="d-flex justify-content-center mt-2">
+                        <x-pagination :paginator="$eventRequests->appends(request()->query())" />
+                    </div>
+                </div>
+            @endif
             <div class="row">
                 @foreach($bookings as $booking)
                     <div class="col-lg-6 col-xl-4 mb-4">
@@ -77,7 +139,7 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Total</div>
-                                        <div class="fw-bold text-primary">${{ number_format($booking->total_amount, 2) }}</div>
+                                        <div class="fw-bold text-primary">EGP {{ number_format((float)$booking->total_amount, 2) }}</div>
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">Tickets</div>
@@ -99,18 +161,12 @@
                                     <div>
                                         <a href="{{ route('bookings.show', $booking) }}"
                                            class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-eye me-1"></i>View Details
+                                            <i class="bi bi-eye me-1"></i>View
                                         </a>
                                     </div>
 
                                     <div class="btn-group btn-group-sm">
-                                        @if($booking->canBeCancelled() && (!auth()->user()->isAdmin() || auth()->user()->id === $booking->user_id))
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm"
-                                                    onclick="confirmCancel('{{ $booking->id }}', '{{ $booking->booking_reference }}')">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
-                                        @endif
+
 
                                         @if(auth()->user()->isAdmin())
                                             <a href="{{ route('bookings.edit', $booking) }}"
@@ -127,17 +183,17 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center">
-                {{ $bookings->links() }}
+            <div class="d-flex justify-content-center mt-4">
+                <x-pagination :paginator="$bookings->appends(request()->query())" />
             </div>
         @else
             <div class="text-center py-5">
                 <i class="bi bi-ticket-perforated display-1 text-muted"></i>
-                <h3 class="mt-3 text-muted">No Bookings Found</h3>
+                <h3 class="mt-3 text-muted">No Bookings or Requests Found</h3>
                 @if(auth()->user()->isAdmin())
-                    <p class="text-muted">No bookings have been made yet.</p>
+                    <p class="text-muted">No bookings or requests yet.</p>
                 @else
-                    <p class="text-muted">You haven't made any bookings yet.</p>
+                    <p class="text-muted mb-3">No bookings or requests yet.</p>
                     <a href="{{ route('events.index') }}" class="btn btn-primary">
                         <i class="bi bi-calendar-event me-1"></i>Browse Events
                     </a>

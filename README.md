@@ -1,61 +1,153 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<h1 align="center">After Eight Booking Website</h1>
+<p align="center"><em>Event & ticket management platform with transparent pricing, QR validation, invitations, and role-based access.</em></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## ✨ Overview
+After Eight Booking Website is a Laravel 12 application for managing events, bookings, ticket types (with configurable fees), QR-code tickets, and event-bound invitations. It emphasizes clear pricing (Base + Fee), dependable scanning, and simple operations for three roles: Admin, Staff/Operator, and User.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Key Features
+- Event management (capacity, schedule, multi-artist display)
+- Ticket types with optional fees (percentage or fixed)
+- Immutable, fee-inclusive ticket pricing for auditability
+- Booking flow with full fee breakdown and confirmation email
+- QR code generation for tickets and invitations
+- Invitations are scoped to specific events (no generic invites)
+- Approval/request workflow for event requests
+- Role-based access and policies for safe operations
+- User profile completion and demographic fields (age, gender, birthday)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🔐 Roles — A to Z Journeys
+The platform is designed so each role can complete their end-to-end tasks without unnecessary access to others’ data. Below are typical, security-safe user journeys with no secrets or internal endpoints exposed.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Admin
+1. Authenticate and access the admin views.
+2. Create or manage events: title, description, date/time, capacity, image, terms.
+3. Define ticket types per event: base price, optional fee type (percentage/fixed), and fee amount.
+4. Publish or update event status over time (e.g., draft → published → completed/cancelled).
+5. Monitor bookings and ticket issuance; export or review operational reports as needed.
+6. Send event-specific invitations (each invite has its own QR and is tied to a single event).
+7. Oversee approvals for event requests and manage staff/operator access.
+8. Perform post-event reviews and archive/retire events safely.
 
-## Learning Laravel
+### Staff / Operator
+1. Authenticate with operator access.
+2. Open the scanning screen on a device with a camera (mobile or desktop-supported hardware).
+3. Scan attendee QR codes to validate tickets instantly (valid/used/cancelled/expired states).
+4. Prevent re-use automatically (a used ticket will not validate again).
+5. Continue scanning throughout entry operations; results are attributed for auditability.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### User (Attendee)
+1. Browse upcoming events and open event details.
+2. Select ticket type(s) and quantity; see transparent fee breakdown before confirming.
+3. Complete booking; receive confirmation and QR-code tickets via email.
+4. View/manage bookings and tickets from the account area; download or present QR at entry.
+5. If invited, open the event-bound invitation and follow the flow to attend.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+> Note: The application enforces access control by role and only exposes the minimum information required for each action.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🧮 Pricing & Fee Model
+Each `TicketType` can define:
+- `fee_type`: `percentage | fixed | null`
+- `fee_amount`: numeric (0–100 if percentage; >= 0 if fixed)
 
-## Laravel Sponsors
+When tickets are created during booking:
+1) Base price comes from the ticket type.
+2) Fee is calculated based on fee type and amount.
+3) The ticket’s stored price = Base + Fee and is not recomputed later.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+All breakdowns (booking details, tickets, admin summaries) consistently show:
+Total = Base + Fee (including when the fee is zero).
 
-### Premium Partners
+### Example
+| Base | Fee Type   | Fee Amount | Computed Fee | Stored Ticket Price |
+|------|------------|------------|--------------|---------------------|
+| 100  | percentage | 5          | 5.00         | 105.00              |
+| 250  | fixed      | 20         | 20.00        | 270.00              |
+| 80   | (none)     | 0          | 0.00         | 80.00               |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🗃 Data Integrity
+- A migration introduced fee fields on ticket types.
+- A backfill normalized `fee_amount` null → `0` to ensure explicit zero-fee semantics.
+- Tickets preserve historical prices even if fee rules change later.
 
-## Contributing
+## 🧑‍💻 Tech Stack
+- PHP 8.2, Laravel 12
+- Blade + Vite + Tailwind CSS
+- MySQL (primary) and SQLite for tests
+- Email via a provider integration; QR codes via a QR library
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## � Security & Privacy
+- No secrets are stored in the repository. Environment variables are read from a local `.env` file that is not committed.
+- Role-based authorization and policies enforce least-privilege access.
+- CSRF protection and Laravel security defaults are enabled.
+- Validation prevents capacity over-allocation and enforces fee constraints (e.g., percentage within 0–100).
+- Password reset flows are provided via email without exposing any sensitive data.
 
-## Code of Conduct
+## 📧 Notifications
+- Booking confirmation (showing Base + Fee breakdown)
+- Invitation sent (QR attached)
+- Password reset
+- Approval / payment-related notifications (as applicable)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🧱 Project Structure (Highlights)
+```
+app/
+  Models/ (Event, Booking, Ticket, TicketType, Invitation, User)
+  Http/Controllers/ (Admin, Booking, Event, Ticket, Invitation, etc.)
+  Enums/ (BookingStatus, EventStatus, TicketStatus, Role)
+resources/views/ (events, tickets, bookings, invitations, admin panels)
+database/migrations/ (schema evolution + fee backfill)
+```
 
-## Security Vulnerabilities
+## 🛠 Local Development Setup
+```bash
+git clone <repo-url>
+cd after-eight-booking-website
+cp .env.example .env    # provide environment values locally (do not commit .env)
+composer install
+npm install
+php artisan key:generate
+php artisan migrate --seed
+npm run dev             # or: npm run build
+php artisan serve       # visit the local URL (e.g., http://localhost:8000)
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Test Suite
+```bash
+php artisan test
+```
+The test configuration uses SQLite (see `phpunit.xml`).
 
-## License
+## 🔄 Common Commands
+```bash
+php artisan migrate          # run migrations
+php artisan migrate:rollback # rollback last migration batch
+php artisan tinker           # interactively test small snippets
+php artisan queue:work       # run queues (if queue driver is not sync)
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🧩 Design Principles
+- Immutable ticket pricing for historical accuracy
+- Explicit zeros instead of NULL for financial fields
+- UI transparency (always present Base + Fee)
+- Event-bound invitations for tight access control
+- Progressive enhancement and clear separation of concerns
+
+## 🧭 Operations Notes
+- Scanning flow is optimized to prevent ticket reuse.
+- Listings use pagination and eager-loading where applicable.
+- Logging and audits support operational traceability.
+
+## 📚 Further Reading
+- System architecture and deeper details: `SYSTEM_DOCUMENTATION.md`
+- Invitation flow specifics: `README_INVITATIONS.txt`
+
+## 🤝 Contributing
+1. Create a feature branch.
+2. Add or adjust tests for any behavior changes.
+3. Ensure code style (e.g., Pint) and tests are passing.
+4. Open a PR with a summary and screenshots for UI updates.
+
+## � License
+This project builds on Laravel (MIT). Custom application code is MIT unless noted otherwise.
